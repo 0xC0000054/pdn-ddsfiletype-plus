@@ -1,0 +1,36 @@
+# pdn-ddsfiletype-plus
+
+A [Paint.NET](http://www.getpaint.net) filetype plugin that adds support for some of the DDS formats introduced in DirectX 10 and later.
+
+## Installing the plugin
+
+1. Close Paint.NET.
+2. Place DdsFileTypePlus.dll, DdsFileTypePlusIO_x86.dll and DdsFileTypePlusIO_x64.dll in the Paint.NET FileTypes folder (usually C:\Program Files\Paint.NET\FileTypes).
+3. Restart Paint.NET.
+
+## License
+
+This project is licensed under the terms of the MIT License.   
+See [License.txt](License.txt) for more information.
+
+***
+
+# Source code
+
+## Prerequsites
+
+* Visual Studio 2017
+* Paint.NET 4.0.17 or later
+
+## Building the plugin
+
+* Open the solution
+* Change the PaintDotNet references in the DDSFileTypePlus project to match your Paint.NET install location
+* Update the post build events to copy the build output to the Paint.NET FileTypes folder
+* Build the solution
+
+## 3rd Party Code
+
+This project utilizes the following code (located under 3rdParty folder)
+
+* [DirectXTex](https://github.com/Microsoft/DirectXTex) (July 2017 release)
