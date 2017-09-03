@@ -173,11 +173,13 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="DirectComputeHelper.h" />
     <ClInclude Include="DdsFileTypePlusIO.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DirectComputeHelper.cpp" />
     <ClCompile Include="DdsFileTypePlusIO.cpp" />
     <ClCompile Include="dllmain.cpp" />
   </ItemGroup>

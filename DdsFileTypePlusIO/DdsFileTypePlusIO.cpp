@@ -14,6 +14,8 @@
 #include "DirectXTex.h"
 #include <memory>
 
+#include "DirectComputeHelper.h"
+
 using namespace DirectX;
 
 namespace
@@ -293,6 +295,9 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 			compressFlags |= TEX_COMPRESS_PARALLEL;
 		}
 
+		DirectComputeHelper* dcHelper = nullptr;
+		bool useDirectCompute = false;
+
 		if (dxgiFormat == DXGI_FORMAT_BC7_UNORM || dxgiFormat == DXGI_FORMAT_BC7_UNORM_SRGB || dxgiFormat == DXGI_FORMAT_BC7_TYPELESS)
 		{
 			switch (input->compressionMode)
@@ -307,9 +312,31 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 			default:
 				break;
 			}
+
+			dcHelper = new(std::nothrow) DirectComputeHelper;
+			if (dcHelper != nullptr)
+			{
+				useDirectCompute = dcHelper->CreateComputeDevice();
+			}
 		}
 
-		hr = Compress(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage);
+		if (useDirectCompute)
+		{
+			const float alphaWeight = 1.0;
+
+			hr = Compress(dcHelper->GetComputeDevice(), image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags,
+				alphaWeight, *compressedImage);
+		}
+		else
+		{
+			hr = Compress(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage);
+		}
+
+		if (dcHelper != nullptr)
+		{
+			delete dcHelper;
+			dcHelper = nullptr;
+		}
 
 		if (FAILED(hr))
 		{
