@@ -166,7 +166,7 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 	loadInfo->height = static_cast<int>(info.height);
 	loadInfo->stride = static_cast<int>(info.width * 4);
 	loadInfo->hasAlpha = hasAlpha;
-	loadInfo->data = outData;
+	loadInfo->scan0 = outData;
 
 	return S_OK;
 }
@@ -180,10 +180,10 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 		info->stride = 0;
 		info->hasAlpha = false;
 				
-		if (info->data != nullptr)
+		if (info->scan0 != nullptr)
 		{
-			HeapFree(GetProcessHeap(), 0, info->data);
-			info->data = nullptr;
+			HeapFree(GetProcessHeap(), 0, info->scan0);
+			info->scan0 = nullptr;
 		}
 	}
 }
@@ -209,7 +209,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 		return hr;
 	}
 	
-	const uint8_t* srcScan0 = reinterpret_cast<const uint8_t*>(input->data);
+	const uint8_t* srcScan0 = reinterpret_cast<const uint8_t*>(input->scan0);
 	uint8_t* destScan0 = image->GetPixels();
 
 	const int destStride = input->width * 4;

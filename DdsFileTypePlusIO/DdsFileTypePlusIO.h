@@ -28,7 +28,7 @@ extern "C" {
 		int height;
 		int stride;
 		bool hasAlpha;
-		void* data;
+		void* scan0;
 	};
 
 	enum DdsFileFormat
@@ -82,7 +82,7 @@ extern "C" {
 		BC7CompressionMode compressionMode;
 		bool generateMipmaps;
 		MipmapSampling mipmapSampling;
-		void* data;
+		void* scan0;
 	};
 
 	__declspec(dllexport) HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* info);

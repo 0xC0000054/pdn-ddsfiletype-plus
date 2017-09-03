@@ -27,7 +27,7 @@ namespace DdsFileTypePlus
             public int stride;
             [MarshalAs(UnmanagedType.U1)]
             public bool hasAlpha;
-            public IntPtr data;
+            public IntPtr scan0;
         }
 
         private struct DDSSaveInfo
@@ -41,7 +41,7 @@ namespace DdsFileTypePlus
             [MarshalAs(UnmanagedType.U1)]
             public bool generateMipmaps;
             public MipMapSampling mipmapSampling;
-            public IntPtr data;
+            public IntPtr scan0;
         }
 
         private static class DdsIO_x86
@@ -98,7 +98,7 @@ namespace DdsFileTypePlus
 
             for (int y = 0; y < surface.Height; y++)
             {
-                byte* src = (byte*)info.data + (y * info.stride);
+                byte* src = (byte*)info.scan0 + (y * info.stride);
                 ColorBgra* dst = surface.GetRowAddressUnchecked(y);
 
                 for (int x = 0; x < surface.Width; x++)
@@ -208,7 +208,7 @@ namespace DdsFileTypePlus
                 compressionMode = compressionMode,
                 generateMipmaps = generateMipmaps,
                 mipmapSampling = mipMapSampling,
-                data = surface.Scan0.Pointer
+                scan0 = surface.Scan0.Pointer
             };
 
             int hr;
