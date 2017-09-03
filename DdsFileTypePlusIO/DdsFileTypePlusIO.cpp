@@ -274,6 +274,13 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 
 	if (IsCompressed(dxgiFormat))
 	{
+		std::unique_ptr<ScratchImage> compressedImage(new(std::nothrow) ScratchImage);
+
+		if (compressedImage == nullptr)
+		{
+			return E_OUTOFMEMORY;
+		}
+
 		DWORD compressFlags = TEX_COMPRESS_DEFAULT;
 
 		if (input->errorMetric == DDS_ERROR_METRIC_UNIFORM)
@@ -300,13 +307,6 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 			default:
 				break;
 			}
-		}
-
-		std::unique_ptr<ScratchImage> compressedImage(new(std::nothrow) ScratchImage);
-
-		if (compressedImage == nullptr)
-		{
-			return E_OUTOFMEMORY;
 		}
 
 		hr = Compress(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage);
