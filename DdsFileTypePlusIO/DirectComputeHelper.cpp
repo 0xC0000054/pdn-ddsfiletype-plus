@@ -33,7 +33,7 @@ bool DirectComputeHelper::CreateComputeDevice()
 			return false;
 		}
 
-		dynamicD3D11CreateDevice = (PFN_D3D11_CREATE_DEVICE)GetProcAddress(hModD3D11, "D3D11CreateDevice");
+		dynamicD3D11CreateDevice = reinterpret_cast<PFN_D3D11_CREATE_DEVICE>(GetProcAddress(hModD3D11, "D3D11CreateDevice"));
 	}
 
 	if (dynamicD3D11CreateDevice == nullptr)
