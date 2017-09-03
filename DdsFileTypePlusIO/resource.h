@@ -1,6 +1,7 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by version.rc
+// Used by DdsFileTypePlusIO.rc
+//
 
 // Next default values for new objects
 // 
