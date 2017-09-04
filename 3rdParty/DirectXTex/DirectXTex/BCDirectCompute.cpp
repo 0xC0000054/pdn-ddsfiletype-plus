@@ -340,7 +340,7 @@ HRESULT GPUCompressBC::Prepare(size_t width, size_t height, DWORD flags, DXGI_FO
 
 
 //-------------------------------------------------------------------------------------
-HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage)
+HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, CompressProgressProc progressProc)
 {
     if (!srcImage.pixels || !destImage.pixels)
         return E_INVALIDARG;
@@ -426,6 +426,7 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage)
     if (!pContext)
         return E_UNEXPECTED;
 
+	size_t processedBlocks = 0;
     size_t xblocks = std::max<size_t>(1, (m_width + 3) >> 2);
     size_t yblocks = std::max<size_t>(1, (m_height + 3) >> 2);
 
@@ -579,6 +580,13 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage)
 
         start_block_id += n;
         num_blocks -= n;
+
+		processedBlocks += n;
+
+		if (progressProc)
+		{
+			progressProc(processedBlocks, num_total_blocks);
+		}
     }
 
     ResetContext(pContext);

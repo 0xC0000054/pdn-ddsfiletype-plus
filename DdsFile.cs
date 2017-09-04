@@ -44,6 +44,9 @@ namespace DdsFileTypePlus
             public IntPtr scan0;
         }
 
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void DdsProgressCallback(UIntPtr done, UIntPtr total);
+
         private static class DdsIO_x86
         {
             [DllImport("DdsFileTypePlusIO_Win32.dll", CallingConvention = CallingConvention.StdCall)]
@@ -56,7 +59,8 @@ namespace DdsFileTypePlus
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] PinnedByteArrayAllocDelegate allocDelegate,
-                [Out] out IntPtr output);
+                [Out] out IntPtr output,
+                [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
         private static class DdsIO_x64
@@ -71,7 +75,8 @@ namespace DdsFileTypePlus
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] PinnedByteArrayAllocDelegate allocDelegate,
-                [Out] out IntPtr output);
+                [Out] out IntPtr output,
+                [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
         private static bool FAILED(int hr)
@@ -128,7 +133,8 @@ namespace DdsFileTypePlus
             BC7CompressionMode compressionMode,
             bool generateMipmaps,
             MipMapSampling sampling,
-            Surface scratchSurface)
+            Surface scratchSurface,
+            ProgressEventHandler progressCallback)
         {
             using (RenderArgs args = new RenderArgs(scratchSurface))
             {
@@ -141,7 +147,13 @@ namespace DdsFileTypePlus
 
                 IntPtr outputPtr = IntPtr.Zero;
 
-                SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, allocDelegate, out outputPtr);
+                DdsProgressCallback ddsProgress = delegate (UIntPtr done, UIntPtr total)
+                {
+                    double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
+                    progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
+                };
+
+                SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, allocDelegate, out outputPtr, ddsProgress);
 
                 GC.KeepAlive(allocDelegate);
 
@@ -196,7 +208,8 @@ namespace DdsFileTypePlus
             bool generateMipmaps,
             MipMapSampling mipMapSampling,
             PinnedByteArrayAllocDelegate allocDelegate,
-            out IntPtr output)
+            out IntPtr output,
+            DdsProgressCallback progressCallback)
         {
             DDSSaveInfo info = new DDSSaveInfo
             {
@@ -215,11 +228,11 @@ namespace DdsFileTypePlus
 
             if (IntPtr.Size == 8)
             {
-                hr = DdsIO_x64.Save(ref info, allocDelegate, out output);
+                hr = DdsIO_x64.Save(ref info, allocDelegate, out output, progressCallback);
             }
             else
             {
-                hr = DdsIO_x86.Save(ref info, allocDelegate, out output);
+                hr = DdsIO_x86.Save(ref info, allocDelegate, out output, progressCallback);
             }
 
             if (FAILED(hr))

@@ -596,7 +596,8 @@ HRESULT DirectX::Compress(
     DXGI_FORMAT format,
     DWORD compress,
     float threshold,
-    ScratchImage& image)
+    ScratchImage& image,
+	CompressProgressProc progressProc)
 {
     if (IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
@@ -617,6 +618,11 @@ HRESULT DirectX::Compress(
         return E_POINTER;
     }
 
+	if (progressProc)
+	{
+		progressProc(0, img->height);
+	}
+
     // Compress single image
     if (compress & TEX_COMPRESS_PARALLEL)
     {
@@ -630,6 +636,11 @@ HRESULT DirectX::Compress(
     {
         hr = CompressBC(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold);
     }
+
+	if (progressProc)
+	{
+		progressProc(img->height, img->height);
+	}
 
     if (FAILED(hr))
         image.Release();
@@ -645,7 +656,8 @@ HRESULT DirectX::Compress(
     DXGI_FORMAT format,
     DWORD compress,
     float threshold,
-    ScratchImage& cImages)
+    ScratchImage& cImages,
+	CompressProgressProc progressProc)
 {
     if (!srcImages || !nimages)
         return E_INVALIDARG;
@@ -677,6 +689,11 @@ HRESULT DirectX::Compress(
         cImages.Release();
         return E_POINTER;
     }
+
+	if (progressProc)
+	{
+		progressProc(0, nimages);
+	}
 
     for (size_t index = 0; index < nimages; ++index)
     {
@@ -715,7 +732,17 @@ HRESULT DirectX::Compress(
                 return hr;
             }
         }
+
+		if (progressProc)
+		{
+			progressProc(index, nimages);
+		}
     }
+
+	if (progressProc)
+	{
+		progressProc(nimages, nimages);
+	}
 
     return S_OK;
 }

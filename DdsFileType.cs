@@ -20,7 +20,7 @@ namespace DdsFileTypePlus
 {
     public sealed class DdsFileType : PropertyBasedFileType
     {
-        public DdsFileType() : base("DirectDraw Surface", FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving, new string[] { ".dds2" })
+        public DdsFileType() : base("DirectDraw Surface", FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving | FileTypeFlags.SavesWithProgress, new string[] { ".dds2" })
         {
         }
 
@@ -93,7 +93,7 @@ namespace DdsFileTypePlus
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
             MipMapSampling mipSampling = (MipMapSampling)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
 
-            DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, generateMipmaps, mipSampling, scratchSurface);
+            DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, generateMipmaps, mipSampling, scratchSurface, progressCallback);
         }
 
         public enum PropertyNames

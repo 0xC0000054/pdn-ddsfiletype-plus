@@ -11,7 +11,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 #include "DdsFileTypePlusIO.h"
-#include "DirectXTex.h"
 #include <memory>
 
 #include "DirectComputeHelper.h"
@@ -190,7 +189,7 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 	}
 }
 
-HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outputAlloc, void** output)
+HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outputAlloc, void** output, CompressProgressProc progressFn)
 {
 	if (input == nullptr || outputAlloc == nullptr || output == nullptr)
 	{
@@ -328,11 +327,11 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 			const float alphaWeight = 1.0;
 
 			hr = Compress(dcHelper->GetComputeDevice(), image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags,
-				alphaWeight, *compressedImage);
+				alphaWeight, *compressedImage, progressFn);
 		}
 		else
 		{
-			hr = Compress(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage);
+			hr = Compress(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
 		}
 
 		if (dcHelper != nullptr)

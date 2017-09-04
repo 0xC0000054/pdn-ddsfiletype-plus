@@ -149,7 +149,8 @@ namespace
         _In_ GPUCompressBC* gpubc,
         const Image& srcImage,
         const Image& destImage,
-        DWORD compress)
+        DWORD compress,
+		CompressProgressProc progressProc)
     {
         if (!gpubc)
             return E_POINTER;
@@ -161,7 +162,7 @@ namespace
         if (srcImage.format == format)
         {
             // Input is already in our required source format
-            return gpubc->Compress(srcImage, destImage);
+            return gpubc->Compress(srcImage, destImage, progressProc);
         }
         else
         {
@@ -197,7 +198,7 @@ namespace
             if (!img)
                 return E_POINTER;
 
-            return gpubc->Compress(*img, destImage);
+            return gpubc->Compress(*img, destImage, progressProc);
         }
     }
 };
@@ -216,7 +217,8 @@ HRESULT DirectX::Compress(
     DXGI_FORMAT format,
     DWORD compress,
     float alphaWeight,
-    ScratchImage& image)
+    ScratchImage& image,
+	CompressProgressProc progressProc)
 {
     if (!pDevice || IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
@@ -250,7 +252,7 @@ HRESULT DirectX::Compress(
         return E_POINTER;
     }
 
-    hr = GPUCompress(gpubc.get(), srcImage, *img, compress);
+    hr = GPUCompress(gpubc.get(), srcImage, *img, compress, progressProc);
     if (FAILED(hr))
         image.Release();
 
@@ -266,7 +268,8 @@ HRESULT DirectX::Compress(
     DXGI_FORMAT format,
     DWORD compress,
     float alphaWeight,
-    ScratchImage& cImages)
+    ScratchImage& cImages,
+	CompressProgressProc progressProc)
 {
     if (!pDevice || !srcImages || !nimages)
         return E_INVALIDARG;
@@ -346,7 +349,7 @@ HRESULT DirectX::Compress(
                     return E_FAIL;
                 }
 
-                hr = GPUCompress(gpubc.get(), src, dest[index], compress);
+                hr = GPUCompress(gpubc.get(), src, dest[index], compress, progressProc);
                 if (FAILED(hr))
                 {
                     cImages.Release();
@@ -397,7 +400,7 @@ HRESULT DirectX::Compress(
                     return E_FAIL;
                 }
 
-                hr = GPUCompress(gpubc.get(), src, dest[index], compress);
+                hr = GPUCompress(gpubc.get(), src, dest[index], compress, progressProc);
                 if (FAILED(hr))
                 {
                     cImages.Release();

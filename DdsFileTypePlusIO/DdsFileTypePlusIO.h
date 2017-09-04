@@ -15,6 +15,7 @@
 #include "targetver.h"
 
 #include <Windows.h>
+#include "DirectXTex.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,7 +90,7 @@ extern "C" {
 
 	__declspec(dllexport) HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* info);
 	__declspec(dllexport) void __stdcall FreeLoadInfo(DDSLoadInfo* info);
-	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outputAlloc, void** output);
+	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outputAlloc, void** output, DirectX::CompressProgressProc progressFn);
 
 #ifdef __cplusplus
 }
