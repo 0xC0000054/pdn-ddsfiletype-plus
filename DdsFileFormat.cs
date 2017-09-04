@@ -19,6 +19,7 @@ namespace DdsFileTypePlus
         DDS_FORMAT_BC3,
         DDS_FORMAT_BC4,
         DDS_FORMAT_BC5,
+        DDS_FORMAT_BC6H,
         DDS_FORMAT_BC7,
         DDS_FORMAT_A8R8G8B8,
         DDS_FORMAT_X8R8G8B8,

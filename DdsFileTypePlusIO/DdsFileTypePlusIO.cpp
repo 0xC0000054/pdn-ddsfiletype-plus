@@ -34,6 +34,8 @@ namespace
 			return DXGI_FORMAT_BC4_UNORM;
 		case DDS_FORMAT_BC5:
 			return DXGI_FORMAT_BC5_UNORM;
+		case DDS_FORMAT_BC6H:
+			return DXGI_FORMAT_BC6H_UF16;
 		case DDS_FORMAT_BC7:
 			return DXGI_FORMAT_BC7_UNORM;
 		case DDS_FORMAT_X8R8G8B8:
@@ -298,7 +300,8 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 		DirectComputeHelper* dcHelper = nullptr;
 		bool useDirectCompute = false;
 
-		if (dxgiFormat == DXGI_FORMAT_BC7_UNORM || dxgiFormat == DXGI_FORMAT_BC7_UNORM_SRGB || dxgiFormat == DXGI_FORMAT_BC7_TYPELESS)
+		if (dxgiFormat == DXGI_FORMAT_BC7_UNORM || dxgiFormat == DXGI_FORMAT_BC7_UNORM_SRGB || dxgiFormat == DXGI_FORMAT_BC7_TYPELESS ||
+			dxgiFormat == DXGI_FORMAT_BC6H_UF16 || dxgiFormat == DXGI_FORMAT_BC6H_SF16 || dxgiFormat == DXGI_FORMAT_BC6H_TYPELESS)
 		{
 			switch (input->compressionMode)
 			{

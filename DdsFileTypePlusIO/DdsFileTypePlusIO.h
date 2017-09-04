@@ -43,6 +43,8 @@ extern "C" {
 		DDS_FORMAT_BC4,
 		// BC5 (DX 10+)
 		DDS_FORMAT_BC5,
+		// BC6H (DX 11+)
+		DDS_FORMAT_BC6H,
 		// BC7 (DX 11+)
 		DDS_FORMAT_BC7,
 		DDS_FORMAT_A8R8G8B8,

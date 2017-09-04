@@ -37,7 +37,7 @@ namespace DdsFileTypePlus
 
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
             {
-                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.BC7CompressionMode, PropertyNames.FileFormat, new object[] { DdsFileFormat.DDS_FORMAT_BC7 }, true),
+                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.BC7CompressionMode, PropertyNames.FileFormat, new object[] { DdsFileFormat.DDS_FORMAT_BC6H, DdsFileFormat.DDS_FORMAT_BC7 }, true),
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.ErrorMetric, PropertyNames.FileFormat, new object[] { DdsFileFormat.DDS_FORMAT_A1R5G5B5, DdsFileFormat.DDS_FORMAT_A8R8G8B8, DdsFileFormat.DDS_FORMAT_R5G6B5, DdsFileFormat.DDS_FORMAT_X8R8G8B8 }, false),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true)
             };
@@ -55,6 +55,7 @@ namespace DdsFileTypePlus
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_BC3, "BC3 (DXT5)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_BC4, "BC4 (DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_BC5, "BC5 (DX 10+)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_BC6H, "BC6H (DX 11+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_BC7, "BC7 (DX 11+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_A8R8G8B8, "A8B8G8R8");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.DDS_FORMAT_X8R8G8B8, "X8B8G8R8");
