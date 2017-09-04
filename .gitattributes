@@ -61,3 +61,6 @@
 #*.PDF   diff=astextplain
 #*.rtf   diff=astextplain
 #*.RTF diff=astextplain
+
+# GitHub Linguist override
+3rdParty/* linguist-vendored
