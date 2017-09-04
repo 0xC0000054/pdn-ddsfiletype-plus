@@ -17,6 +17,10 @@ using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus
 {
+    // The following code is adapted from the Paint.NET blog
+    // Marshaling native arrays back as managed arrays without copying
+    // https://blog.getpaint.net/2012/04/30/marshaling-native-arrays-back-as-managed-arrays-without-copying/
+
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate IntPtr PinnedByteArrayAllocDelegate(UIntPtr sizeInBytes);
 
