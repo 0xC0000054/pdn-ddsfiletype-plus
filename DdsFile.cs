@@ -49,13 +49,13 @@ namespace DdsFileTypePlus
 
         private static class DdsIO_x86
         {
-            [DllImport("DdsFileTypePlusIO_Win32.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
             internal static unsafe extern int Load([In] byte* input, [In] UIntPtr inputSize, [In, Out] ref DDSLoadInfo info);
 
-            [DllImport("DdsFileTypePlusIO_Win32.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
             internal static extern void FreeLoadInfo([In, Out] ref DDSLoadInfo info);
 
-            [DllImport("DdsFileTypePlusIO_Win32.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] PinnedByteArrayAllocDelegate allocDelegate,
