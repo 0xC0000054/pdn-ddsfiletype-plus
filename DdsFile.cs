@@ -79,6 +79,12 @@ namespace DdsFileTypePlus
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
+        private static class HResult
+        {
+            public const int NotSupported = unchecked((int)0x80070032); // HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED)
+            public const int InvalidData = unchecked((int)0x8007000D); // HRESULT_FROM_WIN32(ERROR_INVALID_DATA)
+        }
+
         private static bool FAILED(int hr)
         {
             return hr < 0;
@@ -184,7 +190,16 @@ namespace DdsFileTypePlus
 
             if (FAILED(hr))
             {
-                Marshal.ThrowExceptionForHR(hr);
+                switch (hr)
+                {
+                    case HResult.InvalidData:
+                        throw new FormatException("The DDS file is invalid.");
+                    case HResult.NotSupported:
+                        throw new FormatException("The file is not a supported DDS format.");
+                    default:
+                        Marshal.ThrowExceptionForHR(hr);
+                        break;
+                }
             }
         }
 
