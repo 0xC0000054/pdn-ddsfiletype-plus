@@ -288,7 +288,7 @@ namespace
         uint32_t dwMagicNumber = *reinterpret_cast<const uint32_t*>(pSource);
         if (dwMagicNumber != DDS_MAGIC)
         {
-            return E_FAIL;
+            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
 
         auto pHeader = reinterpret_cast<const DDS_HEADER*>((const uint8_t*)pSource + sizeof(uint32_t));
@@ -297,7 +297,7 @@ namespace
         if (pHeader->dwSize != sizeof(DDS_HEADER)
             || pHeader->ddspf.dwSize != sizeof(DDS_PIXELFORMAT))
         {
-            return E_FAIL;
+            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
 
         metadata.mipLevels = pHeader->dwMipMapCount;
@@ -311,7 +311,7 @@ namespace
             // Buffer must be big enough for both headers and magic value
             if (size < (sizeof(DDS_HEADER) + sizeof(uint32_t) + sizeof(DDS_HEADER_DXT10)))
             {
-                return E_FAIL;
+                return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
             }
 
             auto d3d10ext = reinterpret_cast<const DDS_HEADER_DXT10*>((const uint8_t*)pSource + sizeof(uint32_t) + sizeof(DDS_HEADER));
