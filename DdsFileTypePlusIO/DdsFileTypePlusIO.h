@@ -28,7 +28,6 @@ extern "C" {
 		int width;
 		int height;
 		int stride;
-		bool hasAlpha;
 		void* scan0;
 	};
 

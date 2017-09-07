@@ -25,8 +25,6 @@ namespace DdsFileTypePlus
             public int width;
             public int height;
             public int stride;
-            [MarshalAs(UnmanagedType.U1)]
-            public bool hasAlpha;
             public IntPtr scan0;
         }
 
@@ -101,11 +99,6 @@ namespace DdsFileTypePlus
             BitmapLayer layer = Layer.CreateBackgroundLayer(info.width, info.height);
 
             Surface surface = layer.Surface;
-
-            if (!info.hasAlpha)
-            {
-                new UnaryPixelOps.SetAlphaChannelTo255().Apply(surface, surface.Bounds);
-            }
 
             for (int y = 0; y < surface.Height; y++)
             {

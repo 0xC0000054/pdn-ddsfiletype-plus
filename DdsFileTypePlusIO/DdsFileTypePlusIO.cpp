@@ -124,8 +124,6 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 	}
 
 
-	bool hasAlpha = false;
-
 	if (HasAlpha(info.format) && info.format != DXGI_FORMAT_A8_UNORM)
 	{
 		// Convert the premultiplied alpha to straight alpha.
@@ -148,8 +146,6 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 			info = unmultipliedImage->GetMetadata();
 			targetImage.swap(unmultipliedImage);
 		}
-
-		hasAlpha = true;
 	}
 
 	const size_t outBufferSize = targetImage->GetPixelsSize();
@@ -166,7 +162,6 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 	loadInfo->width = static_cast<int>(info.width);
 	loadInfo->height = static_cast<int>(info.height);
 	loadInfo->stride = static_cast<int>(info.width * 4);
-	loadInfo->hasAlpha = hasAlpha;
 	loadInfo->scan0 = outData;
 
 	return S_OK;
@@ -179,7 +174,6 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 		info->width = 0;
 		info->height = 0;
 		info->stride = 0;
-		info->hasAlpha = false;
 				
 		if (info->scan0 != nullptr)
 		{
