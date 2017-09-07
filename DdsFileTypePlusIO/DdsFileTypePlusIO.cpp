@@ -91,6 +91,26 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 		return hr;
 	}
 
+	if (IsPlanar(info.format))
+	{
+		std::unique_ptr<ScratchImage> interleavedImage(new(std::nothrow) ScratchImage);
+
+		if (interleavedImage == nullptr)
+		{
+			return E_OUTOFMEMORY;
+		}
+
+		hr = ConvertToSinglePlane(ddsCompressedImage->GetImage(0, 0, 0), ddsCompressedImage->GetImageCount(), info, *interleavedImage);
+
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
+		info = interleavedImage->GetMetadata();
+		ddsCompressedImage.swap(interleavedImage);
+	}
+
 	DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
 	std::unique_ptr<ScratchImage> targetImage(new(std::nothrow) ScratchImage);
 
