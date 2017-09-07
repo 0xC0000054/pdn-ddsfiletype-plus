@@ -341,6 +341,24 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 
 		image.swap(compressedImage);
 	}
+	else if (image->GetMetadata().format != dxgiFormat)
+	{
+		std::unique_ptr<ScratchImage> convertedImage(new(std::nothrow) ScratchImage);
+
+		if (convertedImage == nullptr)
+		{
+			return E_OUTOFMEMORY;
+		}
+
+		hr = Convert(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *convertedImage);
+
+		if (FAILED(hr))
+		{
+			return hr;
+		}
+
+		image.swap(convertedImage);
+	}
 
 	TexMetadata metadata = image->GetMetadata();
 
