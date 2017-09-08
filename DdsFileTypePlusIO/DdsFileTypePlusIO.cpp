@@ -91,6 +91,13 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 		return hr;
 	}
 
+	if (IsTypeless(info.format))
+	{
+		info.format = MakeTypelessUNORM(info.format);
+
+		ddsCompressedImage->OverrideFormat(info.format);
+	}
+
 	if (IsPlanar(info.format))
 	{
 		std::unique_ptr<ScratchImage> interleavedImage(new(std::nothrow) ScratchImage);
