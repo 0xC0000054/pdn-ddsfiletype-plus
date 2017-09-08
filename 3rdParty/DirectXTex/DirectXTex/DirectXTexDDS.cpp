@@ -166,6 +166,25 @@ namespace
 
         const size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
         size_t index = 0;
+
+		if (ddpf.dwFlags == 0 && ddpf.dwFourCC != 0)
+		{
+			// Some writers set the dwFourCC field without setting DDS_FOURCC in the dwFlags field.
+			for (index = 0; index < MAP_SIZE; ++index)
+			{
+				const LegacyDDS* entry = &g_LegacyDDSMap[index];
+
+				if (entry->ddpf.dwFlags & DDS_FOURCC)
+				{
+					if (ddpf.dwFourCC == entry->ddpf.dwFourCC)
+					{
+						ddpfFlags = entry->ddpf.dwFlags;
+						break;
+					}
+				}
+			}
+		}
+
         for (index = 0; index < MAP_SIZE; ++index)
         {
             const LegacyDDS* entry = &g_LegacyDDSMap[index];
@@ -263,6 +282,32 @@ namespace
         return format;
     }
 
+	// Some DDS files contain an incorrectly populated DDS_PIXELFORMAT that 
+	// has all fields except the dwFourCC field set to zero.
+	// Detect this case and allow the files to be loaded regardless
+	// of the value of the DDS_PIXELFORMAT dwSize field. 
+	bool IsPixelFormatFourCCValid(const DDS_PIXELFORMAT& ddpf)
+	{
+		if (ddpf.dwFlags == 0 && ddpf.dwFourCC != 0)
+		{
+			const size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
+
+			for (size_t index = 0; index < MAP_SIZE; ++index)
+			{
+				const LegacyDDS* entry = &g_LegacyDDSMap[index];
+
+				if (entry->ddpf.dwFlags & DDS_FOURCC)
+				{
+					if (ddpf.dwFourCC == entry->ddpf.dwFourCC)
+					{
+						return true;
+					}
+				}
+			}
+		}
+
+		return false;
+	}
 
     //-------------------------------------------------------------------------------------
     // Decodes DDS header including optional DX10 extended header
@@ -295,7 +340,7 @@ namespace
 
         // Verify header to validate DDS file
         if (pHeader->dwSize != sizeof(DDS_HEADER)
-            || pHeader->ddspf.dwSize != sizeof(DDS_PIXELFORMAT))
+            || pHeader->ddspf.dwSize != sizeof(DDS_PIXELFORMAT) && !IsPixelFormatFourCCValid(pHeader->ddspf))
         {
             return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
