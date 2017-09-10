@@ -29,7 +29,5 @@ public:
 
 private:	
 	HMODULE hModD3D11;
-	PFN_D3D11_CREATE_DEVICE dynamicD3D11CreateDevice;
 	ID3D11Device* computeDevice;
-	bool loadedD3D11;
 };
