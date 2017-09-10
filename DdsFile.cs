@@ -94,32 +94,39 @@ namespace DdsFileTypePlus
 
             LoadDdsFile(input, ref info);
 
-            Document doc = new Document(info.width, info.height);
+            Document doc = null;
 
-            BitmapLayer layer = Layer.CreateBackgroundLayer(info.width, info.height);
-
-            Surface surface = layer.Surface;
-
-            for (int y = 0; y < surface.Height; y++)
+            try
             {
-                byte* src = (byte*)info.scan0 + (y * info.stride);
-                ColorBgra* dst = surface.GetRowAddressUnchecked(y);
+                doc = new Document(info.width, info.height);
 
-                for (int x = 0; x < surface.Width; x++)
+                BitmapLayer layer = Layer.CreateBackgroundLayer(info.width, info.height);
+
+                Surface surface = layer.Surface;
+
+                for (int y = 0; y < surface.Height; y++)
                 {
-                    dst->R = src[0];
-                    dst->G = src[1];
-                    dst->B = src[2];
-                    dst->A = src[3];
+                    byte* src = (byte*)info.scan0 + (y * info.stride);
+                    ColorBgra* dst = surface.GetRowAddressUnchecked(y);
 
-                    src += 4;
-                    dst++;
+                    for (int x = 0; x < surface.Width; x++)
+                    {
+                        dst->R = src[0];
+                        dst->G = src[1];
+                        dst->B = src[2];
+                        dst->A = src[3];
+
+                        src += 4;
+                        dst++;
+                    }
                 }
+
+                doc.Layers.Add(layer);
             }
-
-            FreeLoadInfo(ref info);
-
-            doc.Layers.Add(layer);
+            finally
+            {
+                FreeLoadInfo(ref info);
+            }
 
             return doc;
         }
