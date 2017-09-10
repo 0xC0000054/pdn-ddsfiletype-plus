@@ -339,7 +339,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 			dcHelper = new(std::nothrow) DirectComputeHelper;
 			if (dcHelper != nullptr)
 			{
-				useDirectCompute = dcHelper->CreateComputeDevice();
+				useDirectCompute = dcHelper->ComputeDeviceAvailable();
 			}
 		}
 

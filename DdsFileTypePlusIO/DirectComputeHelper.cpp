@@ -68,7 +68,7 @@ DirectComputeHelper::~DirectComputeHelper()
 	Release();
 }
 
-bool DirectComputeHelper::CreateComputeDevice()
+bool DirectComputeHelper::ComputeDeviceAvailable() const
 {
 	return computeDevice != nullptr;
 }

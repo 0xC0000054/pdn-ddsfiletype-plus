@@ -23,7 +23,7 @@ public:
 	DirectComputeHelper(const DirectComputeHelper&) = delete;
 	DirectComputeHelper& operator=(const DirectComputeHelper&) = delete;
 
-	bool CreateComputeDevice();
+	bool ComputeDeviceAvailable() const;
 	ID3D11Device* GetComputeDevice() const;
 	void Release();
 
