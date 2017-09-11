@@ -317,7 +317,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 			compressFlags |= TEX_COMPRESS_PARALLEL;
 		}
 
-		DirectComputeHelper* dcHelper = nullptr;
+		std::unique_ptr<DirectComputeHelper> dcHelper = nullptr;
 		bool useDirectCompute = false;
 
 		if (dxgiFormat == DXGI_FORMAT_BC7_UNORM || dxgiFormat == DXGI_FORMAT_BC7_UNORM_SRGB || dxgiFormat == DXGI_FORMAT_BC7_TYPELESS ||
@@ -336,7 +336,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 				break;
 			}
 
-			dcHelper = new(std::nothrow) DirectComputeHelper;
+			dcHelper.reset(new(std::nothrow) DirectComputeHelper);
 			if (dcHelper != nullptr)
 			{
 				useDirectCompute = dcHelper->ComputeDeviceAvailable();
@@ -353,12 +353,6 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 		else
 		{
 			hr = Compress(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
-		}
-
-		if (dcHelper != nullptr)
-		{
-			delete dcHelper;
-			dcHelper = nullptr;
 		}
 
 		if (FAILED(hr))
