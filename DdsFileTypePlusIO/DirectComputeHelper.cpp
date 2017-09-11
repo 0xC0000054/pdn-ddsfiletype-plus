@@ -15,6 +15,8 @@
 DirectComputeHelper::DirectComputeHelper()
 {
 	hModD3D11 = LoadLibrary(L"d3d11.dll");
+	computeDevice = nullptr;
+
 	if (hModD3D11 != nullptr)
 	{
 		PFN_D3D11_CREATE_DEVICE dynamicD3D11CreateDevice = reinterpret_cast<PFN_D3D11_CREATE_DEVICE>(GetProcAddress(hModD3D11, "D3D11CreateDevice"));
