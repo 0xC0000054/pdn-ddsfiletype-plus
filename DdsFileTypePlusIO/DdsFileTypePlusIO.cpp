@@ -210,9 +210,9 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 	}
 }
 
-HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outputAlloc, void** output, CompressProgressProc progressFn)
+HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, CompressProgressProc progressFn)
 {
-	if (input == nullptr || outputAlloc == nullptr || output == nullptr)
+	if (input == nullptr || writeFn == nullptr)
 	{
 		return E_INVALIDARG;
 	}
@@ -404,11 +404,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const OutputBufferAllocFn outpu
 		return hr;
 	}
 
-	const size_t bufferSize = blob.GetBufferSize();
-
-	*output = outputAlloc(bufferSize);
-
-	memcpy_s(*output, bufferSize, blob.GetBufferPointer(), bufferSize);
+	writeFn(blob.GetBufferPointer(), blob.GetBufferSize());
 
 	return S_OK;
 }

@@ -43,6 +43,9 @@ namespace DdsFileTypePlus
         }
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate void DdsWriteImageCallback(IntPtr image, UIntPtr imageSize);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private delegate void DdsProgressCallback(UIntPtr done, UIntPtr total);
 
         private static class DdsIO_x86
@@ -56,8 +59,7 @@ namespace DdsFileTypePlus
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
-                [In, MarshalAs(UnmanagedType.FunctionPtr)] PinnedByteArrayAllocDelegate allocDelegate,
-                [Out] out IntPtr output,
+                [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsWriteImageCallback writeImageCallback,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
@@ -72,8 +74,7 @@ namespace DdsFileTypePlus
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
-                [In, MarshalAs(UnmanagedType.FunctionPtr)] PinnedByteArrayAllocDelegate allocDelegate,
-                [Out] out IntPtr output,
+                [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsWriteImageCallback writeImageCallback,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
@@ -131,7 +132,7 @@ namespace DdsFileTypePlus
             return doc;
         }
 
-        public static void Save(
+        public static unsafe void Save(
             Document input,
             Stream output,
             DdsFileFormat format,
@@ -147,26 +148,50 @@ namespace DdsFileTypePlus
                 input.Render(args, true);
             }
 
-            using (PinnedByteArrayAllocator allocator = new PinnedByteArrayAllocator())
+            DdsWriteImageCallback ddsWriteImage = delegate (IntPtr image, UIntPtr imageSize)
             {
-                PinnedByteArrayAllocDelegate allocDelegate = new PinnedByteArrayAllocDelegate(allocator.AllocateArray);
+                ulong size = imageSize.ToUInt64();
 
-                IntPtr outputPtr = IntPtr.Zero;
-
-                DdsProgressCallback ddsProgress = delegate (UIntPtr done, UIntPtr total)
+                if (image != IntPtr.Zero && size > 0)
                 {
-                    double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
-                    progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
-                };
+                    const int MaxBufferSize = 65536;
 
-                SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, allocDelegate, out outputPtr, ddsProgress);
+                    ulong streamBufferSize = Math.Min(MaxBufferSize, size);
+                    byte[] streamBuffer = new byte[streamBufferSize];
 
-                GC.KeepAlive(allocDelegate);
+                    output.SetLength(checked((long)size));
 
-                byte[] bytes = allocator.GetManagedArray(outputPtr);
+                    ulong offset = 0;
+                    ulong remaining = size;
 
-                output.Write(bytes, 0, bytes.Length);
-            }
+                    fixed (byte* destPtr = streamBuffer)
+                    {
+                        byte* srcPtr = (byte*)image.ToPointer();
+
+                        while (remaining > 0)
+                        {
+                            ulong copySize = Math.Min(MaxBufferSize, remaining);
+
+                            Buffer.MemoryCopy(srcPtr + offset, destPtr, streamBufferSize, copySize);
+
+                            output.Write(streamBuffer, 0, (int)copySize);
+
+                            offset += copySize;
+                            remaining -= copySize;
+                        }
+                    }
+                }
+            };
+
+            DdsProgressCallback ddsProgress = delegate (UIntPtr done, UIntPtr total)
+            {
+                double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
+                progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
+            };
+
+            SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, ddsWriteImage, ddsProgress);
+
+            GC.KeepAlive(ddsWriteImage);
         }
 
         private static unsafe void LoadDdsFile(Stream stream, ref DDSLoadInfo info)
@@ -222,8 +247,7 @@ namespace DdsFileTypePlus
             BC7CompressionMode compressionMode,
             bool generateMipmaps,
             MipMapSampling mipMapSampling,
-            PinnedByteArrayAllocDelegate allocDelegate,
-            out IntPtr output,
+            DdsWriteImageCallback writeImageCallback,
             DdsProgressCallback progressCallback)
         {
             DDSSaveInfo info = new DDSSaveInfo
@@ -243,11 +267,11 @@ namespace DdsFileTypePlus
 
             if (IntPtr.Size == 8)
             {
-                hr = DdsIO_x64.Save(ref info, allocDelegate, out output, progressCallback);
+                hr = DdsIO_x64.Save(ref info, writeImageCallback, progressCallback);
             }
             else
             {
-                hr = DdsIO_x86.Save(ref info, allocDelegate, out output, progressCallback);
+                hr = DdsIO_x86.Save(ref info, writeImageCallback, progressCallback);
             }
 
             if (FAILED(hr))
