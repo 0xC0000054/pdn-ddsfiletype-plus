@@ -96,6 +96,13 @@ namespace DdsFileTypePlus
             DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, generateMipmaps, mipSampling, scratchSurface, progressCallback);
         }
 
+        protected override bool IsReflexive(PropertyBasedSaveConfigToken token)
+        {
+            DdsFileFormat format = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
+
+            return (format == DdsFileFormat.A8R8G8B8);
+        }
+
         public enum PropertyNames
         {
             FileFormat,
