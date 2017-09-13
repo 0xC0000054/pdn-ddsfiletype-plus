@@ -55,7 +55,6 @@
     <Compile Include="DdsFileType.cs" />
     <Compile Include="DdsFileTypeFactory.cs" />
     <Compile Include="MipMapSampling.cs" />
-    <Compile Include="PinnedByteArrayAllocator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
