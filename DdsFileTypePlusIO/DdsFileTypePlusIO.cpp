@@ -118,7 +118,7 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 		ddsCompressedImage.swap(interleavedImage);
 	}
 
-	DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+	const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
 	std::unique_ptr<ScratchImage> targetImage(new(std::nothrow) ScratchImage);
 
 	if (targetImage == nullptr)
