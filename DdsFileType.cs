@@ -20,7 +20,7 @@ namespace DdsFileTypePlus
 {
     public sealed class DdsFileType : PropertyBasedFileType
     {
-        public DdsFileType() : base("DirectDraw Surface", FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving | FileTypeFlags.SavesWithProgress, new string[] { ".dds2" })
+        public DdsFileType() : base("DirectDraw Surface (DDS)", FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving | FileTypeFlags.SavesWithProgress, new string[] { ".dds2" })
         {
         }
 
