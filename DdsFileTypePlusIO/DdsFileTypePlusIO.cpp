@@ -69,7 +69,7 @@ namespace
 	}
 }
 
-HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* loadInfo)
+HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo* loadInfo)
 {
 	if (input == nullptr || inputSize == 0 || loadInfo == nullptr)
 	{
@@ -186,9 +186,9 @@ HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* l
 
 	memcpy_s(outData, outBufferSize, targetImage->GetPixels(), outBufferSize);
 
-	loadInfo->width = static_cast<int>(info.width);
-	loadInfo->height = static_cast<int>(info.height);
-	loadInfo->stride = static_cast<int>(info.width * 4);
+	loadInfo->width = static_cast<int32_t>(info.width);
+	loadInfo->height = static_cast<int32_t>(info.height);
+	loadInfo->stride = static_cast<int32_t>(info.width * 4);
 	loadInfo->scan0 = outData;
 
 	return S_OK;

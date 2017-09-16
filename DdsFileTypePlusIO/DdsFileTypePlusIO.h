@@ -25,9 +25,9 @@ extern "C" {
 
 	struct DDSLoadInfo
 	{
-		int width;
-		int height;
-		int stride;
+		int32_t width;
+		int32_t height;
+		int32_t stride;
 		void* scan0;
 	};
 
@@ -76,9 +76,9 @@ extern "C" {
 
 	struct DDSSaveInfo
 	{
-		int width;
-		int height;
-		int stride;
+		int32_t width;
+		int32_t height;
+		int32_t stride;
 		DdsFileFormat format;
 		DdsErrorMetric errorMetric;
 		BC7CompressionMode compressionMode;
@@ -87,7 +87,7 @@ extern "C" {
 		void* scan0;
 	};
 
-	__declspec(dllexport) HRESULT __stdcall Load(const BYTE* input, const size_t inputSize, DDSLoadInfo* info);
+	__declspec(dllexport) HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo* info);
 	__declspec(dllexport) void __stdcall FreeLoadInfo(DDSLoadInfo* info);
 	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, DirectX::CompressProgressProc progressFn);
 
