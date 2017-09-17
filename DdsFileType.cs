@@ -57,8 +57,8 @@ namespace DdsFileTypePlus
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC5, "BC5 (DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC6H, "BC6H (DX 11+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7, "BC7 (DX 11+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.A8R8G8B8, "A8B8G8R8");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.X8R8G8B8, "X8B8G8R8");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.A8R8G8B8, "A8R8G8B8");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.X8R8G8B8, "X8R8G8B8");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.A1R5G5B5, "A1R5G5B5");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.R5G6B5, "R5G6B5");
             configUI.SetPropertyControlValue(PropertyNames.BC7CompressionMode, ControlInfoPropertyNames.DisplayName, "BC7 Compression Mode");
