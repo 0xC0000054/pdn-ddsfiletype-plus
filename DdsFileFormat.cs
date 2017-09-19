@@ -21,9 +21,9 @@ namespace DdsFileTypePlus
         BC5,
         BC6H,
         BC7,
-        A8R8G8B8,
-        X8R8G8B8,
-        A1R5G5B5,
-        R5G6B5
+        B8G8R8A8,
+        B8G8R8X8,
+        B5G5R5A1,
+        B5G6R5
     }
 }
