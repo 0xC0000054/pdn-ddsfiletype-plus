@@ -38,7 +38,7 @@ namespace DdsFileTypePlus
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
             {
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.BC7CompressionMode, PropertyNames.FileFormat, new object[] { DdsFileFormat.BC6H, DdsFileFormat.BC7 }, true),
-                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.ErrorMetric, PropertyNames.FileFormat, new object[] { DdsFileFormat.B8G8R8A8, DdsFileFormat.B8G8R8X8, DdsFileFormat.B5G5R5A1, DdsFileFormat.B5G6R5 }, false),
+                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.ErrorMetric, PropertyNames.FileFormat, new object[] { DdsFileFormat.B8G8R8A8, DdsFileFormat.B8G8R8X8, DdsFileFormat.R8G8B8A8, DdsFileFormat.B5G5R5A1, DdsFileFormat.B5G6R5 }, false),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true)
             };
 
@@ -59,6 +59,7 @@ namespace DdsFileTypePlus
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7, "BC7 (DX 11+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (A8R8G8B8)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (X8R8G8B8)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (A8B8G8R8)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G5R5A1, "B5G5R5A1 (A1R5G5B5)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (R5G6B5)");
             configUI.SetPropertyControlValue(PropertyNames.BC7CompressionMode, ControlInfoPropertyNames.DisplayName, "BC7 Compression Mode");
@@ -100,7 +101,7 @@ namespace DdsFileTypePlus
         {
             DdsFileFormat format = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
 
-            return (format == DdsFileFormat.B8G8R8A8);
+            return (format == DdsFileFormat.B8G8R8A8 || format == DdsFileFormat.R8G8B8A8);
         }
 
         public enum PropertyNames
