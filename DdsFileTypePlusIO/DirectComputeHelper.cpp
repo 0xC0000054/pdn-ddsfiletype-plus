@@ -46,19 +46,15 @@ DirectComputeHelper::DirectComputeHelper()
 					D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS hwopts;
 					hr = computeDevice->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts, sizeof(hwopts));
 
-					if (SUCCEEDED(hr))
+					if (FAILED(hr) || !hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
 					{
-						if (!hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
-						{
-							hr = CO_E_NOT_SUPPORTED;
-						}
+						computeDevice->Release();
+						computeDevice = nullptr;
 					}
 				}
 			}
-
-			if (FAILED(hr) && computeDevice != nullptr)
+			else
 			{
-				computeDevice->Release();
 				computeDevice = nullptr;
 			}
 		}
