@@ -20,6 +20,7 @@ namespace DdsFileTypePlus
 {
     static class DdsFile
     {
+        [StructLayout(LayoutKind.Sequential)]
         private struct DDSLoadInfo
         {
             public int width;
@@ -28,6 +29,7 @@ namespace DdsFileTypePlus
             public IntPtr scan0;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
         private struct DDSSaveInfo
         {
             public int width;
