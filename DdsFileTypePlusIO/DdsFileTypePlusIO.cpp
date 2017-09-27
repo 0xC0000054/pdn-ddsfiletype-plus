@@ -144,7 +144,7 @@ HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo
 		else
 		{
 			hr = Convert(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), ddsCompressedImage->GetMetadata(), targetFormat, 
-				TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *targetImage);
+				TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *targetImage, nullptr);
 		}
 
 		if (FAILED(hr))
@@ -376,7 +376,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 			return E_OUTOFMEMORY;
 		}
 
-		hr = Convert(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *convertedImage);
+		hr = Convert(image->GetImage(0, 0, 0), image->GetImageCount(), image->GetMetadata(), dxgiFormat, TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
 
 		if (FAILED(hr))
 		{

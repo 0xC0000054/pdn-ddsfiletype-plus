@@ -463,9 +463,9 @@ namespace DirectX
         // Default value for alpha threshold used when converting to 1-bit alpha
 
     HRESULT __cdecl Convert( _In_ const Image& srcImage, _In_ DXGI_FORMAT format, _In_ DWORD filter, _In_ float threshold,
-                            _Out_ ScratchImage& image );
+                            _Out_ ScratchImage& image, _In_opt_ ProgressProc progressProc );
     HRESULT __cdecl Convert( _In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-                             _In_ DXGI_FORMAT format, _In_ DWORD filter, _In_ float threshold, _Out_ ScratchImage& result );
+                             _In_ DXGI_FORMAT format, _In_ DWORD filter, _In_ float threshold, _Out_ ScratchImage& result, _In_opt_ ProgressProc progressProc );
         // Convert the image to a new format
     
     HRESULT __cdecl ConvertToSinglePlane( _In_ const Image& srcImage, _Out_ ScratchImage& image );

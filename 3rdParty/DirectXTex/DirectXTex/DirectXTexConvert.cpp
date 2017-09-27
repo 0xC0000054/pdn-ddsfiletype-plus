@@ -4699,7 +4699,8 @@ HRESULT DirectX::Convert(
     DXGI_FORMAT format,
     DWORD filter,
     float threshold,
-    ScratchImage& image)
+    ScratchImage& image,
+    ProgressProc progressProc)
 {
     if ((srcImage.format == format) || !IsValid(format))
         return E_INVALIDARG;
@@ -4727,6 +4728,11 @@ HRESULT DirectX::Convert(
         return E_POINTER;
     }
 
+	if (progressProc)
+	{
+		progressProc(0, rimage->height);
+	}
+
     WICPixelFormatGUID pfGUID, targetGUID;
     if (UseWICConversion(filter, srcImage.format, format, pfGUID, targetGUID))
     {
@@ -4736,6 +4742,11 @@ HRESULT DirectX::Convert(
     {
         hr = ConvertCustom(srcImage, filter, *rimage, threshold, 0);
     }
+
+	if (progressProc)
+	{
+		progressProc(rimage->height, rimage->height);
+	}
 
     if (FAILED(hr))
     {
@@ -4758,7 +4769,8 @@ HRESULT DirectX::Convert(
     DXGI_FORMAT format,
     DWORD filter,
     float threshold,
-    ScratchImage& result)
+    ScratchImage& result,
+    ProgressProc progressProc)
 {
     if (!srcImages || !nimages || (metadata.format == format) || !IsValid(format))
         return E_INVALIDARG;
@@ -4790,6 +4802,11 @@ HRESULT DirectX::Convert(
         result.Release();
         return E_POINTER;
     }
+	
+	if (progressProc)
+	{
+		progressProc(0, nimages);
+	}
 
     WICPixelFormatGUID pfGUID, targetGUID;
     bool usewic = !metadata.IsPMAlpha() && UseWICConversion(filter, metadata.format, format, pfGUID, targetGUID);
@@ -4830,6 +4847,11 @@ HRESULT DirectX::Convert(
             {
                 hr = ConvertCustom(src, filter, dst, threshold, 0);
             }
+
+			if (progressProc)
+			{
+				progressProc(index, nimages);
+			}
 
             if (FAILED(hr))
             {
@@ -4884,6 +4906,11 @@ HRESULT DirectX::Convert(
                     hr = ConvertCustom(src, filter, dst, threshold, slice);
                 }
 
+				if (progressProc)
+				{
+					progressProc(index, nimages);
+				}
+
                 if (FAILED(hr))
                 {
                     result.Release();
@@ -4901,6 +4928,11 @@ HRESULT DirectX::Convert(
         result.Release();
         return E_FAIL;
     }
+
+	if (progressProc)
+	{
+		progressProc(nimages, nimages);
+	}
 
     return S_OK;
 }
