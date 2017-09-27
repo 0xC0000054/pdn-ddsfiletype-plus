@@ -258,7 +258,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Com
 		}
 	}
 
-	if (input->generateMipmaps && (input->width & 1) == 0 && (input->height & 1) == 0)
+	if (input->generateMipmaps)
 	{
 		DWORD filter = TEX_FILTER_DEFAULT | TEX_FILTER_SEPARATE_ALPHA;
 
