@@ -215,7 +215,7 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 	}
 }
 
-HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, CompressProgressProc progressFn)
+HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, ProgressProc progressFn)
 {
 	if (input == nullptr || writeFn == nullptr)
 	{

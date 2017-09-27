@@ -597,7 +597,7 @@ HRESULT DirectX::Compress(
     DWORD compress,
     float threshold,
     ScratchImage& image,
-	CompressProgressProc progressProc)
+	ProgressProc progressProc)
 {
     if (IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
@@ -657,7 +657,7 @@ HRESULT DirectX::Compress(
     DWORD compress,
     float threshold,
     ScratchImage& cImages,
-	CompressProgressProc progressProc)
+	ProgressProc progressProc)
 {
     if (!srcImages || !nimages)
         return E_INVALIDARG;

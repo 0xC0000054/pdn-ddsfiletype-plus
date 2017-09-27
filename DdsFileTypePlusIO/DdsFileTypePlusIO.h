@@ -89,7 +89,7 @@ extern "C" {
 
 	__declspec(dllexport) HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo* info);
 	__declspec(dllexport) void __stdcall FreeLoadInfo(DDSLoadInfo* info);
-	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, DirectX::CompressProgressProc progressFn);
+	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, DirectX::ProgressProc progressFn);
 
 #ifdef __cplusplus
 }

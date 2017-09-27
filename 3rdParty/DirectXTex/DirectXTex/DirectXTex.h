@@ -322,6 +322,8 @@ namespace DirectX
         size_t  m_size;
     };
 
+	typedef void(__stdcall *ProgressProc)(_In_ size_t done, _In_ size_t total);
+
     //---------------------------------------------------------------------------------
     // Image I/O
 
@@ -539,21 +541,19 @@ namespace DirectX
             // Compress is free to use multithreading to improve performance (by default it does not use multithreading)
     };
 
-	typedef void(__stdcall *CompressProgressProc)(_In_ size_t done, _In_ size_t total);
-
 	HRESULT __cdecl Compress(_In_ const Image& srcImage, _In_ DXGI_FORMAT format, _In_ DWORD compress, _In_ float threshold,
-		_Out_ ScratchImage& cImage, _In_opt_ CompressProgressProc progressProc);
+		_Out_ ScratchImage& cImage, _In_opt_ ProgressProc progressProc);
 	HRESULT __cdecl Compress(_In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
 		_In_ DXGI_FORMAT format, _In_ DWORD compress, _In_ float threshold, _Out_ ScratchImage& cImages,
-		_In_opt_ CompressProgressProc progressProc);
+		_In_opt_ ProgressProc progressProc);
 	// Note that threshold is only used by BC1. TEX_THRESHOLD_DEFAULT is a typical value to use
 
 #if defined(__d3d11_h__) || defined(__d3d11_x_h__)
 	HRESULT __cdecl Compress(_In_ ID3D11Device* pDevice, _In_ const Image& srcImage, _In_ DXGI_FORMAT format, _In_ DWORD compress,
-		_In_ float alphaWeight, _Out_ ScratchImage& image, _In_opt_ CompressProgressProc progressProc);
+		_In_ float alphaWeight, _Out_ ScratchImage& image, _In_opt_ ProgressProc progressProc);
 	HRESULT __cdecl Compress(_In_ ID3D11Device* pDevice, _In_ const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
 		_In_ DXGI_FORMAT format, _In_ DWORD compress, _In_ float alphaWeight, _Out_ ScratchImage& cImages,
-		_In_opt_ CompressProgressProc progressProc);
+		_In_opt_ ProgressProc progressProc);
 	// DirectCompute-based compression (alphaWeight is only used by BC7. 1.0 is the typical value to use)
 #endif
 

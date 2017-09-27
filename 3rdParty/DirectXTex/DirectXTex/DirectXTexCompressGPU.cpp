@@ -150,7 +150,7 @@ namespace
         const Image& srcImage,
         const Image& destImage,
         DWORD compress,
-		CompressProgressProc progressProc)
+		ProgressProc progressProc)
     {
         if (!gpubc)
             return E_POINTER;
@@ -218,7 +218,7 @@ HRESULT DirectX::Compress(
     DWORD compress,
     float alphaWeight,
     ScratchImage& image,
-	CompressProgressProc progressProc)
+	ProgressProc progressProc)
 {
     if (!pDevice || IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
@@ -269,7 +269,7 @@ HRESULT DirectX::Compress(
     DWORD compress,
     float alphaWeight,
     ScratchImage& cImages,
-	CompressProgressProc progressProc)
+	ProgressProc progressProc)
 {
     if (!pDevice || !srcImages || !nimages)
         return E_INVALIDARG;

@@ -25,7 +25,7 @@ public:
 
     HRESULT Prepare( size_t width, size_t height, DWORD flags, DXGI_FORMAT format, float alphaWeight );
 
-    HRESULT Compress( const Image& srcImage, const Image& destImage, CompressProgressProc progressProc );
+    HRESULT Compress( const Image& srcImage, const Image& destImage, ProgressProc progressProc );
 
     DXGI_FORMAT GetSourceFormat() const { return m_srcformat; }
 

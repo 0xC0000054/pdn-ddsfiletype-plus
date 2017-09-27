@@ -340,7 +340,7 @@ HRESULT GPUCompressBC::Prepare(size_t width, size_t height, DWORD flags, DXGI_FO
 
 
 //-------------------------------------------------------------------------------------
-HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, CompressProgressProc progressProc)
+HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, ProgressProc progressProc)
 {
     if (!srcImage.pixels || !destImage.pixels)
         return E_INVALIDARG;
