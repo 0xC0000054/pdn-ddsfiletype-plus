@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+#include "stdafx.h"
 #include "DirectComputeHelper.h"
 
 DirectComputeHelper::DirectComputeHelper()
