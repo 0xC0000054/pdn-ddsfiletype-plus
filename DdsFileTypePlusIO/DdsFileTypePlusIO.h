@@ -15,6 +15,7 @@
 #include "targetver.h"
 
 #include <Windows.h>
+#include <stdint.h>
 #include "DirectXTex.h"
 
 #ifdef __cplusplus
