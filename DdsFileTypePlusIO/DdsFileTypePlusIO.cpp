@@ -49,7 +49,7 @@ namespace
 		case DDS_FORMAT_B5G6R5:
 			return DXGI_FORMAT_B5G6R5_UNORM;
 		case DDS_FORMAT_R8G8B8A8:
-		default: 
+		default:
 			return DXGI_FORMAT_R8G8B8A8_UNORM;
 		}
 	}
@@ -143,7 +143,7 @@ HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo
 		}
 		else
 		{
-			hr = Convert(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), ddsCompressedImage->GetMetadata(), targetFormat, 
+			hr = Convert(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), ddsCompressedImage->GetMetadata(), targetFormat,
 				TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *targetImage, nullptr);
 		}
 
@@ -206,7 +206,7 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 		info->width = 0;
 		info->height = 0;
 		info->stride = 0;
-				
+
 		if (info->scan0 != nullptr)
 		{
 			HeapFree(GetProcessHeap(), 0, info->scan0);
@@ -235,7 +235,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 	{
 		return hr;
 	}
-	
+
 	const uint8_t* srcScan0 = reinterpret_cast<const uint8_t*>(input->scan0);
 	uint8_t* destScan0 = image->GetPixels();
 

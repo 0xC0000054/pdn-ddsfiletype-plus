@@ -27,7 +27,7 @@ public:
 	ID3D11Device* GetComputeDevice() const;
 	void Release();
 
-private:	
+private:
 	HMODULE hModD3D11;
 	ID3D11Device* computeDevice;
 };
