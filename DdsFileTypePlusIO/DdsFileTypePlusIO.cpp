@@ -100,6 +100,11 @@ HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo
 	{
 		info.format = MakeTypelessUNORM(info.format);
 
+		if (IsTypeless(info.format))
+		{
+			return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+		}
+
 		ddsCompressedImage->OverrideFormat(info.format);
 	}
 
