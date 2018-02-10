@@ -3,7 +3,7 @@ DIRECTX TEXTURE LIBRARY (DirectXTex)
 
 Copyright (c) Microsoft Corporation. All rights reserved.
 
-July 26, 2017
+February 9, 2018
 
 This package contains DirectXTex, a shared source library for reading and writing DDS
 files, and performing various texture content processing operations including
@@ -13,8 +13,10 @@ use of the Windows Image Component (WIC) APIs. It also includes simple .TGA and 
 readers and writers since these image file formats are commonly used for texture content
 processing pipelines, but are not currently supported by a built-in WIC codec.
 
-The source is written for Visual Studio 2013 or 2015. It is recommended that you
-make use of VS 2013 Update 5 or VS 2015 Update 3 and Windows 7 Service Pack 1 or later.
+This code is designed to build with Visual Studio 2013 Update 5, Visual Studio 2015 Update 3,
+or Visual Studio 2017. It is recommended that you make use of VS 2015 Update 3, Windows Tools
+1.4.1, and the Windows 10 Anniversary Update SDK (14393) or VS 2017 (15.5 update) with the
+Windows 10 Fall Creators Update SDK (16299).
 
 DirectXTex\
     This contains the DirectXTex library. This includes a full-featured DDS reader and writer
@@ -118,9 +120,38 @@ RELEASE NOTES
 * Loading of 96bpp floating-point TIFF files results in a corrupted image prior to Windows 8. This fix is available
   on Windows 7 SP1 with KB 2670838 installed.
 
+* The VS 2017 projects make use of /permissive- for improved C++ standard conformance. Use of a Windows 10 SDK prior to
+  the Fall Creators Update (16299) or an Xbox One XDK prior to June 2017 QFE 4 may result in failures due to problems
+  with the system headers. You can work around these by deleting /permissive- from the project files which is found
+  in the <AdditionalOptions> element.
+
 
 ------------------------------------
 RELEASE HISTORY
+
+February 9, 2018
+    HDR (RGBE Radiance) file format reader updated to support #?RGBE signature
+    texconv: Added -rotatecolor and -nits switches
+    texassemble: Added merge and gif commands
+    texdiag: added dumpdds command
+
+February 7, 2018
+    Fixed bug with GPU BC7 encoding (mode 1, fixup 6)
+    Updated for a few more VS 2017 warnings
+    Code cleanup
+
+December 13, 2017
+    Updated for VS 2017 15.5 update warnings
+    Support building library with _XM_NO_XMVECTOR_OVERLOADS_
+    Code cleanup
+
+November 1, 2017
+    VS 2017 updated for Windows 10 Fall Creators Update SDK (16299)
+
+September 22, 2017
+    Updated for VS 2017 15.3 update /permissive- changes
+    WIC writer and ScreenGrab updated to use non-sRGB metadata for PNG
+    texassemble, texconv, texdiag: added -flist option
 
 July 26, 2017
     Support for reading non-standard DDS files written by nVidia Texture Tools (NVTT)

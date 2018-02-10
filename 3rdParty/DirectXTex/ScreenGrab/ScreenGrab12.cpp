@@ -35,7 +35,7 @@
 
 #include <wrl\client.h>
 
-#include <d3dx12.h>
+#include "d3dx12.h"
 
 using Microsoft::WRL::ComPtr;
 
@@ -211,7 +211,7 @@ namespace
         {
             if (m_handle)
             {
-                FILE_DISPOSITION_INFO info = {0};
+                FILE_DISPOSITION_INFO info = {};
                 info.DeleteFile = TRUE;
                 (void)SetFileInformationByHandle(m_handle, FileDispositionInfo, &info, sizeof(info));
             }
@@ -1202,11 +1202,21 @@ HRESULT DirectX::SaveWICTextureToFile( ID3D12CommandQueue* pCommandQ,
             (void)metawriter->SetMetadataByName( L"/tEXt/{str=Software}", &value );
 
             // Set sRGB chunk
-            if ( sRGB )
+            if (sRGB)
             {
                 value.vt = VT_UI1;
                 value.bVal = 0;
-                (void)metawriter->SetMetadataByName( L"/sRGB/RenderingIntent", &value );
+                (void)metawriter->SetMetadataByName(L"/sRGB/RenderingIntent", &value);
+            }
+            else
+            {
+                // add gAMA chunk with gamma 1.0
+                value.vt = VT_UI4;
+                value.uintVal = 100000; // gama value * 100,000 -- i.e. gamma 1.0
+                (void)metawriter->SetMetadataByName(L"/gAMA/ImageGamma", &value);
+
+                // remove sRGB chunk which is added by default.
+                (void)metawriter->RemoveMetadataByName(L"/sRGB/RenderingIntent");
             }
         }
         else

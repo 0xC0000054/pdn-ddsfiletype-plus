@@ -599,6 +599,16 @@ namespace
                     value.bVal = 0;
                     (void)metawriter->SetMetadataByName(L"/sRGB/RenderingIntent", &value);
                 }
+                else
+                {
+                    // add gAMA chunk with gamma 1.0
+                    value.vt = VT_UI4;
+                    value.uintVal = 100000; // gama value * 100,000 -- i.e. gamma 1.0
+                    (void)metawriter->SetMetadataByName(L"/gAMA/ImageGamma", &value);
+
+                    // remove sRGB chunk which is added by default.
+                    (void)metawriter->RemoveMetadataByName(L"/sRGB/RenderingIntent");
+                }
             }
 #if defined(_XBOX_ONE) && defined(_TITLE)
             else if (memcmp(&containerFormat, &GUID_ContainerFormatJpeg, sizeof(GUID)) == 0)
@@ -791,7 +801,7 @@ namespace
         if (memcmp(&containerFormat, &GUID_ContainerFormatBmp, sizeof(WICPixelFormatGUID)) == 0 && iswic2)
         {
             // Opt-in to the WIC2 support for writing 32-bit Windows BMP files with an alpha channel
-            PROPBAG2 option = { 0 };
+            PROPBAG2 option = {};
             option.pstrName = const_cast<wchar_t*>(L"EnableV5Header32bppBGRA");
 
             VARIANT varValue;
@@ -1033,7 +1043,7 @@ HRESULT DirectX::LoadFromWICMemory(
 
     // Get metadata
     TexMetadata mdata;
-    WICPixelFormatGUID convertGUID = { 0 };
+    WICPixelFormatGUID convertGUID = {};
     hr = DecodeMetadata(flags, iswic2, decoder.Get(), frame.Get(), mdata, &convertGUID, getMQR);
     if (FAILED(hr))
         return hr;
@@ -1094,7 +1104,7 @@ HRESULT DirectX::LoadFromWICFile(
 
     // Get metadata
     TexMetadata mdata;
-    WICPixelFormatGUID convertGUID = { 0 };
+    WICPixelFormatGUID convertGUID = {};
     hr = DecodeMetadata(flags, iswic2, decoder.Get(), frame.Get(), mdata, &convertGUID, getMQR);
     if (FAILED(hr))
         return hr;
@@ -1160,7 +1170,7 @@ HRESULT DirectX::SaveToWICMemory(
     if (FAILED(hr))
         return hr;
 
-    LARGE_INTEGER li = { { 0 } };
+    LARGE_INTEGER li = {};
     hr = stream->Seek(li, STREAM_SEEK_SET, 0);
     if (FAILED(hr))
         return hr;
@@ -1217,7 +1227,7 @@ HRESULT DirectX::SaveToWICMemory(
     if (FAILED(hr))
         return hr;
 
-    LARGE_INTEGER li = { { 0 } };
+    LARGE_INTEGER li = {};
     hr = stream->Seek(li, STREAM_SEEK_SET, 0);
     if (FAILED(hr))
         return hr;
