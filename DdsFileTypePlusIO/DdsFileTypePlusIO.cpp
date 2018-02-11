@@ -65,7 +65,7 @@ namespace
 
 			SYSTEM_INFO info;
 
-			GetNativeSystemInfo(&info);
+			GetSystemInfo(&info);
 
 			processorCount = info.dwNumberOfProcessors;
 		}
