@@ -15,12 +15,16 @@ namespace DdsFileTypePlus
     public enum DdsFileFormat
     {
         BC1,
+        BC1Srgb,
         BC2,
+        BC2Srgb,
         BC3,
+        BC3Srgb,
         BC4,
         BC5,
         BC6H,
         BC7,
+        BC7Srgb,
         B8G8R8A8,
         B8G8R8X8,
         R8G8B8A8,

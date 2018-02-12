@@ -37,7 +37,7 @@ namespace DdsFileTypePlus
 
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
             {
-                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.BC7CompressionMode, PropertyNames.FileFormat, new object[] { DdsFileFormat.BC6H, DdsFileFormat.BC7 }, true),
+                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.BC7CompressionMode, PropertyNames.FileFormat, new object[] { DdsFileFormat.BC6H, DdsFileFormat.BC7, DdsFileFormat.BC7Srgb }, true),
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.ErrorMetric, PropertyNames.FileFormat, new object[] { DdsFileFormat.B8G8R8A8, DdsFileFormat.B8G8R8X8, DdsFileFormat.R8G8B8A8, DdsFileFormat.B5G5R5A1, DdsFileFormat.B4G4R4A4, DdsFileFormat.B5G6R5 }, false),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true)
             };
@@ -51,12 +51,17 @@ namespace DdsFileTypePlus
 
             configUI.SetPropertyControlValue(PropertyNames.FileFormat, ControlInfoPropertyNames.DisplayName, string.Empty);
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1, "BC1 (DXT1)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1Srgb, "BC1 (sRGB, DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2, "BC2 (DXT3)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3, "BC3 (DXT5)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC4, "BC4 (DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC5, "BC5 (DX 10+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC6H, "BC6H (DX 11+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7, "BC7 (DX 11+)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
+
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (A8R8G8B8)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (X8R8G8B8)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (A8B8G8R8)");
