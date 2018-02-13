@@ -280,7 +280,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 		case DDS_MIPMAP_SAMPLING_NEAREST_NEIGHBOR:
 			filter |= TEX_FILTER_POINT;
 			break;
-		case DDS_MIPMAP_SAMPLING_BLINEAR:
+		case DDS_MIPMAP_SAMPLING_BILINEAR:
 			filter |= TEX_FILTER_LINEAR;
 			break;
 		case DDS_MIPMAP_SAMPLING_BICUBIC:
