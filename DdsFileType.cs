@@ -50,24 +50,24 @@ namespace DdsFileTypePlus
             ControlInfo configUI = CreateDefaultSaveConfigUI(props);
 
             configUI.SetPropertyControlValue(PropertyNames.FileFormat, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1, "BC1 (DXT1)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1, "BC1 (Linear, DXT1)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1Srgb, "BC1 (sRGB, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2, "BC2 (DXT3)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2, "BC2 (Linear, DXT3)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3, "BC3 (DXT5)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3, "BC3 (Linear, DXT5)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC4, "BC4 (DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC5, "BC5 (DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC6H, "BC6H (DX 11+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7, "BC7 (DX 11+)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC4, "BC4 (Linear, DX 10+)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC5, "BC5 (Linear, DX 10+)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC6H, "BC6H (Linear, DX 11+)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7, "BC7 (Linear, DX 11+)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
 
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (A8R8G8B8)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (X8R8G8B8)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (A8B8G8R8)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G5R5A1, "B5G5R5A1 (A1R5G5B5)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B4G4R4A4, "B4G4R4A4 (A4R4G4B4)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (R5G6B5)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (Linear, A8R8G8B8)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (Linear, X8R8G8B8)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (Linear, A8B8G8R8)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G5R5A1, "B5G5R5A1 (Linear, A1R5G5B5)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B4G4R4A4, "B4G4R4A4 (Linear, A4R4G4B4)");
+            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (Linear, R5G6B5)");
             configUI.SetPropertyControlValue(PropertyNames.BC7CompressionMode, ControlInfoPropertyNames.DisplayName, "BC7 Compression Mode");
             configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Quick, "Quick");
             configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Normal, "Normal");
