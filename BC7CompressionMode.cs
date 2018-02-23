@@ -14,8 +14,8 @@ namespace DdsFileTypePlus
 {
     public enum BC7CompressionMode
     {
-        Quick,
+        Fast,
         Normal,
-        Max
+        Slow
     }
 }

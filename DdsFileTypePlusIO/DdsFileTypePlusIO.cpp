@@ -343,10 +343,10 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 		{
 			switch (input->compressionMode)
 			{
-			case BC7_COMPRESSION_MODE_QUICK:
+			case BC7_COMPRESSION_MODE_FAST:
 				compressFlags |= TEX_COMPRESS_BC7_QUICK;
 				break;
-			case BC7_COMPRESSION_MODE_MAX:
+			case BC7_COMPRESSION_MODE_SLOW:
 				compressFlags |= TEX_COMPRESS_BC7_USE_3SUBSETS;
 				break;
 			case BC7_COMPRESSION_MODE_NORMAL:

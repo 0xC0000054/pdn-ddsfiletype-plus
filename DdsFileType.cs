@@ -69,9 +69,9 @@ namespace DdsFileTypePlus
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B4G4R4A4, "B4G4R4A4 (Linear, A4R4G4B4)");
             configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (Linear, R5G6B5)");
             configUI.SetPropertyControlValue(PropertyNames.BC7CompressionMode, ControlInfoPropertyNames.DisplayName, "BC7 Compression Mode");
-            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Quick, "Quick");
+            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Fast, "Fast");
             configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Normal, "Normal");
-            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Max, "Max");
+            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Slow, "Slow");
             configUI.SetPropertyControlValue(PropertyNames.ErrorMetric, ControlInfoPropertyNames.DisplayName, "Error Metric");
             configUI.SetPropertyControlType(PropertyNames.ErrorMetric, PropertyControlType.RadioButton);
             configUI.FindControlForPropertyName(PropertyNames.ErrorMetric).SetValueDisplayName(DdsErrorMetric.Perceptual, "Perceptual");
