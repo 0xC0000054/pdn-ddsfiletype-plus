@@ -61,25 +61,6 @@ namespace
 			return DXGI_FORMAT_R8G8B8A8_UNORM;
 		}
 	}
-
-	bool UseMultiThreading()
-	{
-		static bool initProcessorCount;
-		static int processorCount;
-
-		if (!initProcessorCount)
-		{
-			initProcessorCount = true;
-
-			SYSTEM_INFO info;
-
-			GetSystemInfo(&info);
-
-			processorCount = info.dwNumberOfProcessors;
-		}
-
-		return processorCount > 1;
-	}
 }
 
 HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo* loadInfo)
@@ -323,16 +304,11 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 			return E_OUTOFMEMORY;
 		}
 
-		DWORD compressFlags = TEX_COMPRESS_DEFAULT;
+		DWORD compressFlags = TEX_COMPRESS_DEFAULT | TEX_COMPRESS_PARALLEL;
 
 		if (input->errorMetric == DDS_ERROR_METRIC_UNIFORM)
 		{
 			compressFlags |= TEX_COMPRESS_UNIFORM;
-		}
-
-		if (UseMultiThreading())
-		{
-			compressFlags |= TEX_COMPRESS_PARALLEL;
 		}
 
 		std::unique_ptr<DirectComputeHelper> dcHelper = nullptr;
