@@ -3,12 +3,8 @@
 //  
 // DirectX Texture Library - Radiance HDR (RGBE) file format reader/writer
 //
-// THIS CODE AND INFORMATION IS PROVIDED "AS IS" WITHOUT WARRANTY OF
-// ANY KIND, EITHER EXPRESSED OR IMPLIED, INCLUDING BUT NOT LIMITED TO
-// THE IMPLIED WARRANTIES OF MERCHANTABILITY AND/OR FITNESS FOR A
-// PARTICULAR PURPOSE.
-//
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //-------------------------------------------------------------------------------------
@@ -106,7 +102,7 @@ namespace
 
         // Process first part of header
         bool formatFound = false;
-        const char* info = reinterpret_cast<const char*>(pSource);
+        auto info = static_cast<const char*>(pSource);
         while (size > 0)
         {
             if (*info == '\n')
@@ -208,33 +204,33 @@ namespace
         }
 
         // Get orientation
-        char orient[256] = {};
+        char orientation[256] = {};
 
-        size_t len = FindEOL(info, std::min<size_t>(sizeof(orient), size - 1));
+        size_t len = FindEOL(info, std::min<size_t>(sizeof(orientation), size - 1));
         if (len == size_t(-1)
             || len <= 2)
         {
             return E_FAIL;
         }
 
-        strncpy_s(orient, info, len);
+        strncpy_s(orientation, info, len);
 
-        if (orient[0] != '-' && orient[1] != 'Y')
+        if (orientation[0] != '-' && orientation[1] != 'Y')
         {
             // We only support the -Y +X orientation (see top of file)
             return HRESULT_FROM_WIN32(
-                ((orient[0] == '+' || orient[0] == '-') && (orient[1] == 'X' || orient[1] == 'Y'))
+                ((orientation[0] == '+' || orientation[0] == '-') && (orientation[1] == 'X' || orientation[1] == 'Y'))
                 ? ERROR_NOT_SUPPORTED : ERROR_INVALID_DATA
             );
         }
 
         uint32_t height = 0;
-        if (sscanf_s(orient + 2, "%u", &height) != 1)
+        if (sscanf_s(orientation + 2, "%u", &height) != 1)
         {
             return E_FAIL;
         }
 
-        const char* ptr = orient + 2;
+        const char* ptr = orientation + 2;
         while (*ptr != 0 && *ptr != '-' && *ptr != '+')
             ++ptr;
 
@@ -279,7 +275,7 @@ namespace
             return E_FAIL;
         }
 
-        offset = info - reinterpret_cast<const char*>(pSource);
+        offset = info - static_cast<const char*>(pSource);
 
         metadata.width = width;
         metadata.height = height;
@@ -481,7 +477,7 @@ namespace
                     enc[1] = *spanPtr;
                     enc += 2;
                     encSize += 2;
-                    spanPtr += spanLen * 4;
+                    spanPtr += size_t(spanLen) * 4;
                     pixelCount += spanLen;
                 }
                 else
@@ -505,8 +501,8 @@ namespace
                     *enc++ = runLen;
                     memcpy(enc, scan, runLen);
                     enc += runLen;
-                    encSize += runLen + 1;
-                    spanPtr += runLen * 4;
+                    encSize += size_t(runLen) + 1;
+                    spanPtr += size_t(runLen) * 4;
                     pixelCount += runLen;
                 }
             }
@@ -573,7 +569,7 @@ HRESULT DirectX::GetMetadataFromHDRFile(const wchar_t* szFile, TexMetadata& meta
     }
 
     // Read the first part of the file to find the header
-    uint8_t header[8192];
+    uint8_t header[8192] = {};
     DWORD bytesRead = 0;
     if (!ReadFile(hFile.get(), header, std::min<DWORD>(sizeof(header), fileInfo.EndOfFile.LowPart), &bytesRead, nullptr))
     {
@@ -616,7 +612,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
         return hr;
 
     // Copy pixels
-    auto sourcePtr = reinterpret_cast<const uint8_t*>(pSource) + offset;
+    auto sourcePtr = static_cast<const uint8_t*>(pSource) + offset;
 
     size_t pixelLen = remaining;
 
@@ -651,7 +647,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
         if (inColor[0] == 2 && inColor[1] == 2 && inColor[2] < 128)
         {
             // Adaptive Run Length Encoding (RLE)
-            if (size_t((inColor[2] << 8) + inColor[3]) != mdata.width)
+            if (size_t((size_t(inColor[2]) << 8) + inColor[3]) != mdata.width)
             {
                 image.Release();
                 return E_FAIL;
@@ -690,7 +686,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
                         sourcePtr += 2;
                         pixelLen -= 2;
                     }
-                    else if ((size < size_t(runLen + 1)) || ((pixelCount + runLen) > mdata.width))
+                    else if ((size < size_t(runLen) + 1) || ((pixelCount + size_t(runLen)) > mdata.width))
                     {
                         image.Release();
                         return E_FAIL;
@@ -705,7 +701,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
                             pixelLoc += 4;
                         }
                         pixelCount += runLen;
-                        pixelLen -= runLen + 1;
+                        pixelLen -= size_t(runLen) + 1;
                     }
                 }
             }
@@ -912,7 +908,7 @@ HRESULT DirectX::SaveToHDRMemory(const Image& image, Blob& blob)
         return hr;
 
     // Copy header
-    auto dPtr = reinterpret_cast<uint8_t*>(blob.GetBufferPointer());
+    auto dPtr = static_cast<uint8_t*>(blob.GetBufferPointer());
     assert(dPtr != 0);
     memcpy_s(dPtr, blob.GetBufferSize(), header, headerLen);
     dPtr += headerLen;
@@ -937,7 +933,7 @@ HRESULT DirectX::SaveToHDRMemory(const Image& image, Blob& blob)
     auto rgbe = temp.get();
     auto enc = temp.get() + rowPitch;
 
-    auto sPtr = reinterpret_cast<const uint8_t*>(image.pixels);
+    const uint8_t* sPtr = image.pixels;
     for (size_t scan = 0; scan < image.height; ++scan)
     {
         FloatToRGBE(rgbe, reinterpret_cast<const float*>(sPtr), image.width, fpp);
@@ -957,7 +953,7 @@ HRESULT DirectX::SaveToHDRMemory(const Image& image, Blob& blob)
     }
 #endif
 
-    hr = blob.Trim(dPtr - reinterpret_cast<uint8_t*>(blob.GetBufferPointer()));
+    hr = blob.Trim(dPtr - static_cast<uint8_t*>(blob.GetBufferPointer()));
     if (FAILED(hr))
     {
         blob.Release();
@@ -1083,7 +1079,7 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile)
 #else
         auto enc = temp.get() + rowPitch;
 
-        auto sPtr = reinterpret_cast<const uint8_t*>(image.pixels);
+        const uint8_t* sPtr = image.pixels;
         for (size_t scan = 0; scan < image.height; ++scan)
         {
             FloatToRGBE(rgbe, reinterpret_cast<const float*>(sPtr), image.width, fpp);

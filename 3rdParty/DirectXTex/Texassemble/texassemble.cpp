@@ -4,6 +4,7 @@
 // DirectX Texture assembler for cube maps, volume maps, and arrays
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
+// Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //--------------------------------------------------------------------------------------
@@ -220,6 +221,17 @@ const SValue g_pFormats [] =
     { nullptr, DXGI_FORMAT_UNKNOWN }
 };
 
+const SValue g_pFormatAliases [] =
+{
+    { L"RGBA", DXGI_FORMAT_R8G8B8A8_UNORM },
+    { L"BGRA", DXGI_FORMAT_B8G8R8A8_UNORM },
+
+    { L"FP16", DXGI_FORMAT_R16G16B16A16_FLOAT },
+    { L"FP32", DXGI_FORMAT_R32G32B32A32_FLOAT },
+
+    { nullptr, DXGI_FORMAT_UNKNOWN }
+};
+
 const SValue g_pFilters [] =
 {
     { L"POINT",                     TEX_FILTER_POINT },
@@ -400,16 +412,16 @@ namespace
 
     void PrintInfo(const TexMetadata& info)
     {
-        wprintf(L" (%Iux%Iu", info.width, info.height);
+        wprintf(L" (%zux%zu", info.width, info.height);
 
         if (TEX_DIMENSION_TEXTURE3D == info.dimension)
-            wprintf(L"x%Iu", info.depth);
+            wprintf(L"x%zu", info.depth);
 
         if (info.mipLevels > 1)
-            wprintf(L",%Iu", info.mipLevels);
+            wprintf(L",%zu", info.mipLevels);
 
         if (info.arraySize > 1)
-            wprintf(L",%Iu", info.arraySize);
+            wprintf(L",%zu", info.arraySize);
 
         wprintf(L" ");
         PrintFormat(info.format);
@@ -518,6 +530,8 @@ namespace
 
         wprintf(L"\n   <format>: ");
         PrintList(13, g_pFormats);
+        wprintf(L"      ");
+        PrintList(13, g_pFormatAliases);
 
         wprintf(L"\n   <filter>: ");
         PrintList(13, g_pFilters);
@@ -1000,7 +1014,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             switch (dwOption)
             {
             case OPT_WIDTH:
-                if (swscanf_s(pValue, L"%Iu", &width) != 1)
+                if (swscanf_s(pValue, L"%zu", &width) != 1)
                 {
                     wprintf(L"Invalid value specified with -w (%ls)\n", pValue);
                     return 1;
@@ -1008,7 +1022,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 break;
 
             case OPT_HEIGHT:
-                if (swscanf_s(pValue, L"%Iu", &height) != 1)
+                if (swscanf_s(pValue, L"%zu", &height) != 1)
                 {
                     wprintf(L"Invalid value specified with -h (%ls)\n", pValue);
                     return 1;
@@ -1016,11 +1030,15 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 break;
 
             case OPT_FORMAT:
-                format = (DXGI_FORMAT)LookupByName(pValue, g_pFormats);
+                format = static_cast<DXGI_FORMAT>(LookupByName(pValue, g_pFormats));
                 if (!format)
                 {
-                    wprintf(L"Invalid value specified with -f (%ls)\n", pValue);
-                    return 1;
+                    format = static_cast<DXGI_FORMAT>(LookupByName(pValue, g_pFormatAliases));
+                    if (!format)
+                    {
+                        wprintf(L"Invalid value specified with -f (%ls)\n", pValue);
+                        return 1;
+                    }
                 }
                 break;
 
