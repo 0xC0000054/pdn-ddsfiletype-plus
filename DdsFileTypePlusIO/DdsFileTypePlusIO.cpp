@@ -402,5 +402,3 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 
 	return S_OK;
 }
-
-
