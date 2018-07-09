@@ -195,9 +195,9 @@ namespace
     //-----------------------------------------------------------------------------
     struct handle_closer { void operator()(HANDLE h) { if (h) CloseHandle(h); } };
 
-    typedef public std::unique_ptr<void, handle_closer> ScopedHandle;
+    typedef std::unique_ptr<void, handle_closer> ScopedHandle;
 
-    inline HANDLE safe_handle( HANDLE h ) { return (h == INVALID_HANDLE_VALUE) ? 0 : h; }
+    inline HANDLE safe_handle( HANDLE h ) { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
 
     class auto_delete_file
     {
@@ -701,7 +701,7 @@ namespace
 
         IWICImagingFactory* factory = nullptr;
         InitOnceExecuteOnce(&s_initOnce,
-            [](PINIT_ONCE, PVOID, LPVOID *factory) -> BOOL
+            [](PINIT_ONCE, PVOID, LPVOID *ifactory) -> BOOL
             {
             #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
                 HRESULT hr = CoCreateInstance(
@@ -709,7 +709,7 @@ namespace
                     nullptr,
                     CLSCTX_INPROC_SERVER,
                     __uuidof(IWICImagingFactory2),
-                    factory
+                    ifactory
                     );
 
                 if ( SUCCEEDED(hr) )
@@ -725,7 +725,7 @@ namespace
                         nullptr,
                         CLSCTX_INPROC_SERVER,
                         __uuidof(IWICImagingFactory),
-                        factory
+                        ifactory
                         );
                     return SUCCEEDED(hr) ? TRUE : FALSE;
                 }
@@ -735,7 +735,7 @@ namespace
                     nullptr,
                     CLSCTX_INPROC_SERVER,
                     __uuidof(IWICImagingFactory),
-                    factory) ) ? TRUE : FALSE;
+                    ifactory) ) ? TRUE : FALSE;
             #endif
             }, nullptr, reinterpret_cast<LPVOID*>(&factory));
 
@@ -986,7 +986,7 @@ HRESULT DirectX::SaveWICTextureToFile( _In_ ID3D11DeviceContext* pContext,
     auto_delete_file_wic delonfail(stream, fileName);
 
     ComPtr<IWICBitmapEncoder> encoder;
-    hr = pWIC->CreateEncoder( guidContainerFormat, 0, encoder.GetAddressOf() );
+    hr = pWIC->CreateEncoder( guidContainerFormat, nullptr, encoder.GetAddressOf() );
     if ( FAILED(hr) )
         return hr;
 

@@ -355,11 +355,11 @@ const SValue g_pExtFileTypes[] =
 
 namespace
 {
-    inline HANDLE safe_handle(HANDLE h) { return (h == INVALID_HANDLE_VALUE) ? 0 : h; }
+    inline HANDLE safe_handle(HANDLE h) { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
 
     struct find_closer { void operator()(HANDLE h) { assert(h != INVALID_HANDLE_VALUE); if (h) FindClose(h); } };
 
-    typedef public std::unique_ptr<void, find_closer> ScopedFindHandle;
+    typedef std::unique_ptr<void, find_closer> ScopedFindHandle;
 
 #pragma prefast(disable : 26018, "Only used with static internal arrays")
 

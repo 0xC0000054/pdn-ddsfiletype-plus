@@ -286,11 +286,11 @@ const SValue g_pExtFileTypes [] =
 
 namespace
 {
-    inline HANDLE safe_handle(HANDLE h) { return (h == INVALID_HANDLE_VALUE) ? 0 : h; }
+    inline HANDLE safe_handle(HANDLE h) { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
 
     struct find_closer { void operator()(HANDLE h) { assert(h != INVALID_HANDLE_VALUE); if (h) FindClose(h); } };
 
-    typedef public std::unique_ptr<void, find_closer> ScopedFindHandle;
+    typedef std::unique_ptr<void, find_closer> ScopedFindHandle;
 
 #pragma prefast(disable : 26018, "Only used with static internal arrays")
 
@@ -641,7 +641,7 @@ namespace
             return E_NOINTERFACE;
 
         ComPtr<IWICBitmapDecoder> decoder;
-        HRESULT hr = pWIC->CreateDecoderFromFilename(szFile, 0, GENERIC_READ, WICDecodeMetadataCacheOnDemand, decoder.GetAddressOf());
+        HRESULT hr = pWIC->CreateDecoderFromFilename(szFile, nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, decoder.GetAddressOf());
         if (FAILED(hr))
             return hr;
 
@@ -876,7 +876,7 @@ namespace
 
             auto img = rawFrame.GetImage(0, 0, 0);
 
-            hr = FC->CopyPixels(0, static_cast<UINT>(img->rowPitch), static_cast<UINT>(img->slicePitch), img->pixels);
+            hr = FC->CopyPixels(nullptr, static_cast<UINT>(img->rowPitch), static_cast<UINT>(img->slicePitch), img->pixels);
             if (FAILED(hr))
                 return hr;
 
