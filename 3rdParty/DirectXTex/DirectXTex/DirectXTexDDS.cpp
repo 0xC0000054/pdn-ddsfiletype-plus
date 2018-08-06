@@ -731,7 +731,9 @@ HRESULT DirectX::_EncodeDDSHeader(
     }
 
     size_t rowPitch, slicePitch;
-    ComputePitch(metadata.format, metadata.width, metadata.height, rowPitch, slicePitch, CP_FLAGS_NONE);
+    HRESULT hr = ComputePitch(metadata.format, metadata.width, metadata.height, rowPitch, slicePitch, CP_FLAGS_NONE);
+    if (FAILED(hr))
+        return hr;
 
     if (slicePitch > UINT32_MAX
         || rowPitch > UINT32_MAX)
@@ -1185,7 +1187,9 @@ namespace
         }
 
         size_t pixelSize, nimages;
-        _DetermineImageArray(metadata, cpFlags, nimages, pixelSize);
+        if (!_DetermineImageArray(metadata, cpFlags, nimages, pixelSize))
+            return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+
         if ((nimages == 0) || (nimages != image.GetImageCount()))
         {
             return E_FAIL;
@@ -1786,6 +1790,12 @@ HRESULT DirectX::LoadFromDDSFile(
             return HRESULT_FROM_WIN32(ERROR_HANDLE_EOF);
         }
 
+        if (image.GetPixelsSize() > UINT32_MAX)
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+        }
+
         if (!ReadFile(hFile.get(), image.GetPixels(), static_cast<DWORD>(image.GetPixelsSize()), &bytesRead, nullptr))
         {
             image.Release();
@@ -1842,7 +1852,9 @@ HRESULT DirectX::SaveToDDSMemory(
             return E_FAIL;
 
         size_t ddsRowPitch, ddsSlicePitch;
-        ComputePitch(metadata.format, images[i].width, images[i].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+        hr = ComputePitch(metadata.format, images[i].width, images[i].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+        if (FAILED(hr))
+            return hr;
 
         assert(images[i].rowPitch > 0);
         assert(images[i].slicePitch > 0);
@@ -1913,7 +1925,12 @@ HRESULT DirectX::SaveToDDSMemory(
                 else
                 {
                     size_t ddsRowPitch, ddsSlicePitch;
-                    ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                    hr = ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                    if (FAILED(hr))
+                    {
+                        blob.Release();
+                        return hr;
+                    }
 
                     size_t rowPitch = images[index].rowPitch;
 
@@ -1982,7 +1999,12 @@ HRESULT DirectX::SaveToDDSMemory(
                 else
                 {
                     size_t ddsRowPitch, ddsSlicePitch;
-                    ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                    hr = ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                    if (FAILED(hr))
+                    {
+                        blob.Release();
+                        return hr;
+                    }
 
                     size_t rowPitch = images[index].rowPitch;
 
@@ -2094,9 +2116,11 @@ HRESULT DirectX::SaveToDDSFile(
                 assert(images[index].slicePitch > 0);
 
                 size_t ddsRowPitch, ddsSlicePitch;
-                ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                hr = ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                if (FAILED(hr))
+                    return hr;
 
-                if (images[index].slicePitch == ddsSlicePitch)
+                if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
                 {
                     if (!WriteFile(hFile.get(), images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten, nullptr))
                     {
@@ -2116,6 +2140,9 @@ HRESULT DirectX::SaveToDDSFile(
                         // DDS uses 1-byte alignment, so if this is happening then the input pitch isn't actually a full line of data
                         return E_FAIL;
                     }
+
+                    if (ddsRowPitch > UINT32_MAX)
+                        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
 
                     const uint8_t * __restrict sPtr = images[index].pixels;
 
@@ -2162,9 +2189,11 @@ HRESULT DirectX::SaveToDDSFile(
                 assert(images[index].slicePitch > 0);
 
                 size_t ddsRowPitch, ddsSlicePitch;
-                ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                hr = ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                if (FAILED(hr))
+                    return hr;
 
-                if (images[index].slicePitch == ddsSlicePitch)
+                if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
                 {
                     if (!WriteFile(hFile.get(), images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten, nullptr))
                     {
@@ -2184,6 +2213,9 @@ HRESULT DirectX::SaveToDDSFile(
                         // DDS uses 1-byte alignment, so if this is happening then the input pitch isn't actually a full line of data
                         return E_FAIL;
                     }
+
+                    if (ddsRowPitch > UINT32_MAX)
+                        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
 
                     const uint8_t * __restrict sPtr = images[index].pixels;
 
