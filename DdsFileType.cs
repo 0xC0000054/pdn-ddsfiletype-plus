@@ -107,7 +107,7 @@ namespace DdsFileTypePlus
         {
             DdsFileFormat format = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
 
-            return (format == DdsFileFormat.B8G8R8A8 || format == DdsFileFormat.R8G8B8A8);
+            return format == DdsFileFormat.B8G8R8A8 || format == DdsFileFormat.R8G8B8A8;
         }
 
         public enum PropertyNames
