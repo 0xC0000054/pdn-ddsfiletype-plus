@@ -17,7 +17,7 @@ using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus
 {
-    static class DdsFile
+    internal static class DdsFile
     {
         [StructLayout(LayoutKind.Sequential)]
         private struct DDSLoadInfo
