@@ -180,11 +180,15 @@ namespace DdsFileTypePlus
                 input.Render(args, true);
             }
 
-            DdsProgressCallback ddsProgress = delegate (UIntPtr done, UIntPtr total)
+            DdsProgressCallback ddsProgress = null;
+            if (progressCallback != null)
             {
-                double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
-                progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
-            };
+                ddsProgress = (UIntPtr done, UIntPtr total) =>
+                {
+                    double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
+                    progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
+                };
+            }
 
             SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, output, ddsProgress);
         }
