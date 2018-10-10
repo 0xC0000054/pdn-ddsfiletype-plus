@@ -78,7 +78,7 @@ namespace DdsFileTypePlus
         {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static unsafe extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
+            internal static extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
@@ -86,7 +86,7 @@ namespace DdsFileTypePlus
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static unsafe extern int Save(
+            internal static extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
@@ -96,7 +96,7 @@ namespace DdsFileTypePlus
         {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static unsafe extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
+            internal static extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
@@ -104,7 +104,7 @@ namespace DdsFileTypePlus
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static unsafe extern int Save(
+            internal static extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
@@ -164,7 +164,7 @@ namespace DdsFileTypePlus
             return doc;
         }
 
-        public static unsafe void Save(
+        public static void Save(
             Document input,
             Stream output,
             DdsFileFormat format,
@@ -193,7 +193,7 @@ namespace DdsFileTypePlus
             SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, output, ddsProgress);
         }
 
-        private static unsafe void LoadDdsFile(Stream stream, ref DDSLoadInfo info)
+        private static void LoadDdsFile(Stream stream, ref DDSLoadInfo info)
         {
             StreamIOCallbacks streamIO = new StreamIOCallbacks(stream);
             IOCallbacks callbacks = new IOCallbacks
@@ -245,7 +245,7 @@ namespace DdsFileTypePlus
             }
         }
 
-        private static unsafe void SaveDdsFile(
+        private static void SaveDdsFile(
             Surface surface,
             DdsFileFormat format,
             DdsErrorMetric errorMetric,
