@@ -198,8 +198,6 @@ namespace DdsFileTypePlus
             };
 
             SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, ddsWriteImage, ddsProgress);
-
-            GC.KeepAlive(ddsWriteImage);
         }
 
         private static unsafe void LoadDdsFile(Stream stream, ref DDSLoadInfo info)
@@ -281,6 +279,8 @@ namespace DdsFileTypePlus
             {
                 hr = DdsIO_x86.Save(ref info, writeImageCallback, progressCallback);
             }
+
+            GC.KeepAlive(progressCallback);
 
             if (FAILED(hr))
             {
