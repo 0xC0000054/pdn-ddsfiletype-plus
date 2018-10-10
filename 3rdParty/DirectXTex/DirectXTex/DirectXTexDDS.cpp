@@ -1821,6 +1821,170 @@ HRESULT DirectX::LoadFromDDSFile(
     return S_OK;
 }
 
+//-------------------------------------------------------------------------------------
+// Load a DDS file using the specified I/O callbacks
+//-------------------------------------------------------------------------------------
+_Use_decl_annotations_
+HRESULT DirectX::LoadFromDDSIOCallbacks(
+    const ImageIOCallbacks* pIOCallbacks,
+    DWORD flags,
+    TexMetadata* metadata,
+    ScratchImage& image)
+{
+    if (!pIOCallbacks)
+        return E_INVALIDARG;
+
+    image.Release();
+
+    // Get the file size
+    LARGE_INTEGER fileSize;
+    fileSize.QuadPart = pIOCallbacks->GetSize();
+
+    // File is too big for 32-bit allocation, so reject read (4 GB should be plenty large enough for a valid DDS file)
+    if (fileSize.HighPart > 0)
+    {
+        return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
+    }
+
+    // Need at least enough data to fill the standard header and magic number to be a valid DDS
+    if (fileSize.LowPart < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
+    {
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+    }
+
+    // Read the header in (including extended header if present)
+    const size_t MAX_HEADER_SIZE = sizeof(uint32_t) + sizeof(DDS_HEADER) + sizeof(DDS_HEADER_DXT10);
+    uint8_t header[MAX_HEADER_SIZE] = {};
+
+    DWORD bytesRead = pIOCallbacks->Read(header, MAX_HEADER_SIZE);
+
+    DWORD convFlags = 0;
+    TexMetadata mdata;
+    HRESULT hr = DecodeDDSHeader(header, bytesRead, flags, mdata, convFlags);
+    if (FAILED(hr))
+        return hr;
+
+    DWORD offset = MAX_HEADER_SIZE;
+
+    if (!(convFlags & CONV_FLAGS_DX10))
+    {
+        // Must reset file position since we read more than the standard header above
+        const INT64 newOffset = sizeof(uint32_t) + sizeof(DDS_HEADER);
+        if (pIOCallbacks->Seek(newOffset, FILE_BEGIN) != newOffset)
+        {
+            return HRESULT_FROM_WIN32(ERROR_SEEK_ON_DEVICE);
+        }
+
+        offset = sizeof(uint32_t) + sizeof(DDS_HEADER);
+    }
+
+    std::unique_ptr<uint32_t[]> pal8;
+    if (convFlags & CONV_FLAGS_PAL8)
+    {
+        pal8.reset(new (std::nothrow) uint32_t[256]);
+        if (!pal8)
+        {
+            return E_OUTOFMEMORY;
+        }
+
+        bytesRead = pIOCallbacks->Read(pal8.get(), 256 * sizeof(uint32_t));
+
+        if (bytesRead != (256 * sizeof(uint32_t)))
+        {
+            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+        }
+
+        offset += (256 * sizeof(uint32_t));
+    }
+
+    DWORD remaining = fileSize.LowPart - offset;
+    if (remaining == 0)
+        return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+
+    hr = image.Initialize(mdata);
+    if (FAILED(hr))
+        return hr;
+
+    if ((convFlags & CONV_FLAGS_EXPAND) || (flags & (DDS_FLAGS_LEGACY_DWORD | DDS_FLAGS_BAD_DXTN_TAILS)))
+    {
+        std::unique_ptr<uint8_t[]> temp(new (std::nothrow) uint8_t[remaining]);
+        if (!temp)
+        {
+            image.Release();
+            return E_OUTOFMEMORY;
+        }
+
+        bytesRead = pIOCallbacks->Read(temp.get(), remaining);
+
+        if (bytesRead != remaining)
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+        }
+
+        DWORD cflags = CP_FLAGS_NONE;
+        if (flags & DDS_FLAGS_LEGACY_DWORD)
+        {
+            cflags |= CP_FLAGS_LEGACY_DWORD;
+        }
+        if (flags & DDS_FLAGS_BAD_DXTN_TAILS)
+        {
+            cflags |= CP_FLAGS_BAD_DXTN_TAILS;
+        }
+
+        hr = CopyImage(temp.get(),
+            remaining,
+            mdata,
+            cflags,
+            convFlags,
+            pal8.get(),
+            image);
+        if (FAILED(hr))
+        {
+            image.Release();
+            return hr;
+        }
+    }
+    else
+    {
+        if (remaining < image.GetPixelsSize())
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_HANDLE_EOF);
+        }
+
+        if (image.GetPixelsSize() > UINT32_MAX)
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+        }
+
+        const DWORD pixelSize = static_cast<DWORD>(image.GetPixelsSize());
+
+        if (pIOCallbacks->Read(image.GetPixels(), pixelSize) != pixelSize)
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+        }
+
+        if (convFlags & (CONV_FLAGS_SWIZZLE | CONV_FLAGS_NOALPHA))
+        {
+            // Swizzle/copy image in place
+            hr = CopyImageInPlace(convFlags, image);
+            if (FAILED(hr))
+            {
+                image.Release();
+                return hr;
+            }
+        }
+    }
+
+    if (metadata)
+        memcpy(metadata, &mdata, sizeof(TexMetadata));
+
+    return S_OK;
+}
+
 
 //-------------------------------------------------------------------------------------
 // Save a DDS file to memory
@@ -2249,6 +2413,178 @@ HRESULT DirectX::SaveToDDSFile(
     }
 
     delonfail.clear();
+
+    return S_OK;
+}
+
+//-------------------------------------------------------------------------------------
+// Save a DDS file using the specified I/O callbacks
+//-------------------------------------------------------------------------------------
+_Use_decl_annotations_
+HRESULT DirectX::SaveToDDSIOCallbacks(
+    const Image* images,
+    size_t nimages,
+    const TexMetadata& metadata,
+    DWORD flags,
+    const ImageIOCallbacks* pIOCallbacks)
+{
+    if (!pIOCallbacks)
+        return E_INVALIDARG;
+
+    // Create DDS Header
+    const size_t MAX_HEADER_SIZE = sizeof(uint32_t) + sizeof(DDS_HEADER) + sizeof(DDS_HEADER_DXT10);
+    uint8_t header[MAX_HEADER_SIZE];
+    size_t required;
+    HRESULT hr = _EncodeDDSHeader(metadata, flags, header, MAX_HEADER_SIZE, required);
+    if (FAILED(hr))
+        return hr;
+
+    DWORD bytesWritten = pIOCallbacks->Write(header, static_cast<DWORD>(required));
+
+    if (bytesWritten != required)
+    {
+        return E_FAIL;
+    }
+
+    // Write images
+    switch (static_cast<DDS_RESOURCE_DIMENSION>(metadata.dimension))
+    {
+    case DDS_DIMENSION_TEXTURE1D:
+    case DDS_DIMENSION_TEXTURE2D:
+    {
+        size_t index = 0;
+        for (size_t item = 0; item < metadata.arraySize; ++item)
+        {
+            for (size_t level = 0; level < metadata.mipLevels; ++level, ++index)
+            {
+                if (index >= nimages)
+                    return E_FAIL;
+
+                if (!images[index].pixels)
+                    return E_POINTER;
+
+                assert(images[index].rowPitch > 0);
+                assert(images[index].slicePitch > 0);
+
+                size_t ddsRowPitch, ddsSlicePitch;
+                hr = ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                if (FAILED(hr))
+                    return hr;
+
+                if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
+                {
+                    bytesWritten = pIOCallbacks->Write(images[index].pixels, static_cast<DWORD>(ddsSlicePitch));
+
+                    if (bytesWritten != ddsSlicePitch)
+                    {
+                        return E_FAIL;
+                    }
+                }
+                else
+                {
+                    size_t rowPitch = images[index].rowPitch;
+                    if (rowPitch < ddsRowPitch)
+                    {
+                        // DDS uses 1-byte alignment, so if this is happening then the input pitch isn't actually a full line of data
+                        return E_FAIL;
+                    }
+
+                    if (ddsRowPitch > UINT32_MAX)
+                        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+
+                    const uint8_t * __restrict sPtr = images[index].pixels;
+
+                    size_t lines = ComputeScanlines(metadata.format, images[index].height);
+                    for (size_t j = 0; j < lines; ++j)
+                    {
+                        bytesWritten = pIOCallbacks->Write(sPtr, static_cast<DWORD>(ddsRowPitch));
+
+                        if (bytesWritten != ddsRowPitch)
+                        {
+                            return E_FAIL;
+                        }
+
+                        sPtr += rowPitch;
+                    }
+                }
+            }
+        }
+    }
+    break;
+
+    case DDS_DIMENSION_TEXTURE3D:
+    {
+        if (metadata.arraySize != 1)
+            return E_FAIL;
+
+        size_t d = metadata.depth;
+
+        size_t index = 0;
+        for (size_t level = 0; level < metadata.mipLevels; ++level)
+        {
+            for (size_t slice = 0; slice < d; ++slice, ++index)
+            {
+                if (index >= nimages)
+                    return E_FAIL;
+
+                if (!images[index].pixels)
+                    return E_POINTER;
+
+                assert(images[index].rowPitch > 0);
+                assert(images[index].slicePitch > 0);
+
+                size_t ddsRowPitch, ddsSlicePitch;
+                hr = ComputePitch(metadata.format, images[index].width, images[index].height, ddsRowPitch, ddsSlicePitch, CP_FLAGS_NONE);
+                if (FAILED(hr))
+                    return hr;
+
+                if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
+                {
+                    bytesWritten = pIOCallbacks->Write(images[index].pixels, static_cast<DWORD>(ddsSlicePitch));
+
+                    if (bytesWritten != ddsSlicePitch)
+                    {
+                        return E_FAIL;
+                    }
+                }
+                else
+                {
+                    size_t rowPitch = images[index].rowPitch;
+                    if (rowPitch < ddsRowPitch)
+                    {
+                        // DDS uses 1-byte alignment, so if this is happening then the input pitch isn't actually a full line of data
+                        return E_FAIL;
+                    }
+
+                    if (ddsRowPitch > UINT32_MAX)
+                        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+
+                    const uint8_t * __restrict sPtr = images[index].pixels;
+
+                    size_t lines = ComputeScanlines(metadata.format, images[index].height);
+                    for (size_t j = 0; j < lines; ++j)
+                    {
+                        bytesWritten = pIOCallbacks->Write(sPtr, static_cast<DWORD>(ddsRowPitch));
+
+                        if (bytesWritten != ddsRowPitch)
+                        {
+                            return E_FAIL;
+                        }
+
+                        sPtr += rowPitch;
+                    }
+                }
+            }
+
+            if (d > 1)
+                d >>= 1;
+        }
+    }
+    break;
+
+    default:
+        return E_FAIL;
+    }
 
     return S_OK;
 }

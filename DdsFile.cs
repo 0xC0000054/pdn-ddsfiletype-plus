@@ -11,7 +11,6 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
-using PaintDotNet.IO;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -45,16 +44,41 @@ namespace DdsFileTypePlus
         }
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate void DdsWriteImageCallback(IntPtr image, UIntPtr imageSize);
+        private delegate void DdsProgressCallback(UIntPtr done, UIntPtr total);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate void DdsProgressCallback(UIntPtr done, UIntPtr total);
+        private delegate uint ReadDelegate(IntPtr buffer, uint count);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate uint WriteDelegate(IntPtr buffer, uint count);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate long SeekDelegate(long offset, int origin);
+
+        [UnmanagedFunctionPointer(CallingConvention.StdCall)]
+        private delegate long GetSizeDelegate();
+
+        [StructLayout(LayoutKind.Sequential)]
+        private sealed class IOCallbacks
+        {
+            [MarshalAs(UnmanagedType.FunctionPtr)]
+            public ReadDelegate Read;
+
+            [MarshalAs(UnmanagedType.FunctionPtr)]
+            public WriteDelegate Write;
+
+            [MarshalAs(UnmanagedType.FunctionPtr)]
+            public SeekDelegate Seek;
+
+            [MarshalAs(UnmanagedType.FunctionPtr)]
+            public GetSizeDelegate GetSize;
+        }
 
         private static class DdsIO_x86
         {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static unsafe extern int Load([In] byte* input, [In] UIntPtr inputSize, [In, Out] ref DDSLoadInfo info);
+            internal static unsafe extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
@@ -64,7 +88,7 @@ namespace DdsFileTypePlus
             [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
-                [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsWriteImageCallback writeImageCallback,
+                [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
@@ -72,7 +96,7 @@ namespace DdsFileTypePlus
         {
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
-            internal static unsafe extern int Load([In] byte* input, [In] UIntPtr inputSize, [In, Out] ref DDSLoadInfo info);
+            internal static unsafe extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
@@ -82,7 +106,7 @@ namespace DdsFileTypePlus
             [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
             internal static unsafe extern int Save(
                 [In] ref DDSSaveInfo input,
-                [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsWriteImageCallback writeImageCallback,
+                [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
 
@@ -156,68 +180,39 @@ namespace DdsFileTypePlus
                 input.Render(args, true);
             }
 
-            DdsWriteImageCallback ddsWriteImage = delegate (IntPtr image, UIntPtr imageSize)
-            {
-                ulong size = imageSize.ToUInt64();
-
-                if (image != IntPtr.Zero && size > 0)
-                {
-                    const int MaxBufferSize = 65536;
-
-                    ulong streamBufferSize = Math.Min(MaxBufferSize, size);
-                    byte[] streamBuffer = new byte[streamBufferSize];
-
-                    output.SetLength(checked((long)size));
-
-                    ulong offset = 0;
-                    ulong remaining = size;
-
-                    fixed (byte* destPtr = streamBuffer)
-                    {
-                        byte* srcPtr = (byte*)image.ToPointer();
-
-                        while (remaining > 0)
-                        {
-                            ulong copySize = Math.Min(MaxBufferSize, remaining);
-
-                            Buffer.MemoryCopy(srcPtr + offset, destPtr, streamBufferSize, copySize);
-
-                            output.Write(streamBuffer, 0, (int)copySize);
-
-                            offset += copySize;
-                            remaining -= copySize;
-                        }
-                    }
-                }
-            };
-
             DdsProgressCallback ddsProgress = delegate (UIntPtr done, UIntPtr total)
             {
                 double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
                 progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
             };
 
-            SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, ddsWriteImage, ddsProgress);
+            SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, output, ddsProgress);
         }
 
         private static unsafe void LoadDdsFile(Stream stream, ref DDSLoadInfo info)
         {
-            byte[] buffer = new byte[stream.Length];
-            stream.ProperRead(buffer, 0, buffer.Length);
+            StreamIOCallbacks streamIO = new StreamIOCallbacks(stream);
+            IOCallbacks callbacks = new IOCallbacks
+            {
+                Read = streamIO.Read,
+                Write = streamIO.Write,
+                Seek = streamIO.Seek,
+                GetSize = streamIO.GetSize
+            };
 
             int hr;
 
-            fixed (byte* pBytes = buffer)
+            if (IntPtr.Size == 8)
             {
-                if (IntPtr.Size == 8)
-                {
-                    hr = DdsIO_x64.Load(pBytes, new UIntPtr((ulong)buffer.Length), ref info);
-                }
-                else
-                {
-                    hr = DdsIO_x86.Load(pBytes, new UIntPtr((ulong)buffer.Length), ref info);
-                }
+                hr = DdsIO_x64.Load(callbacks, ref info);
             }
+            else
+            {
+                hr = DdsIO_x86.Load(callbacks, ref info);
+            }
+
+            GC.KeepAlive(streamIO);
+            GC.KeepAlive(callbacks);
 
             if (FAILED(hr))
             {
@@ -253,7 +248,7 @@ namespace DdsFileTypePlus
             BC7CompressionMode compressionMode,
             bool generateMipmaps,
             MipMapSampling mipMapSampling,
-            DdsWriteImageCallback writeImageCallback,
+            Stream output,
             DdsProgressCallback progressCallback)
         {
             DDSSaveInfo info = new DDSSaveInfo
@@ -269,22 +264,115 @@ namespace DdsFileTypePlus
                 scan0 = surface.Scan0.Pointer
             };
 
+            StreamIOCallbacks streamIO = new StreamIOCallbacks(output);
+            IOCallbacks callbacks = new IOCallbacks
+            {
+                Read = streamIO.Read,
+                Write = streamIO.Write,
+                Seek = streamIO.Seek,
+                GetSize = streamIO.GetSize
+            };
+
             int hr;
 
             if (IntPtr.Size == 8)
             {
-                hr = DdsIO_x64.Save(ref info, writeImageCallback, progressCallback);
+                hr = DdsIO_x64.Save(ref info, callbacks, progressCallback);
             }
             else
             {
-                hr = DdsIO_x86.Save(ref info, writeImageCallback, progressCallback);
+                hr = DdsIO_x86.Save(ref info, callbacks, progressCallback);
             }
 
+            GC.KeepAlive(streamIO);
+            GC.KeepAlive(callbacks);
             GC.KeepAlive(progressCallback);
 
             if (FAILED(hr))
             {
                 Marshal.ThrowExceptionForHR(hr);
+            }
+        }
+
+        private sealed class StreamIOCallbacks
+        {
+            private readonly Stream stream;
+
+            // 81920 is the largest multiple of 4096 that is below the large object heap threshold.
+            private const int MaxBufferSize = 81920;
+
+            public StreamIOCallbacks(Stream stream)
+            {
+                this.stream = stream;
+            }
+
+            public uint Read(IntPtr buffer, uint count)
+            {
+                if (count == 0)
+                {
+                    return 0;
+                }
+
+                int bufferSize = (int)Math.Min(MaxBufferSize, count);
+                byte[] bytes = new byte[bufferSize];
+
+                long totalBytesRead = 0;
+                long remaining = count;
+
+                do
+                {
+                    int bytesRead = stream.Read(bytes, 0, (int)Math.Min(MaxBufferSize, remaining));
+
+                    if (bytesRead == 0)
+                    {
+                        break;
+                    }
+
+                    Marshal.Copy(bytes, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), bytesRead);
+
+                    totalBytesRead += bytesRead;
+                    remaining -= bytesRead;
+
+                } while (remaining > 0);
+
+                return (uint)totalBytesRead;
+            }
+
+            public uint Write(IntPtr buffer, uint count)
+            {
+                if (count > 0)
+                {
+                    int bufferSize = (int)Math.Min(MaxBufferSize, count);
+                    byte[] bytes = new byte[bufferSize];
+
+                    long offset = 0;
+                    long remaining = count;
+
+                    do
+                    {
+                        int copySize = (int)Math.Min(MaxBufferSize, remaining);
+
+                        Marshal.Copy(new IntPtr(buffer.ToInt64() + offset), bytes, 0, copySize);
+
+                        stream.Write(bytes, 0, copySize);
+
+                        offset += copySize;
+                        remaining -= copySize;
+
+                    } while (remaining > 0);
+                }
+
+                return count;
+            }
+
+            public long Seek(long offset, int origin)
+            {
+                return stream.Seek(offset, (SeekOrigin)origin);
+            }
+
+            public long GetSize()
+            {
+                return stream.Length;
             }
         }
     }

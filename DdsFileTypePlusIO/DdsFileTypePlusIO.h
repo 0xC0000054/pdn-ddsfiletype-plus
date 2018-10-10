@@ -95,9 +95,9 @@ extern "C" {
 		void* scan0;
 	};
 
-	__declspec(dllexport) HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo* info);
+	__declspec(dllexport) HRESULT __stdcall Load(const DirectX::ImageIOCallbacks* callbacks, DDSLoadInfo* info);
 	__declspec(dllexport) void __stdcall FreeLoadInfo(DDSLoadInfo* info);
-	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, DirectX::ProgressProc progressFn);
+	__declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const DirectX::ImageIOCallbacks* callbacks, DirectX::ProgressProc progressFn);
 
 #ifdef __cplusplus
 }

@@ -63,9 +63,9 @@ namespace
 	}
 }
 
-HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo* loadInfo)
+HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 {
-	if (input == nullptr || inputSize == 0 || loadInfo == nullptr)
+	if (callbacks == nullptr || loadInfo == nullptr)
 	{
 		return E_INVALIDARG;
 	}
@@ -78,7 +78,7 @@ HRESULT __stdcall Load(const uint8_t* input, const size_t inputSize, DDSLoadInfo
 		return E_OUTOFMEMORY;
 	}
 
-	HRESULT hr = LoadFromDDSMemory(input, inputSize, DDS_FLAGS_NONE, &info, *ddsCompressedImage);
+	HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_NONE, &info, *ddsCompressedImage);
 
 	if (FAILED(hr))
 	{
@@ -209,9 +209,9 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
 	}
 }
 
-HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, ProgressProc progressFn)
+HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbacks, ProgressProc progressFn)
 {
-	if (input == nullptr || writeFn == nullptr)
+	if (input == nullptr || callbacks == nullptr)
 	{
 		return E_INVALIDARG;
 	}
@@ -389,16 +389,7 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const WriteImageFn writeFn, Pro
 		}
 	}
 
-	Blob blob;
+	hr = SaveToDDSIOCallbacks(image->GetImages(), image->GetImageCount(), metadata, DDS_FLAGS_NONE, callbacks);
 
-	hr = SaveToDDSMemory(image->GetImages(), image->GetImageCount(), metadata, DDS_FLAGS_NONE, blob);
-
-	if (FAILED(hr))
-	{
-		return hr;
-	}
-
-	writeFn(blob.GetBufferPointer(), blob.GetBufferSize());
-
-	return S_OK;
+	return hr;
 }
