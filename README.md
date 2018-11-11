@@ -2,6 +2,8 @@
 
 A [Paint.NET](http://www.getpaint.net) filetype plugin that adds support for some of the DDS formats introduced in DirectX 10 and later.
 
+### Note that a DDS file must be renamed to use the DDS2 file extension before the plugin will load it.
+
 ## Installing the plugin
 
 1. Close Paint.NET.
