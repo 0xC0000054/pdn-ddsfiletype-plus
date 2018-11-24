@@ -174,7 +174,9 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 		}
 	}
 
-	const size_t outBufferSize = targetImage->GetPixelsSize();
+	const Image* firstImage = targetImage->GetImage(0, 0, 0);
+
+	const size_t outBufferSize = firstImage->slicePitch;
 
 	void* outData = HeapAlloc(GetProcessHeap(), 0, outBufferSize);
 
@@ -183,11 +185,11 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 		return E_OUTOFMEMORY;
 	}
 
-	memcpy_s(outData, outBufferSize, targetImage->GetPixels(), outBufferSize);
+	memcpy_s(outData, outBufferSize, firstImage->pixels, outBufferSize);
 
-	loadInfo->width = static_cast<int32_t>(info.width);
-	loadInfo->height = static_cast<int32_t>(info.height);
-	loadInfo->stride = static_cast<int32_t>(info.width * 4);
+	loadInfo->width = static_cast<int32_t>(firstImage->width);
+	loadInfo->height = static_cast<int32_t>(firstImage->height);
+	loadInfo->stride = static_cast<int32_t>(firstImage->rowPitch);
 	loadInfo->scan0 = outData;
 
 	return S_OK;
