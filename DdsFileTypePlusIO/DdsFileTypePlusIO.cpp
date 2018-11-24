@@ -106,7 +106,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 			return E_OUTOFMEMORY;
 		}
 
-		hr = ConvertToSinglePlane(ddsCompressedImage->GetImage(0, 0, 0), ddsCompressedImage->GetImageCount(), info, *interleavedImage);
+		hr = ConvertToSinglePlane(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), info, *interleavedImage);
 
 		if (FAILED(hr))
 		{
@@ -162,7 +162,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 				return E_OUTOFMEMORY;
 			}
 
-			hr = PremultiplyAlpha(targetImage->GetImage(0, 0, 0), targetImage->GetImageCount(), info, TEX_PMALPHA_REVERSE, *unmultipliedImage);
+			hr = PremultiplyAlpha(targetImage->GetImages(), targetImage->GetImageCount(), info, TEX_PMALPHA_REVERSE, *unmultipliedImage);
 
 			if (FAILED(hr))
 			{
