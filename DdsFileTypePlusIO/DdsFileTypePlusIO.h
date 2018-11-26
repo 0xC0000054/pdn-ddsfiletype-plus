@@ -19,8 +19,6 @@
 extern "C" {
 #endif // __cplusplus
 
-	typedef void (__stdcall *WriteImageFn)(const void* image, const size_t imageSize);
-
 	struct DDSLoadInfo
 	{
 		int32_t width;
