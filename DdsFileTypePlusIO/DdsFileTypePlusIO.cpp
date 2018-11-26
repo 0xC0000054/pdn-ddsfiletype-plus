@@ -233,14 +233,13 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
 	}
 
 	const uint8_t* srcScan0 = reinterpret_cast<const uint8_t*>(input->scan0);
-	uint8_t* destScan0 = image->GetPixels();
 
-	const int destStride = input->width * 4;
+	const Image* destImage = image->GetImage(0, 0, 0);
 
 	for (int y = 0; y < input->height; y++)
 	{
 		const uint8_t* src = srcScan0 + (y * input->stride);
-		uint8_t* dst = destScan0 + (y * destStride);
+		uint8_t* dst = destImage->pixels + (y * destImage->rowPitch);
 
 		for (int x = 0; x < input->width; x++)
 		{
