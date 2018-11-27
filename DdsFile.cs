@@ -257,6 +257,7 @@ namespace DdsFileTypePlus
         {
             DDSSaveInfo info = new DDSSaveInfo
             {
+                scan0 = surface.Scan0.Pointer,
                 width = surface.Width,
                 height = surface.Height,
                 stride = surface.Stride,
@@ -264,8 +265,7 @@ namespace DdsFileTypePlus
                 errorMetric = errorMetric,
                 compressionMode = compressionMode,
                 generateMipmaps = generateMipmaps,
-                mipmapSampling = mipMapSampling,
-                scan0 = surface.Scan0.Pointer
+                mipmapSampling = mipMapSampling
             };
 
             StreamIOCallbacks streamIO = new StreamIOCallbacks(output);
