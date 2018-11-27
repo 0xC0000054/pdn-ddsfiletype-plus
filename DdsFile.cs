@@ -22,15 +22,16 @@ namespace DdsFileTypePlus
         [StructLayout(LayoutKind.Sequential)]
         private struct DDSLoadInfo
         {
+            public IntPtr scan0;
             public int width;
             public int height;
             public int stride;
-            public IntPtr scan0;
         }
 
         [StructLayout(LayoutKind.Sequential)]
         private struct DDSSaveInfo
         {
+            public IntPtr scan0;
             public int width;
             public int height;
             public int stride;
@@ -40,7 +41,6 @@ namespace DdsFileTypePlus
             [MarshalAs(UnmanagedType.U1)]
             public bool generateMipmaps;
             public MipMapSampling mipmapSampling;
-            public IntPtr scan0;
         }
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]

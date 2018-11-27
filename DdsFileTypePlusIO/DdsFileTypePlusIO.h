@@ -21,10 +21,10 @@ extern "C" {
 
 	struct DDSLoadInfo
 	{
+		void* scan0;
 		int32_t width;
 		int32_t height;
 		int32_t stride;
-		void* scan0;
 	};
 
 	enum DdsFileFormat
@@ -82,6 +82,7 @@ extern "C" {
 
 	struct DDSSaveInfo
 	{
+		void* scan0;
 		int32_t width;
 		int32_t height;
 		int32_t stride;
@@ -90,7 +91,6 @@ extern "C" {
 		BC7CompressionMode compressionMode;
 		bool generateMipmaps;
 		MipmapSampling mipmapSampling;
-		void* scan0;
 	};
 
 	__declspec(dllexport) HRESULT __stdcall Load(const DirectX::ImageIOCallbacks* callbacks, DDSLoadInfo* info);
