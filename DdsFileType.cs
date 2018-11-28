@@ -31,6 +31,7 @@ namespace DdsFileTypePlus
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.FileFormat, DdsFileFormat.BC1, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.BC7CompressionMode, BC7CompressionMode.Normal, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
+                new BooleanProperty(PropertyNames.CubeMap, false),
                 new BooleanProperty(PropertyNames.GenerateMipMaps, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.MipMapResamplingAlgorithm, MipMapSampling.Fant, false)
             };
@@ -76,6 +77,8 @@ namespace DdsFileTypePlus
             configUI.SetPropertyControlType(PropertyNames.ErrorMetric, PropertyControlType.RadioButton);
             configUI.FindControlForPropertyName(PropertyNames.ErrorMetric).SetValueDisplayName(DdsErrorMetric.Perceptual, "Perceptual");
             configUI.FindControlForPropertyName(PropertyNames.ErrorMetric).SetValueDisplayName(DdsErrorMetric.Uniform, "Uniform");
+            configUI.SetPropertyControlValue(PropertyNames.CubeMap, ControlInfoPropertyNames.DisplayName, string.Empty);
+            configUI.SetPropertyControlValue(PropertyNames.CubeMap, ControlInfoPropertyNames.Description, "Cube Map from crossed image");
             configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.DisplayName, string.Empty);
             configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.Description, "Generate MipMaps");
             configUI.SetPropertyControlValue(PropertyNames.MipMapResamplingAlgorithm, ControlInfoPropertyNames.DisplayName, string.Empty);
@@ -97,10 +100,11 @@ namespace DdsFileTypePlus
             DdsFileFormat fileFormat = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
             BC7CompressionMode compressionMode = (BC7CompressionMode)token.GetProperty(PropertyNames.BC7CompressionMode).Value;
             DdsErrorMetric errorMetric = (DdsErrorMetric)token.GetProperty(PropertyNames.ErrorMetric).Value;
+            bool cubeMap = token.GetProperty<BooleanProperty>(PropertyNames.CubeMap).Value;
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
             MipMapSampling mipSampling = (MipMapSampling)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
 
-            DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, generateMipmaps, mipSampling, scratchSurface, progressCallback);
+            DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
         }
 
         protected override bool IsReflexive(PropertyBasedSaveConfigToken token)
@@ -115,6 +119,7 @@ namespace DdsFileTypePlus
             FileFormat,
             BC7CompressionMode,
             ErrorMetric,
+            CubeMap,
             GenerateMipMaps,
             MipMapResamplingAlgorithm
         }

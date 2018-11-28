@@ -39,6 +39,8 @@ namespace DdsFileTypePlus
             public DdsErrorMetric errorMetric;
             public BC7CompressionMode compressionMode;
             [MarshalAs(UnmanagedType.U1)]
+            public bool cubeMap;
+            [MarshalAs(UnmanagedType.U1)]
             public bool generateMipmaps;
             public MipMapSampling mipmapSampling;
         }
@@ -170,6 +172,7 @@ namespace DdsFileTypePlus
             DdsFileFormat format,
             DdsErrorMetric errorMetric,
             BC7CompressionMode compressionMode,
+            bool cubeMap,
             bool generateMipmaps,
             MipMapSampling sampling,
             Surface scratchSurface,
@@ -190,7 +193,7 @@ namespace DdsFileTypePlus
                 };
             }
 
-            SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, generateMipmaps, sampling, output, ddsProgress);
+            SaveDdsFile(scratchSurface, format, errorMetric, compressionMode, cubeMap, generateMipmaps, sampling, output, ddsProgress);
         }
 
         private static void LoadDdsFile(Stream stream, ref DDSLoadInfo info)
@@ -250,6 +253,7 @@ namespace DdsFileTypePlus
             DdsFileFormat format,
             DdsErrorMetric errorMetric,
             BC7CompressionMode compressionMode,
+            bool cubeMap,
             bool generateMipmaps,
             MipMapSampling mipMapSampling,
             Stream output,
@@ -264,6 +268,7 @@ namespace DdsFileTypePlus
                 format = format,
                 errorMetric = errorMetric,
                 compressionMode = compressionMode,
+                cubeMap = cubeMap && IsCrossedCubeMapSize(surface),
                 generateMipmaps = generateMipmaps,
                 mipmapSampling = mipMapSampling
             };
@@ -296,6 +301,26 @@ namespace DdsFileTypePlus
             {
                 Marshal.ThrowExceptionForHR(hr);
             }
+        }
+
+        private static bool IsCrossedCubeMapSize(Surface surface)
+        {
+            // A crossed image cube map must have a 4:3 aspect ratio for horizontal cube maps
+            // or a 3:4 aspect ratio for vertical cube maps, with the cube map images being square.
+            //
+            // For example, a horizontal crossed image with 256 x 256 pixel cube maps
+            // would have a width of 1024 and a height of 768.
+
+            if (surface.Width > surface.Height)
+            {
+                return (surface.Width / 4) == (surface.Height / 3);
+            }
+            else if (surface.Height > surface.Width)
+            {
+                return (surface.Width / 3) == (surface.Height / 4);
+            }
+
+            return false;
         }
 
         private sealed class StreamIOCallbacks

@@ -89,6 +89,7 @@ extern "C" {
 		DdsFileFormat format;
 		DdsErrorMetric errorMetric;
 		BC7CompressionMode compressionMode;
+		bool cubeMap;
 		bool generateMipmaps;
 		MipmapSampling mipmapSampling;
 	};

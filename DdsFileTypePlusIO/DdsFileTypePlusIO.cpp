@@ -61,6 +61,12 @@ namespace
 			return DXGI_FORMAT_R8G8B8A8_UNORM;
 		}
 	}
+
+	struct Point
+	{
+		size_t x;
+		size_t y;
+	};
 }
 
 HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
@@ -174,6 +180,56 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 		}
 	}
 
+	if (info.IsCubemap())
+	{
+		size_t width = info.width;
+		size_t height = info.height;
+
+		// The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
+		// Setup the offsets used to convert the cube map faces to a horizontal crossed image.
+		// A horizontal crossed image uses the following layout:
+		//
+		//		  [ +Y ]
+		//	[ -X ][ +Z ][ +X ][ -Z ]
+		//		  [ -Y ]
+		//
+
+		Point cubeMapOffsets[6] =
+		{
+			{ width * 2, height },	// +X
+			{ 0, height },			// -X
+			{ width, 0 },			// +Y
+			{ width, height * 2 },	// -Y
+			{ width, height },		// +Z
+			{ width * 3, height }	// -Z
+		};
+
+		std::unique_ptr<ScratchImage> flattenedCubeMap(new(std::nothrow) ScratchImage);
+
+		if (flattenedCubeMap == nullptr)
+		{
+			return E_OUTOFMEMORY;
+		}
+		flattenedCubeMap->Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width * 4, height * 3, 1, 1, DDS_FLAGS_NONE);
+
+		const Rect srcRect = { 0, 0, width, height };
+		const Image* destinationImage = flattenedCubeMap->GetImage(0, 0, 0);
+
+		// Initialize the image as completely transparent.
+		memset(destinationImage->pixels, 0, destinationImage->slicePitch);
+
+		for (size_t i = 0; i < 6; i++)
+		{
+			const Image* face = targetImage->GetImage(0, i, 0);
+			const Point& offset = cubeMapOffsets[i];
+
+			CopyRectangle(*face, srcRect, *destinationImage, TEX_FILTER_DEFAULT, offset.x, offset.y);
+		}
+
+		info = flattenedCubeMap->GetMetadata();
+		targetImage.swap(flattenedCubeMap);
+	}
+
 	const Image* firstImage = targetImage->GetImage(0, 0, 0);
 
 	const size_t outBufferSize = firstImage->slicePitch;
@@ -225,7 +281,35 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
 		return E_OUTOFMEMORY;
 	}
 
-	HRESULT hr = image->Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, input->width, input->height, 1, 1, DDS_FLAGS_NONE);
+	TexMetadata inputMetaData = {};
+	if (input->cubeMap)
+	{
+		if (input->width > input->height)
+		{
+			inputMetaData.width = input->width / 4;
+			inputMetaData.height = input->height / 3;
+		}
+		else
+		{
+			inputMetaData.width = input->width / 3;
+			inputMetaData.height = input->height / 4;
+		}
+
+		inputMetaData.arraySize = 6;
+		inputMetaData.miscFlags |= TEX_MISC_TEXTURECUBE;
+	}
+	else
+	{
+		inputMetaData.width = input->width;
+		inputMetaData.height = input->height;
+		inputMetaData.arraySize = 1;
+	}
+	inputMetaData.depth = 1;
+	inputMetaData.mipLevels = 1;
+	inputMetaData.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+	inputMetaData.dimension = TEX_DIMENSION_TEXTURE2D;
+
+	HRESULT hr = image->Initialize(inputMetaData, DDS_FLAGS_NONE);
 
 	if (FAILED(hr))
 	{
@@ -234,22 +318,89 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
 
 	const uint8_t* srcScan0 = reinterpret_cast<const uint8_t*>(input->scan0);
 
-	const Image* destImage = image->GetImage(0, 0, 0);
-
-	for (int y = 0; y < input->height; y++)
+	if (input->cubeMap)
 	{
-		const uint8_t* src = srcScan0 + (y * input->stride);
-		uint8_t* dst = destImage->pixels + (y * destImage->rowPitch);
+		// Split the crossed image into the individual cube map faces.
+		// The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
+		const size_t width = inputMetaData.width;
+		const size_t height = inputMetaData.height;
 
-		for (int x = 0; x < input->width; x++)
+		Point cubeMapOffsets[6];
+
+		if (input->width > input->height)
 		{
-			dst[0] = src[2];
-			dst[1] = src[1];
-			dst[2] = src[0];
-			dst[3] = src[3];
+			// Horizontal crossed image layout.
+			//
+			//		  [ +Y ]
+			//	[ -X ][ +Z ][ +X ][ -Z ]
+			//		  [ -Y ]
+			//
+			cubeMapOffsets[0] = { width * 2, height };	// +X
+			cubeMapOffsets[1] = { 0, height };			// -X
+			cubeMapOffsets[2] = { width, 0 };			// +Y
+			cubeMapOffsets[3] = { width, height * 2 };	// -Y
+			cubeMapOffsets[4] = { width, height };		// +Z
+			cubeMapOffsets[5] = { width * 3, height };	// -Z
+		}
+		else
+		{
+			// Vertical crossed image layout.
+			//
+			//		  [ +Y ]
+			//	[ +Z ][ +X ][ -Z ]
+			//		  [ -Y ]
+			//		  [ -X ]
+			//
+			cubeMapOffsets[0] = { width, height };		// +X
+			cubeMapOffsets[1] = { width, height * 3 };	// -X
+			cubeMapOffsets[2] = { width, 0 };			// +Y
+			cubeMapOffsets[3] = { width, height * 2 };	// -Y
+			cubeMapOffsets[4] = { 0, height };			// +Z
+			cubeMapOffsets[5] = { width * 2, height };	// -Z
+		}
 
-			src += 4;
-			dst += 4;
+		for (size_t i = 0; i < 6; i++)
+		{
+			const Image* cubeMapImage = image->GetImage(0, i, 0);
+			const Point& srcStartOffset = cubeMapOffsets[i];
+
+			for (size_t y = 0; y < height; y++)
+			{
+				const uint8_t* src = srcScan0 + ((srcStartOffset.y + y) * input->stride) + (srcStartOffset.x * 4);
+				uint8_t* dst = cubeMapImage->pixels + (y * cubeMapImage->rowPitch);
+
+				for (int x = 0; x < width; x++)
+				{
+					dst[0] = src[2];
+					dst[1] = src[1];
+					dst[2] = src[0];
+					dst[3] = src[3];
+
+					src += 4;
+					dst += 4;
+				}
+			}
+		}
+	}
+	else
+	{
+		const Image* destImage = image->GetImage(0, 0, 0);
+
+		for (int y = 0; y < input->height; y++)
+		{
+			const uint8_t* src = srcScan0 + (y * input->stride);
+			uint8_t* dst = destImage->pixels + (y * destImage->rowPitch);
+
+			for (int x = 0; x < input->width; x++)
+			{
+				dst[0] = src[2];
+				dst[1] = src[1];
+				dst[2] = src[0];
+				dst[3] = src[3];
+
+				src += 4;
+				dst += 4;
+			}
 		}
 	}
 
