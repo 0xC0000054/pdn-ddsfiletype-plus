@@ -80,7 +80,7 @@ namespace DdsFileTypePlus
             configUI.SetPropertyControlValue(PropertyNames.CubeMap, ControlInfoPropertyNames.DisplayName, string.Empty);
             configUI.SetPropertyControlValue(PropertyNames.CubeMap, ControlInfoPropertyNames.Description, "Cube Map from crossed image");
             configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.Description, "Generate MipMaps");
+            configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.Description, "Generate Mip Maps");
             configUI.SetPropertyControlValue(PropertyNames.MipMapResamplingAlgorithm, ControlInfoPropertyNames.DisplayName, string.Empty);
             configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(MipMapSampling.NearestNeighbor, "Nearest Neighbor");
             configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(MipMapSampling.Bicubic, "Bicubic");
