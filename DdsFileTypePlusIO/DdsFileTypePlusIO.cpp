@@ -347,16 +347,16 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
 			// Vertical crossed image layout.
 			//
 			//		  [ +Y ]
-			//	[ +Z ][ +X ][ -Z ]
+			//	[ -X ][ +Z ][ +X ]
 			//		  [ -Y ]
-			//		  [ -X ]
+			//		  [ -Z ]
 			//
-			cubeMapOffsets[0] = { width, height };		// +X
-			cubeMapOffsets[1] = { width, height * 3 };	// -X
+			cubeMapOffsets[0] = { width * 2, height };	// +X
+			cubeMapOffsets[1] = { 0, height };			// -X
 			cubeMapOffsets[2] = { width, 0 };			// +Y
 			cubeMapOffsets[3] = { width, height * 2 };	// -Y
-			cubeMapOffsets[4] = { 0, height };			// +Z
-			cubeMapOffsets[5] = { width * 2, height };	// -Z
+			cubeMapOffsets[4] = { width, height };		// +Z
+			cubeMapOffsets[5] = { width, height * 3 };	// -Z
 		}
 
 		for (size_t i = 0; i < 6; i++)
