@@ -194,7 +194,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 		//		  [ -Y ]
 		//
 
-		Point cubeMapOffsets[6] =
+		const Point cubeMapOffsets[6] =
 		{
 			{ width * 2, height },	// +X
 			{ 0, height },			// -X
