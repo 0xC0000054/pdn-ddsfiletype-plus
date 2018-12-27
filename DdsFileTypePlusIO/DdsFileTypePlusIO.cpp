@@ -210,7 +210,11 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 		{
 			return E_OUTOFMEMORY;
 		}
-		flattenedCubeMap->Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width * 4, height * 3, 1, 1, DDS_FLAGS_NONE);
+		hr = flattenedCubeMap->Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width * 4, height * 3, 1, 1, DDS_FLAGS_NONE);
+		if (FAILED(hr))
+		{
+			return hr;
+		}
 
 		const Rect srcRect = { 0, 0, width, height };
 		const Image* destinationImage = flattenedCubeMap->GetImage(0, 0, 0);
