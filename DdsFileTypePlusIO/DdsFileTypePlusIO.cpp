@@ -77,14 +77,14 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 	}
 
 	TexMetadata info;
-	std::unique_ptr<ScratchImage> ddsCompressedImage(new(std::nothrow) ScratchImage);
+	std::unique_ptr<ScratchImage> ddsImage(new(std::nothrow) ScratchImage);
 
-	if (ddsCompressedImage == nullptr)
+	if (ddsImage == nullptr)
 	{
 		return E_OUTOFMEMORY;
 	}
 
-	HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_NONE, &info, *ddsCompressedImage);
+	HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_NONE, &info, *ddsImage);
 
 	if (FAILED(hr))
 	{
@@ -100,7 +100,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 			return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 		}
 
-		ddsCompressedImage->OverrideFormat(info.format);
+		ddsImage->OverrideFormat(info.format);
 	}
 
 	if (IsPlanar(info.format))
@@ -112,7 +112,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 			return E_OUTOFMEMORY;
 		}
 
-		hr = ConvertToSinglePlane(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), info, *interleavedImage);
+		hr = ConvertToSinglePlane(ddsImage->GetImages(), ddsImage->GetImageCount(), info, *interleavedImage);
 
 		if (FAILED(hr))
 		{
@@ -120,7 +120,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 		}
 
 		info = interleavedImage->GetMetadata();
-		ddsCompressedImage.swap(interleavedImage);
+		ddsImage.swap(interleavedImage);
 	}
 
 	const DXGI_FORMAT targetFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -133,17 +133,17 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
 
 	if (info.format == targetFormat)
 	{
-		targetImage.swap(ddsCompressedImage);
+		targetImage.swap(ddsImage);
 	}
 	else
 	{
 		if (IsCompressed(info.format))
 		{
-			hr = Decompress(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), ddsCompressedImage->GetMetadata(), targetFormat, *targetImage);
+			hr = Decompress(ddsImage->GetImages(), ddsImage->GetImageCount(), ddsImage->GetMetadata(), targetFormat, *targetImage);
 		}
 		else
 		{
-			hr = Convert(ddsCompressedImage->GetImages(), ddsCompressedImage->GetImageCount(), ddsCompressedImage->GetMetadata(), targetFormat,
+			hr = Convert(ddsImage->GetImages(), ddsImage->GetImageCount(), ddsImage->GetMetadata(), targetFormat,
 				TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *targetImage, nullptr);
 		}
 
