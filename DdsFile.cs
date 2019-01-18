@@ -78,16 +78,18 @@ namespace DdsFileTypePlus
 
         private static class DdsIO_x86
         {
+            private const string DllName = "DdsFileTypePlusIO_x86.dll";
+
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern void FreeLoadInfo([In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("DdsFileTypePlusIO_x86.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In] IOCallbacks callbacks,
@@ -96,16 +98,18 @@ namespace DdsFileTypePlus
 
         private static class DdsIO_x64
         {
+            private const string DllName = "DdsFileTypePlusIO_x64.dll";
+
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern void FreeLoadInfo([In, Out] ref DDSLoadInfo info);
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
-            [DllImport("DdsFileTypePlusIO_x64.dll", CallingConvention = CallingConvention.StdCall)]
+            [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern int Save(
                 [In] ref DDSSaveInfo input,
                 [In] IOCallbacks callbacks,
