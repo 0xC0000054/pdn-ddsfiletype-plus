@@ -17,17 +17,17 @@
 class DirectComputeHelper
 {
 public:
-	DirectComputeHelper();
-	~DirectComputeHelper();
+    DirectComputeHelper();
+    ~DirectComputeHelper();
 
-	DirectComputeHelper(const DirectComputeHelper&) = delete;
-	DirectComputeHelper& operator=(const DirectComputeHelper&) = delete;
+    DirectComputeHelper(const DirectComputeHelper&) = delete;
+    DirectComputeHelper& operator=(const DirectComputeHelper&) = delete;
 
-	bool ComputeDeviceAvailable() const;
-	ID3D11Device* GetComputeDevice() const;
-	void Release();
+    bool ComputeDeviceAvailable() const;
+    ID3D11Device* GetComputeDevice() const;
+    void Release();
 
 private:
-	HMODULE hModD3D11;
-	ID3D11Device* computeDevice;
+    HMODULE hModD3D11;
+    ID3D11Device* computeDevice;
 };
