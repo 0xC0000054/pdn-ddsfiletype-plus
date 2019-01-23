@@ -354,7 +354,7 @@ namespace DdsFileTypePlus
 
                 do
                 {
-                    int bytesRead = stream.Read(bytes, 0, (int)Math.Min(MaxBufferSize, remaining));
+                    int bytesRead = this.stream.Read(bytes, 0, (int)Math.Min(MaxBufferSize, remaining));
 
                     if (bytesRead == 0)
                     {
@@ -387,7 +387,7 @@ namespace DdsFileTypePlus
 
                         Marshal.Copy(new IntPtr(buffer.ToInt64() + offset), bytes, 0, copySize);
 
-                        stream.Write(bytes, 0, copySize);
+                        this.stream.Write(bytes, 0, copySize);
 
                         offset += copySize;
                         remaining -= copySize;
@@ -400,12 +400,12 @@ namespace DdsFileTypePlus
 
             public long Seek(long offset, int origin)
             {
-                return stream.Seek(offset, (SeekOrigin)origin);
+                return this.stream.Seek(offset, (SeekOrigin)origin);
             }
 
             public long GetSize()
             {
-                return stream.Length;
+                return this.stream.Length;
             }
         }
     }
