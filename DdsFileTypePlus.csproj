@@ -54,6 +54,7 @@
     <Compile Include="DdsFileFormat.cs" />
     <Compile Include="DdsFileType.cs" />
     <Compile Include="DdsFileTypeFactory.cs" />
+    <Compile Include="DdsNative.cs" />
     <Compile Include="MipMapSampling.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
