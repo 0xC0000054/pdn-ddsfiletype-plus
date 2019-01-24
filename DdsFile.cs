@@ -97,7 +97,7 @@ namespace DdsFileTypePlus
                 mipmapSampling = sampling
             };
 
-            DdsNative.Save(ref info, output, ddsProgress);
+            DdsNative.Save(info, output, ddsProgress);
         }
 
         private static bool IsCrossedCubeMapSize(Surface surface)

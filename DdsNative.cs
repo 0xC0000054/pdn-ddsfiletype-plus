@@ -96,7 +96,7 @@ namespace DdsFileTypePlus
         }
 
         [StructLayout(LayoutKind.Sequential)]
-        public struct DDSSaveInfo
+        public sealed class DDSSaveInfo
         {
             public IntPtr scan0;
             public int width;
@@ -167,7 +167,7 @@ namespace DdsFileTypePlus
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern int Save(
-                [In] ref DDSSaveInfo input,
+                [In] DDSSaveInfo input,
                 [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
@@ -187,7 +187,7 @@ namespace DdsFileTypePlus
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
             internal static extern int Save(
-                [In] ref DDSSaveInfo input,
+                [In] DDSSaveInfo input,
                 [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
@@ -247,7 +247,7 @@ namespace DdsFileTypePlus
         }
 
         public static void Save(
-            ref DDSSaveInfo info,
+            DDSSaveInfo info,
             Stream output,
             DdsProgressCallback progressCallback)
         {
@@ -264,11 +264,11 @@ namespace DdsFileTypePlus
 
             if (IntPtr.Size == 8)
             {
-                hr = DdsIO_x64.Save(ref info, callbacks, progressCallback);
+                hr = DdsIO_x64.Save(info, callbacks, progressCallback);
             }
             else
             {
-                hr = DdsIO_x86.Save(ref info, callbacks, progressCallback);
+                hr = DdsIO_x86.Save(info, callbacks, progressCallback);
             }
 
             GC.KeepAlive(streamIO);
