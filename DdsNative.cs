@@ -30,37 +30,13 @@ namespace DdsFileTypePlus
             private DDSLoadInfo info;
             private bool disposed;
 
-            public int Width
-            {
-                get
-                {
-                    return this.info.width;
-                }
-            }
+            public int Width => this.info.width;
 
-            public int Height
-            {
-                get
-                {
-                    return this.info.height;
-                }
-            }
+            public int Height => this.info.height;
 
-            public int Stride
-            {
-                get
-                {
-                    return this.info.stride;
-                }
-            }
+            public int Stride => this.info.stride;
 
-            public IntPtr Scan0
-            {
-                get
-                {
-                    return this.info.scan0;
-                }
-            }
+            public IntPtr Scan0 => this.info.scan0;
 
             private DdsImage(DDSLoadInfo info)
             {
