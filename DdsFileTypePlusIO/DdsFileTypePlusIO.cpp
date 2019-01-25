@@ -285,35 +285,35 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
         return E_OUTOFMEMORY;
     }
 
-    TexMetadata inputMetaData = {};
+    TexMetadata inputMetadata = {};
     if (input->cubeMap)
     {
         if (input->width > input->height)
         {
-            inputMetaData.width = input->width / 4;
-            inputMetaData.height = input->height / 3;
+            inputMetadata.width = input->width / 4;
+            inputMetadata.height = input->height / 3;
         }
         else
         {
-            inputMetaData.width = input->width / 3;
-            inputMetaData.height = input->height / 4;
+            inputMetadata.width = input->width / 3;
+            inputMetadata.height = input->height / 4;
         }
 
-        inputMetaData.arraySize = 6;
-        inputMetaData.miscFlags |= TEX_MISC_TEXTURECUBE;
+        inputMetadata.arraySize = 6;
+        inputMetadata.miscFlags |= TEX_MISC_TEXTURECUBE;
     }
     else
     {
-        inputMetaData.width = input->width;
-        inputMetaData.height = input->height;
-        inputMetaData.arraySize = 1;
+        inputMetadata.width = input->width;
+        inputMetadata.height = input->height;
+        inputMetadata.arraySize = 1;
     }
-    inputMetaData.depth = 1;
-    inputMetaData.mipLevels = 1;
-    inputMetaData.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    inputMetaData.dimension = TEX_DIMENSION_TEXTURE2D;
+    inputMetadata.depth = 1;
+    inputMetadata.mipLevels = 1;
+    inputMetadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    inputMetadata.dimension = TEX_DIMENSION_TEXTURE2D;
 
-    HRESULT hr = image->Initialize(inputMetaData, DDS_FLAGS_NONE);
+    HRESULT hr = image->Initialize(inputMetadata, DDS_FLAGS_NONE);
 
     if (FAILED(hr))
     {
@@ -326,8 +326,8 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
     {
         // Split the crossed image into the individual cube map faces.
         // The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
-        const size_t width = inputMetaData.width;
-        const size_t height = inputMetaData.height;
+        const size_t width = inputMetadata.width;
+        const size_t height = inputMetadata.height;
 
         Point cubeMapOffsets[6];
 
