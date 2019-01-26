@@ -62,6 +62,22 @@ namespace
         }
     }
 
+    struct ColorBgra32
+    {
+        uint8_t b;
+        uint8_t g;
+        uint8_t r;
+        uint8_t a;
+    };
+
+    struct ColorRgba32
+    {
+        uint8_t r;
+        uint8_t g;
+        uint8_t b;
+        uint8_t a;
+    };
+
     struct Point
     {
         size_t x;
@@ -370,18 +386,18 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
 
             for (size_t y = 0; y < height; ++y)
             {
-                const uint8_t* src = srcScan0 + ((srcStartOffset.y + y) * input->stride) + (srcStartOffset.x * 4);
-                uint8_t* dst = cubeMapImage->pixels + (y * cubeMapImage->rowPitch);
+                const ColorBgra32* src = reinterpret_cast<const ColorBgra32*>(srcScan0 + ((srcStartOffset.y + y) * input->stride) + (srcStartOffset.x * 4));
+                ColorRgba32* dst = reinterpret_cast<ColorRgba32*>(cubeMapImage->pixels + (y * cubeMapImage->rowPitch));
 
                 for (int x = 0; x < width; ++x)
                 {
-                    dst[0] = src[2];
-                    dst[1] = src[1];
-                    dst[2] = src[0];
-                    dst[3] = src[3];
+                    dst->r = src->r;
+                    dst->g = src->g;
+                    dst->b = src->b;
+                    dst->a = src->a;
 
-                    src += 4;
-                    dst += 4;
+                    ++src;
+                    ++dst;
                 }
             }
         }
@@ -392,18 +408,18 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
 
         for (int y = 0; y < input->height; ++y)
         {
-            const uint8_t* src = srcScan0 + (y * input->stride);
-            uint8_t* dst = destImage->pixels + (y * destImage->rowPitch);
+            const ColorBgra32* src = reinterpret_cast<const ColorBgra32*>(srcScan0 + (y * input->stride));
+            ColorRgba32* dst = reinterpret_cast<ColorRgba32*>(destImage->pixels + (y * destImage->rowPitch));
 
             for (int x = 0; x < input->width; ++x)
             {
-                dst[0] = src[2];
-                dst[1] = src[1];
-                dst[2] = src[0];
-                dst[3] = src[3];
+                dst->r = src->r;
+                dst->g = src->g;
+                dst->b = src->b;
+                dst->a = src->a;
 
-                src += 4;
-                dst += 4;
+                ++src;
+                ++dst;
             }
         }
     }
