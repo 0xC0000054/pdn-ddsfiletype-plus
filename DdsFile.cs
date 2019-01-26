@@ -33,12 +33,12 @@ namespace DdsFileTypePlus
                 byte* scan0 = (byte*)image.Scan0;
                 int stride = image.Stride;
 
-                for (int y = 0; y < surface.Height; y++)
+                for (int y = 0; y < surface.Height; ++y)
                 {
                     byte* src = scan0 + (y * stride);
                     ColorBgra* dst = surface.GetRowAddressUnchecked(y);
 
-                    for (int x = 0; x < surface.Width; x++)
+                    for (int x = 0; x < surface.Width; ++x)
                     {
                         dst->R = src[0];
                         dst->G = src[1];
@@ -46,7 +46,7 @@ namespace DdsFileTypePlus
                         dst->A = src[3];
 
                         src += 4;
-                        dst++;
+                        ++dst;
                     }
                 }
 

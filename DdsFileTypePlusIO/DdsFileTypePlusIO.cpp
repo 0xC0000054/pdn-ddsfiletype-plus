@@ -222,7 +222,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         // Initialize the image as completely transparent.
         memset(destinationImage->pixels, 0, destinationImage->slicePitch);
 
-        for (size_t i = 0; i < 6; i++)
+        for (size_t i = 0; i < 6; ++i)
         {
             const Image* face = targetImage->GetImage(0, i, 0);
             const Point& offset = cubeMapOffsets[i];
@@ -363,17 +363,17 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
             cubeMapOffsets[5] = { width, height * 3 };	// -Z
         }
 
-        for (size_t i = 0; i < 6; i++)
+        for (size_t i = 0; i < 6; ++i)
         {
             const Image* cubeMapImage = image->GetImage(0, i, 0);
             const Point& srcStartOffset = cubeMapOffsets[i];
 
-            for (size_t y = 0; y < height; y++)
+            for (size_t y = 0; y < height; ++y)
             {
                 const uint8_t* src = srcScan0 + ((srcStartOffset.y + y) * input->stride) + (srcStartOffset.x * 4);
                 uint8_t* dst = cubeMapImage->pixels + (y * cubeMapImage->rowPitch);
 
-                for (int x = 0; x < width; x++)
+                for (int x = 0; x < width; ++x)
                 {
                     dst[0] = src[2];
                     dst[1] = src[1];
@@ -390,12 +390,12 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
     {
         const Image* destImage = image->GetImage(0, 0, 0);
 
-        for (int y = 0; y < input->height; y++)
+        for (int y = 0; y < input->height; ++y)
         {
             const uint8_t* src = srcScan0 + (y * input->stride);
             uint8_t* dst = destImage->pixels + (y * destImage->rowPitch);
 
-            for (int x = 0; x < input->width; x++)
+            for (int x = 0; x < input->width; ++x)
             {
                 dst[0] = src[2];
                 dst[1] = src[1];
