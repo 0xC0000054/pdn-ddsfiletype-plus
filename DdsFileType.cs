@@ -20,7 +20,10 @@ namespace DdsFileTypePlus
 {
     public sealed class DdsFileType : PropertyBasedFileType
     {
-        public DdsFileType() : base("DirectDraw Surface (DDS)", FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving | FileTypeFlags.SavesWithProgress, new string[] { ".dds2" })
+        public DdsFileType() :
+            base("DirectDraw Surface (DDS)",
+                 FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving | FileTypeFlags.SavesWithProgress,
+                 new string[] { ".dds2" })
         {
         }
 
@@ -38,8 +41,29 @@ namespace DdsFileTypePlus
 
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
             {
-                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.BC7CompressionMode, PropertyNames.FileFormat, new object[] { DdsFileFormat.BC6H, DdsFileFormat.BC7, DdsFileFormat.BC7Srgb }, true),
-                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(PropertyNames.ErrorMetric, PropertyNames.FileFormat, new object[] { DdsFileFormat.B8G8R8A8, DdsFileFormat.B8G8R8X8, DdsFileFormat.R8G8B8A8, DdsFileFormat.B5G5R5A1, DdsFileFormat.B4G4R4A4, DdsFileFormat.B5G6R5 }, false),
+                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
+                    PropertyNames.BC7CompressionMode,
+                    PropertyNames.FileFormat,
+                    new object[]
+                    {
+                        DdsFileFormat.BC6H,
+                        DdsFileFormat.BC7,
+                        DdsFileFormat.BC7Srgb
+                    },
+                    true),
+                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
+                    PropertyNames.ErrorMetric,
+                    PropertyNames.FileFormat,
+                    new object[]
+                    {
+                        DdsFileFormat.B8G8R8A8,
+                        DdsFileFormat.B8G8R8X8,
+                        DdsFileFormat.R8G8B8A8,
+                        DdsFileFormat.B5G5R5A1,
+                        DdsFileFormat.B4G4R4A4,
+                        DdsFileFormat.B5G6R5
+                    },
+                    false),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true)
             };
 
