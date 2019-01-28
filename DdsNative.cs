@@ -23,6 +23,8 @@ namespace DdsFileTypePlus
             DdsImage.Initalize();
         }
 
+        // Use a factory delegate to hide the DdsImage constructor from external code.
+        // See https://stackoverflow.com/a/1664853
         private static Func<DDSLoadInfo, DdsImage> DdsImageFactory;
 
         public sealed class DdsImage : IDisposable
