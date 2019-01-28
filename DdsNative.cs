@@ -38,7 +38,18 @@ namespace DdsFileTypePlus
 
             public int Stride => this.info.stride;
 
-            public IntPtr Scan0 => this.info.scan0;
+            public IntPtr Scan0
+            {
+                get
+                {
+                    if (this.disposed)
+                    {
+                        throw new ObjectDisposedException(nameof(DdsImage));
+                    }
+
+                    return this.info.scan0;
+                }
+            }
 
             private DdsImage(DDSLoadInfo info)
             {
