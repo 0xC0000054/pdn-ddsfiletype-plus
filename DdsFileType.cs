@@ -36,7 +36,7 @@ namespace DdsFileTypePlus
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
                 new BooleanProperty(PropertyNames.CubeMap, false),
                 new BooleanProperty(PropertyNames.GenerateMipMaps, false),
-                StaticListChoiceProperty.CreateForEnum(PropertyNames.MipMapResamplingAlgorithm, MipMapSampling.Fant, false)
+                StaticListChoiceProperty.CreateForEnum(PropertyNames.MipMapResamplingAlgorithm, ResamplingAlgorithm.Fant, false)
             };
 
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
@@ -106,10 +106,11 @@ namespace DdsFileTypePlus
             configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.DisplayName, string.Empty);
             configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.Description, "Generate Mip Maps");
             configUI.SetPropertyControlValue(PropertyNames.MipMapResamplingAlgorithm, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(MipMapSampling.NearestNeighbor, "Nearest Neighbor");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(MipMapSampling.Bicubic, "Bicubic");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(MipMapSampling.Bilinear, "Bilinear");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(MipMapSampling.Fant, "Fant");
+            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, "Nearest Neighbor");
+            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.Bicubic, "Bicubic");
+            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.Bilinear, "Bilinear");
+            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.Fant, "Fant");
+            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.SuperSampling, "Super Sampling");
 
             return configUI;
         }
@@ -126,7 +127,7 @@ namespace DdsFileTypePlus
             DdsErrorMetric errorMetric = (DdsErrorMetric)token.GetProperty(PropertyNames.ErrorMetric).Value;
             bool cubeMap = token.GetProperty<BooleanProperty>(PropertyNames.CubeMap).Value;
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
-            MipMapSampling mipSampling = (MipMapSampling)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
+            ResamplingAlgorithm mipSampling = (ResamplingAlgorithm)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
 
             DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
         }

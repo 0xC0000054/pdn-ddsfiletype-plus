@@ -55,8 +55,9 @@
     <Compile Include="DdsFileType.cs" />
     <Compile Include="DdsFileTypeFactory.cs" />
     <Compile Include="DdsNative.cs" />
-    <Compile Include="MipMapSampling.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Texture.cs" />
+    <Compile Include="TextureCollection.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>

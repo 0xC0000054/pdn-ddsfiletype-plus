@@ -78,6 +78,88 @@ namespace
         uint8_t a;
     };
 
+    HRESULT InitializeFromSaveInfo(
+        const DDSSaveInfo* info,
+        const DDSBitmapData* sourceImageData,
+        const uint32_t sourceImageDataLength,
+        ScratchImage& destination)
+    {
+        if (info == nullptr || sourceImageData == nullptr)
+        {
+            return E_INVALIDARG;
+        }
+
+        TexMetadata metadata = {};
+
+        metadata.width = info->width;
+        metadata.height = info->height;
+        metadata.depth = 1;
+        metadata.arraySize = info->arraySize;
+        metadata.mipLevels = info->mipLevels;
+        metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+        metadata.dimension = TEX_DIMENSION_TEXTURE2D;
+        if (info->cubeMap)
+        {
+            metadata.miscFlags |= TEX_MISC_TEXTURECUBE;
+        }
+
+        HRESULT hr = destination.Initialize(metadata);
+        if (FAILED(hr))
+        {
+            return hr;
+        }
+
+        const Image* destImages = destination.GetImages();
+        const size_t destImageCount = destination.GetImageCount();
+
+        if (sourceImageDataLength != destImageCount)
+        {
+            destination.Release();
+            return E_FAIL;
+        }
+
+        for (size_t item = 0; item < metadata.arraySize; ++item)
+        {
+            for (size_t mip = 0; mip < metadata.mipLevels; ++mip)
+            {
+                const size_t index = metadata.ComputeIndex(mip, item, 0);
+                if (index >= destImageCount)
+                {
+                    destination.Release();
+                    return E_FAIL;
+                }
+
+                const DDSBitmapData& srcImage = sourceImageData[index];
+                const Image& destImage = destImages[index];
+
+                if (srcImage.width != destImage.width || srcImage.height != destImage.height)
+                {
+                    destination.Release();
+                    return E_FAIL;
+                }
+
+                for (size_t y = 0; y < srcImage.height; ++y)
+                {
+                    const ColorBgra32* src = reinterpret_cast<const ColorBgra32*>(srcImage.scan0 + (y * srcImage.stride));
+                    ColorRgba32* dst = reinterpret_cast<ColorRgba32*>(destImage.pixels + (y * destImage.rowPitch));
+
+                    for (size_t x = 0; x < srcImage.width; ++x)
+                    {
+                        dst->r = src->r;
+                        dst->g = src->g;
+                        dst->b = src->b;
+                        dst->a = src->a;
+
+                        ++src;
+                        ++dst;
+                    }
+                }
+            }
+        }
+
+        return S_OK;
+    }
+
     struct Point
     {
         size_t x;
@@ -287,9 +369,14 @@ void __stdcall FreeLoadInfo(DDSLoadInfo* info)
     }
 }
 
-HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbacks, ProgressProc progressFn)
+HRESULT __stdcall Save(
+    const DDSSaveInfo* input,
+    const DDSBitmapData* imageData,
+    const uint32_t imageDataLength,
+    const ImageIOCallbacks* callbacks,
+    ProgressProc progressFn)
 {
-    if (input == nullptr || callbacks == nullptr)
+    if (input == nullptr || imageData == nullptr || callbacks == nullptr)
     {
         return E_INVALIDARG;
     }
@@ -301,168 +388,11 @@ HRESULT __stdcall Save(const DDSSaveInfo* input, const ImageIOCallbacks* callbac
         return E_OUTOFMEMORY;
     }
 
-    TexMetadata inputMetadata = {};
-    if (input->cubeMap)
-    {
-        if (input->width > input->height)
-        {
-            inputMetadata.width = input->width / 4;
-            inputMetadata.height = input->height / 3;
-        }
-        else
-        {
-            inputMetadata.width = input->width / 3;
-            inputMetadata.height = input->height / 4;
-        }
-
-        inputMetadata.arraySize = 6;
-        inputMetadata.miscFlags |= TEX_MISC_TEXTURECUBE;
-    }
-    else
-    {
-        inputMetadata.width = input->width;
-        inputMetadata.height = input->height;
-        inputMetadata.arraySize = 1;
-    }
-    inputMetadata.depth = 1;
-    inputMetadata.mipLevels = 1;
-    inputMetadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    inputMetadata.dimension = TEX_DIMENSION_TEXTURE2D;
-
-    HRESULT hr = image->Initialize(inputMetadata, DDS_FLAGS_NONE);
+    HRESULT hr = InitializeFromSaveInfo(input, imageData, imageDataLength, *image);
 
     if (FAILED(hr))
     {
         return hr;
-    }
-
-    const uint8_t* srcScan0 = reinterpret_cast<const uint8_t*>(input->scan0);
-
-    if (input->cubeMap)
-    {
-        // Split the crossed image into the individual cube map faces.
-        // The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
-        const size_t width = inputMetadata.width;
-        const size_t height = inputMetadata.height;
-
-        Point cubeMapOffsets[6];
-
-        if (input->width > input->height)
-        {
-            // Horizontal crossed image layout.
-            //
-            //		  [ +Y ]
-            //	[ -X ][ +Z ][ +X ][ -Z ]
-            //		  [ -Y ]
-            //
-            cubeMapOffsets[0] = { width * 2, height };	// +X
-            cubeMapOffsets[1] = { 0, height };			// -X
-            cubeMapOffsets[2] = { width, 0 };			// +Y
-            cubeMapOffsets[3] = { width, height * 2 };	// -Y
-            cubeMapOffsets[4] = { width, height };		// +Z
-            cubeMapOffsets[5] = { width * 3, height };	// -Z
-        }
-        else
-        {
-            // Vertical crossed image layout.
-            //
-            //		  [ +Y ]
-            //	[ -X ][ +Z ][ +X ]
-            //		  [ -Y ]
-            //		  [ -Z ]
-            //
-            cubeMapOffsets[0] = { width * 2, height };	// +X
-            cubeMapOffsets[1] = { 0, height };			// -X
-            cubeMapOffsets[2] = { width, 0 };			// +Y
-            cubeMapOffsets[3] = { width, height * 2 };	// -Y
-            cubeMapOffsets[4] = { width, height };		// +Z
-            cubeMapOffsets[5] = { width, height * 3 };	// -Z
-        }
-
-        for (size_t i = 0; i < 6; ++i)
-        {
-            const Image* cubeMapImage = image->GetImage(0, i, 0);
-            const Point& srcStartOffset = cubeMapOffsets[i];
-
-            for (size_t y = 0; y < height; ++y)
-            {
-                const ColorBgra32* src = reinterpret_cast<const ColorBgra32*>(srcScan0 + ((srcStartOffset.y + y) * input->stride) + (srcStartOffset.x * 4));
-                ColorRgba32* dst = reinterpret_cast<ColorRgba32*>(cubeMapImage->pixels + (y * cubeMapImage->rowPitch));
-
-                for (int x = 0; x < width; ++x)
-                {
-                    dst->r = src->r;
-                    dst->g = src->g;
-                    dst->b = src->b;
-                    dst->a = src->a;
-
-                    ++src;
-                    ++dst;
-                }
-            }
-        }
-    }
-    else
-    {
-        const Image* destImage = image->GetImage(0, 0, 0);
-
-        for (int y = 0; y < input->height; ++y)
-        {
-            const ColorBgra32* src = reinterpret_cast<const ColorBgra32*>(srcScan0 + (y * input->stride));
-            ColorRgba32* dst = reinterpret_cast<ColorRgba32*>(destImage->pixels + (y * destImage->rowPitch));
-
-            for (int x = 0; x < input->width; ++x)
-            {
-                dst->r = src->r;
-                dst->g = src->g;
-                dst->b = src->b;
-                dst->a = src->a;
-
-                ++src;
-                ++dst;
-            }
-        }
-    }
-
-    if (input->generateMipmaps)
-    {
-        DWORD filter = TEX_FILTER_DEFAULT | TEX_FILTER_SEPARATE_ALPHA;
-
-        switch (input->mipmapSampling)
-        {
-        case DDS_MIPMAP_SAMPLING_NEAREST_NEIGHBOR:
-            filter |= TEX_FILTER_POINT;
-            break;
-        case DDS_MIPMAP_SAMPLING_BILINEAR:
-            filter |= TEX_FILTER_LINEAR;
-            break;
-        case DDS_MIPMAP_SAMPLING_BICUBIC:
-            filter |= TEX_FILTER_CUBIC;
-            break;
-        case DDS_MIPMAP_SAMPLING_FANT:
-        default:
-            filter |= TEX_FILTER_FANT;
-            break;
-        }
-
-
-        std::unique_ptr<ScratchImage> mipImage(new(std::nothrow) ScratchImage);
-
-        if (mipImage == nullptr)
-        {
-            return E_OUTOFMEMORY;
-        }
-
-        const size_t allMipLevels = 0;
-
-        hr = GenerateMipMaps(image->GetImages(), image->GetImageCount(), image->GetMetadata(), filter, allMipLevels, *mipImage);
-
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        image.swap(mipImage);
     }
 
     const DXGI_FORMAT dxgiFormat = GetDXGIFormat(input->format);

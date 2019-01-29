@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+using PaintDotNet;
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -87,18 +88,15 @@ namespace DdsFileTypePlus
         [StructLayout(LayoutKind.Sequential)]
         public sealed class DDSSaveInfo
         {
-            public IntPtr scan0;
             public int width;
             public int height;
-            public int stride;
+            public int arraySize;
+            public int mipLevels;
             public DdsFileFormat format;
             public DdsErrorMetric errorMetric;
             public BC7CompressionMode compressionMode;
             [MarshalAs(UnmanagedType.U1)]
             public bool cubeMap;
-            [MarshalAs(UnmanagedType.U1)]
-            public bool generateMipmaps;
-            public MipMapSampling mipmapSampling;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -108,6 +106,27 @@ namespace DdsFileTypePlus
             public int width;
             public int height;
             public int stride;
+        }
+
+        private unsafe struct DDSBitmapData
+        {
+            public byte* scan0;
+            public uint width;
+            public uint height;
+            public uint stride;
+
+            public unsafe DDSBitmapData(Surface surface)
+            {
+                if (surface == null)
+                {
+                    throw new ArgumentNullException(nameof(surface));
+                }
+
+                this.scan0 = (byte*)surface.Scan0.VoidStar;
+                this.width = (uint)surface.Width;
+                this.height = (uint)surface.Height;
+                this.stride = (uint)surface.Stride;
+            }
         }
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
@@ -155,8 +174,10 @@ namespace DdsFileTypePlus
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-            internal static extern int Save(
+            internal static extern unsafe int Save(
                 [In] DDSSaveInfo input,
+                [In] DDSBitmapData* bitmapData,
+                [In] uint bitmapDataLength,
                 [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
@@ -175,8 +196,10 @@ namespace DdsFileTypePlus
 
             [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
             [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-            internal static extern int Save(
+            internal static extern unsafe int Save(
                 [In] DDSSaveInfo input,
+                [In] DDSBitmapData* bitmapData,
+                [In] uint bitmapDataLength,
                 [In] IOCallbacks callbacks,
                 [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
         }
@@ -237,6 +260,7 @@ namespace DdsFileTypePlus
 
         public static void Save(
             DDSSaveInfo info,
+            TextureCollection textures,
             Stream output,
             DdsProgressCallback progressCallback)
         {
@@ -249,15 +273,23 @@ namespace DdsFileTypePlus
                 GetSize = streamIO.GetSize
             };
 
+            DDSBitmapData[] bitmapData = CreateBitmapDataArray(textures, info.arraySize, info.mipLevels);
+
             int hr;
 
-            if (IntPtr.Size == 8)
+            unsafe
             {
-                hr = DdsIO_x64.Save(info, callbacks, progressCallback);
-            }
-            else
-            {
-                hr = DdsIO_x86.Save(info, callbacks, progressCallback);
+                fixed (DDSBitmapData* pBitmapData = bitmapData)
+                {
+                    if (IntPtr.Size == 8)
+                    {
+                        hr = DdsIO_x64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
+                    }
+                    else
+                    {
+                        hr = DdsIO_x86.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
+                    }
+                }
             }
 
             GC.KeepAlive(streamIO);
@@ -268,6 +300,25 @@ namespace DdsFileTypePlus
             {
                 Marshal.ThrowExceptionForHR(hr);
             }
+        }
+
+        private static DDSBitmapData[] CreateBitmapDataArray(TextureCollection textures, int arraySize, int mipLevels)
+        {
+            DDSBitmapData[] array = new DDSBitmapData[textures.Count];
+
+            for (int i = 0; i < arraySize; i++)
+            {
+                int startIndex = i * mipLevels;
+
+                for (int j = 0; j < mipLevels; j++)
+                {
+                    int index = startIndex + j;
+
+                    array[index] = new DDSBitmapData(textures[index].Surface);
+                }
+            }
+
+            return array;
         }
 
         private sealed class StreamIOCallbacks

@@ -72,31 +72,34 @@ extern "C" {
         BC7_COMPRESSION_MODE_SLOW
     };
 
-    enum MipmapSampling
-    {
-        DDS_MIPMAP_SAMPLING_NEAREST_NEIGHBOR,
-        DDS_MIPMAP_SAMPLING_BILINEAR,
-        DDS_MIPMAP_SAMPLING_BICUBIC,
-        DDS_MIPMAP_SAMPLING_FANT
-    };
-
     struct DDSSaveInfo
     {
-        void* scan0;
         int32_t width;
         int32_t height;
-        int32_t stride;
+        int32_t arraySize;
+        int32_t mipLevels;
         DdsFileFormat format;
         DdsErrorMetric errorMetric;
         BC7CompressionMode compressionMode;
         bool cubeMap;
-        bool generateMipmaps;
-        MipmapSampling mipmapSampling;
+    };
+
+    struct DDSBitmapData
+    {
+        uint8_t* scan0;
+        uint32_t width;
+        uint32_t height;
+        uint32_t stride;
     };
 
     __declspec(dllexport) HRESULT __stdcall Load(const DirectX::ImageIOCallbacks* callbacks, DDSLoadInfo* info);
     __declspec(dllexport) void __stdcall FreeLoadInfo(DDSLoadInfo* info);
-    __declspec(dllexport) HRESULT __stdcall Save(const DDSSaveInfo* input, const DirectX::ImageIOCallbacks* callbacks, DirectX::ProgressProc progressFn);
+    __declspec(dllexport) HRESULT __stdcall Save(
+        const DDSSaveInfo* input,
+        const DDSBitmapData* imageData,
+        const uint32_t imageDataLength,
+        const DirectX::ImageIOCallbacks* callbacks,
+        DirectX::ProgressProc progressFn);
 
 #ifdef __cplusplus
 }
