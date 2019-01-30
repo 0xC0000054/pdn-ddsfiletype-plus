@@ -184,6 +184,13 @@ namespace DdsFileTypePlus
                     Point[] cubeMapOffsets = new Point[6];
 
                     // Split the crossed image into the individual cube map faces.
+                    //
+                    // The crossed image uses the same layout as the Intel® Texture Works DDS plug-in for Adobe Photoshop®
+                    // (https://github.com/GameTechDev/Intel-Texture-Works-Plugin)
+                    //
+                    // The DirectXTex texassemble utility and Unity® both use different layouts, so there does not appear
+                    // to be any common standard for a crossed image.
+                    //
                     // The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
 
                     if (scratchSurface.Width > scratchSurface.Height)
