@@ -306,11 +306,11 @@ namespace DdsFileTypePlus
         {
             DDSBitmapData[] array = new DDSBitmapData[textures.Count];
 
-            for (int i = 0; i < arraySize; i++)
+            for (int i = 0; i < arraySize; ++i)
             {
                 int startIndex = i * mipLevels;
 
-                for (int j = 0; j < mipLevels; j++)
+                for (int j = 0; j < mipLevels; ++j)
                 {
                     int index = startIndex + j;
 
