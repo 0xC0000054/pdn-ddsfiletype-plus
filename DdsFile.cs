@@ -283,6 +283,7 @@ namespace DdsFileTypePlus
             try
             {
                 mipSurface = new Surface(mipWidth, mipHeight);
+                mipSurface.FitSurface(algorithm, fullSize);
 
                 if (HasTransparency(fullSize))
                 {
@@ -290,7 +291,6 @@ namespace DdsFileTypePlus
                     // to retain their RGB color values, this behavior is required by some programs that use DDS files.
 
                     using (Surface color = new Surface(mipWidth, mipHeight))
-                    using (Surface colorAndAlpha = new Surface(mipWidth, mipHeight))
                     {
                         using (Surface opaqueClone = fullSize.Clone())
                         {
@@ -300,31 +300,24 @@ namespace DdsFileTypePlus
                             color.FitSurface(algorithm, opaqueClone);
                         }
 
-                        colorAndAlpha.FitSurface(algorithm, fullSize);
-
                         for (int y = 0; y < mipHeight; ++y)
                         {
                             ColorBgra* colorPtr = color.GetRowAddressUnchecked(y);
-                            ColorBgra* alphaPtr = colorAndAlpha.GetRowAddressUnchecked(y);
                             ColorBgra* destPtr = mipSurface.GetRowAddressUnchecked(y);
 
                             for (int x = 0; x < mipWidth; ++x)
                             {
+                                // Copy the color data from the opaque image to create a merged
+                                // image with the transparent pixels retaining their original values.
                                 destPtr->B = colorPtr->B;
                                 destPtr->G = colorPtr->G;
                                 destPtr->R = colorPtr->R;
-                                destPtr->A = alphaPtr->A;
 
                                 ++colorPtr;
-                                ++alphaPtr;
                                 ++destPtr;
                             }
                         }
                     }
-                }
-                else
-                {
-                    mipSurface.FitSurface(algorithm, fullSize);
                 }
 
                 mipTexture = new Texture(mipSurface, true);
