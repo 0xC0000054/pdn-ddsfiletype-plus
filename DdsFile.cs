@@ -240,7 +240,7 @@ namespace DdsFileTypePlus
                                 int mipWidth = Math.Max(1, cubeMapSurface.Width >> j);
                                 int mipHeight = Math.Max(1, cubeMapSurface.Height >> j);
 
-                                tempTextures.Add(CreateMipSurface(cubeMapSurface, mipWidth, mipHeight, algorithm));
+                                tempTextures.Add(CreateMipTexture(cubeMapSurface, mipWidth, mipHeight, algorithm));
                             }
                         }
                     }
@@ -256,7 +256,7 @@ namespace DdsFileTypePlus
                             int mipWidth = Math.Max(1, scratchSurface.Width >> j);
                             int mipHeight = Math.Max(1, scratchSurface.Height >> j);
 
-                            tempTextures.Add(CreateMipSurface(scratchSurface, mipWidth, mipHeight, algorithm));
+                            tempTextures.Add(CreateMipTexture(scratchSurface, mipWidth, mipHeight, algorithm));
                         }
                     }
                 }
@@ -275,7 +275,7 @@ namespace DdsFileTypePlus
             return textures;
         }
 
-        private static unsafe Texture CreateMipSurface(Surface fullSize, int mipWidth, int mipHeight, ResamplingAlgorithm algorithm)
+        private static unsafe Texture CreateMipTexture(Surface fullSize, int mipWidth, int mipHeight, ResamplingAlgorithm algorithm)
         {
             Texture mipTexture = null;
             Surface mipSurface = null;
