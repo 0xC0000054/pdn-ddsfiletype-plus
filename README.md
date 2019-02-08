@@ -42,4 +42,4 @@ See [License.txt](License.txt) for more information.
 
 This project utilizes the following code (located under 3rdParty folder)
 
-* [DirectXTex](https://github.com/Microsoft/DirectXTex) (November 16 2018 release)
+* [DirectXTex](https://github.com/Microsoft/DirectXTex) (February 7 2019 release)
