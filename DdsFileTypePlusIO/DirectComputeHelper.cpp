@@ -15,7 +15,7 @@
 
 DirectComputeHelper::DirectComputeHelper()
 {
-    hModD3D11 = LoadLibrary(L"d3d11.dll");
+    hModD3D11 = LoadLibraryW(L"d3d11.dll");
     computeDevice = nullptr;
 
     if (hModD3D11 != nullptr)
