@@ -37,21 +37,6 @@ namespace DdsFileTypePlus
 
             public int Height => this.info.height;
 
-            public int Stride => this.info.stride;
-
-            public IntPtr Scan0
-            {
-                get
-                {
-                    if (this.disposed)
-                    {
-                        throw new ObjectDisposedException(nameof(DdsImage));
-                    }
-
-                    return this.info.scan0;
-                }
-            }
-
             private DdsImage(DDSLoadInfo info)
             {
                 this.info = info;
@@ -82,6 +67,11 @@ namespace DdsFileTypePlus
                         DdsIO_x86.FreeLoadInfo(ref this.info);
                     }
                 }
+            }
+
+            public unsafe byte* GetRowAddressUnchecked(int y)
+            {
+                return (byte*)this.info.scan0 + (y * this.info.stride);
             }
         }
 

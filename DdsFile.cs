@@ -31,12 +31,9 @@ namespace DdsFileTypePlus
 
                 Surface surface = layer.Surface;
 
-                byte* scan0 = (byte*)image.Scan0;
-                int stride = image.Stride;
-
                 for (int y = 0; y < surface.Height; ++y)
                 {
-                    byte* src = scan0 + (y * stride);
+                    byte* src = image.GetRowAddressUnchecked(y);
                     ColorBgra* dst = surface.GetRowAddressUnchecked(y);
 
                     for (int x = 0; x < surface.Width; ++x)
