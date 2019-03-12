@@ -448,7 +448,8 @@ HRESULT __stdcall Save(
         }
         else
         {
-            hr = Compress(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
+            hr = Compress(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags,
+                TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
         }
 
         if (FAILED(hr))
@@ -467,7 +468,8 @@ HRESULT __stdcall Save(
             return E_OUTOFMEMORY;
         }
 
-        hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
+        hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, TEX_FILTER_DEFAULT,
+            TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
 
         if (FAILED(hr))
         {
