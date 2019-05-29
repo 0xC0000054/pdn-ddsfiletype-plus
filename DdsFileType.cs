@@ -46,7 +46,7 @@ namespace DdsFileTypePlus
                     PropertyNames.FileFormat,
                     new object[]
                     {
-                        DdsFileFormat.BC6H,
+                        DdsFileFormat.BC6HUnsigned,
                         DdsFileFormat.BC7,
                         DdsFileFormat.BC7Srgb
                     },
@@ -82,10 +82,10 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC3, "BC3 (Linear, DXT5)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC4, "BC4 (Linear, DX 10+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, "BC4 (Linear, Unsigned, DX 10+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, "BC5 (Linear, Unsigned, DX 10+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, "BC5 (Linear, Signed, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC6H, "BC6H (Linear, DX 11+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, "BC6H (Linear, Unsigned, DX 11+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7, "BC7 (Linear, DX 11+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (Linear, A8R8G8B8)");
