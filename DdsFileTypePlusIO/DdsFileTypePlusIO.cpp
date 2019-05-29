@@ -38,8 +38,10 @@ namespace
             return DXGI_FORMAT_BC3_UNORM_SRGB;
         case DDS_FORMAT_BC4:
             return DXGI_FORMAT_BC4_UNORM;
-        case DDS_FORMAT_BC5:
+        case DDS_FORMAT_BC5_UNORM:
             return DXGI_FORMAT_BC5_UNORM;
+        case DDS_FORMAT_BC5_SNORM:
+            return DXGI_FORMAT_BC5_SNORM;
         case DDS_FORMAT_BC6H:
             return DXGI_FORMAT_BC6H_UF16;
         case DDS_FORMAT_BC7:
