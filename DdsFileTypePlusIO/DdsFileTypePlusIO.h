@@ -41,11 +41,11 @@ extern "C" {
         DDS_FORMAT_BC3,
         // BC3 sRGB (DX 10+)
         DDS_FORMAT_BC3_SRGB,
-        // BC4 Unsigned (DX 10+)
+        // BC4 Unsigned
         DDS_FORMAT_BC4_UNORM,
-        // BC5 Unsigned (DX 10+)
+        // BC5 Unsigned
         DDS_FORMAT_BC5_UNORM,
-        // BC5 Signed (DX 10+)
+        // BC5 Signed
         DDS_FORMAT_BC5_SNORM,
         // BC6H Unsigned (DX 11+)
         DDS_FORMAT_BC6H_UF16,

@@ -82,9 +82,9 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC3, "BC3 (Linear, DXT5)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, "BC4 (Linear, Unsigned, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, "BC5 (Linear, Unsigned, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, "BC5 (Linear, Signed, DX 10+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, "BC4 (Linear, Unsigned)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, "BC5 (Linear, Unsigned)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, "BC5 (Linear, Signed)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, "BC6H (Linear, Unsigned, DX 11+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7, "BC7 (Linear, DX 11+)");
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
