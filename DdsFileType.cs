@@ -22,8 +22,11 @@ namespace DdsFileTypePlus
     {
         public DdsFileType() :
             base("DirectDraw Surface (DDS)",
-                 FileTypeFlags.SupportsLoading | FileTypeFlags.SupportsSaving | FileTypeFlags.SavesWithProgress,
-                 new string[] { ".dds2" })
+                 new FileTypeOptions()
+                 {
+                     LoadExtensions = new string[] { ".dds2" },
+                     SaveExtensions = new string[] { ".dds2" }
+                 })
         {
         }
 
