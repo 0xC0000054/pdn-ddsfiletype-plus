@@ -46,7 +46,7 @@ namespace DdsFileTypePlus
                     PropertyNames.FileFormat,
                     new object[]
                     {
-                        DdsFileFormat.BC6H,
+                        DdsFileFormat.BC6HUnsigned,
                         DdsFileFormat.BC7,
                         DdsFileFormat.BC7Srgb
                     },
@@ -74,43 +74,54 @@ namespace DdsFileTypePlus
         {
             ControlInfo configUI = CreateDefaultSaveConfigUI(props);
 
-            configUI.SetPropertyControlValue(PropertyNames.FileFormat, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1, "BC1 (Linear, DXT1)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC1Srgb, "BC1 (sRGB, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2, "BC2 (Linear, DXT3)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3, "BC3 (Linear, DXT5)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC4, "BC4 (Linear, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC5, "BC5 (Linear, DX 10+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC6H, "BC6H (Linear, DX 11+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7, "BC7 (Linear, DX 11+)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
+            PropertyControlInfo formatPCI = configUI.FindControlForPropertyName(PropertyNames.FileFormat);
+            formatPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC1, "BC1 (Linear, DXT1)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC1Srgb, "BC1 (sRGB, DX 10+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC2, "BC2 (Linear, DXT3)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3, "BC3 (Linear, DXT5)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, "BC4 (Linear, Unsigned)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, "BC5 (Linear, Unsigned)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, "BC5 (Linear, Signed)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, "BC6H (Linear, Unsigned, DX 11+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC7, "BC7 (Linear, DX 11+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (Linear, A8R8G8B8)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (Linear, X8R8G8B8)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (Linear, A8B8G8R8)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, "B5G5R5A1 (Linear, A1R5G5B5)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, "B4G4R4A4 (Linear, A4R4G4B4)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (Linear, R5G6B5)");
 
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (Linear, A8R8G8B8)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (Linear, X8R8G8B8)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (Linear, A8B8G8R8)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G5R5A1, "B5G5R5A1 (Linear, A1R5G5B5)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B4G4R4A4, "B4G4R4A4 (Linear, A4R4G4B4)");
-            configUI.FindControlForPropertyName(PropertyNames.FileFormat).SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (Linear, R5G6B5)");
-            configUI.SetPropertyControlValue(PropertyNames.BC7CompressionMode, ControlInfoPropertyNames.DisplayName, "BC6H / BC7 Compression Mode");
-            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Fast, "Fast");
-            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Normal, "Normal");
-            configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode).SetValueDisplayName(BC7CompressionMode.Slow, "Slow");
-            configUI.SetPropertyControlValue(PropertyNames.ErrorMetric, ControlInfoPropertyNames.DisplayName, "Error Metric");
-            configUI.SetPropertyControlType(PropertyNames.ErrorMetric, PropertyControlType.RadioButton);
-            configUI.FindControlForPropertyName(PropertyNames.ErrorMetric).SetValueDisplayName(DdsErrorMetric.Perceptual, "Perceptual");
-            configUI.FindControlForPropertyName(PropertyNames.ErrorMetric).SetValueDisplayName(DdsErrorMetric.Uniform, "Uniform");
-            configUI.SetPropertyControlValue(PropertyNames.CubeMap, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.SetPropertyControlValue(PropertyNames.CubeMap, ControlInfoPropertyNames.Description, "Cube Map from crossed image");
-            configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.SetPropertyControlValue(PropertyNames.GenerateMipMaps, ControlInfoPropertyNames.Description, "Generate Mip Maps");
-            configUI.SetPropertyControlValue(PropertyNames.MipMapResamplingAlgorithm, ControlInfoPropertyNames.DisplayName, string.Empty);
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, "Nearest Neighbor");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.Bicubic, "Bicubic");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.Bilinear, "Bilinear");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.Fant, "Fant");
-            configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm).SetValueDisplayName(ResamplingAlgorithm.SuperSampling, "Super Sampling");
+            PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode);
+            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = "BC6H / BC7 Compression Mode";
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Fast, "Fast");
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Normal, "Normal");
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Slow, "Slow");
+
+            PropertyControlInfo errorMetricPCI = configUI.FindControlForPropertyName(PropertyNames.ErrorMetric);
+            errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = "Error Metric";
+            errorMetricPCI.ControlType.Value = PropertyControlType.RadioButton;
+            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Perceptual, "Perceptual");
+            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Uniform, "Uniform");
+
+            PropertyControlInfo cubemapPCI = configUI.FindControlForPropertyName(PropertyNames.CubeMap);
+            cubemapPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            cubemapPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = "Cube Map from crossed image";
+
+            PropertyControlInfo generateMipPCI = configUI.FindControlForPropertyName(PropertyNames.GenerateMipMaps);
+            generateMipPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            generateMipPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = "Generate Mip Maps";
+
+            PropertyControlInfo mipResamplingPCI = configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm);
+            mipResamplingPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, "Nearest Neighbor");
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bicubic, "Bicubic");
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bilinear, "Bilinear");
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, "Fant");
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, "Super Sampling");
 
             return configUI;
         }
