@@ -163,23 +163,23 @@ namespace
         const size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
         size_t index = 0;
 
-		if (ddpf.flags == 0 && ddpf.fourCC != 0)
-		{
-			// Some writers set the fourCC field without setting DDS_FOURCC in the flags field.
-			for (index = 0; index < MAP_SIZE; ++index)
-			{
-				const LegacyDDS* entry = &g_LegacyDDSMap[index];
+        if (ddpf.flags == 0 && ddpf.fourCC != 0)
+        {
+            // Some writers set the fourCC field without setting DDS_FOURCC in the flags field.
+            for (index = 0; index < MAP_SIZE; ++index)
+            {
+                const LegacyDDS* entry = &g_LegacyDDSMap[index];
 
-				if (entry->ddpf.flags & DDS_FOURCC)
-				{
-					if (ddpf.fourCC == entry->ddpf.fourCC)
-					{
-						ddpfFlags = entry->ddpf.flags;
-						break;
-					}
-				}
-			}
-		}
+                if (entry->ddpf.flags & DDS_FOURCC)
+                {
+                    if (ddpf.fourCC == entry->ddpf.fourCC)
+                    {
+                        ddpfFlags = entry->ddpf.flags;
+                        break;
+                    }
+                }
+            }
+        }
 
         for (index = 0; index < MAP_SIZE; ++index)
         {
@@ -279,32 +279,32 @@ namespace
         return format;
     }
 
-	// Some DDS files contain an incorrectly populated DDS_PIXELFORMAT that
-	// has all fields except the dwFourCC field set to zero.
-	// Detect this case and allow the files to be loaded regardless
-	// of the value of the DDS_PIXELFORMAT dwSize field.
-	bool IsPixelFormatFourCCValid(const DDS_PIXELFORMAT& ddpf)
-	{
-		if (ddpf.flags == 0 && ddpf.fourCC != 0)
-		{
-			const size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
+    // Some DDS files contain an incorrectly populated DDS_PIXELFORMAT that
+    // has all fields except the dwFourCC field set to zero.
+    // Detect this case and allow the files to be loaded regardless
+    // of the value of the DDS_PIXELFORMAT dwSize field.
+    bool IsPixelFormatFourCCValid(const DDS_PIXELFORMAT& ddpf)
+    {
+        if (ddpf.flags == 0 && ddpf.fourCC != 0)
+        {
+            const size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
 
-			for (size_t index = 0; index < MAP_SIZE; ++index)
-			{
-				const LegacyDDS* entry = &g_LegacyDDSMap[index];
+            for (size_t index = 0; index < MAP_SIZE; ++index)
+            {
+                const LegacyDDS* entry = &g_LegacyDDSMap[index];
 
-				if (entry->ddpf.flags & DDS_FOURCC)
-				{
-					if (ddpf.fourCC == entry->ddpf.fourCC)
-					{
-						return true;
-					}
-				}
-			}
-		}
+                if (entry->ddpf.flags & DDS_FOURCC)
+                {
+                    if (ddpf.fourCC == entry->ddpf.fourCC)
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
 
-		return false;
-	}
+        return false;
+    }
 
     //-------------------------------------------------------------------------------------
     // Decodes DDS header including optional DX10 extended header
