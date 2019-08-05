@@ -13,6 +13,7 @@
 using PaintDotNet;
 using System;
 using System.IO;
+using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus
@@ -123,16 +124,16 @@ namespace DdsFileTypePlus
         public delegate void DdsProgressCallback(UIntPtr done, UIntPtr total);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate uint ReadDelegate(IntPtr buffer, uint count);
+        private unsafe delegate int ReadDelegate(IntPtr buffer, uint count, uint* bytesRead);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate uint WriteDelegate(IntPtr buffer, uint count);
+        private unsafe delegate int WriteDelegate(IntPtr buffer, uint count, uint* bytesWritten);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate long SeekDelegate(long offset, int origin);
+        private delegate int SeekDelegate(long offset, int origin);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        private delegate long GetSizeDelegate();
+        private unsafe delegate int GetSizeDelegate(long* size);
 
         [StructLayout(LayoutKind.Sequential)]
         private sealed class IOCallbacks
@@ -196,6 +197,9 @@ namespace DdsFileTypePlus
 
         private static class HResult
         {
+            public const int S_OK = 0;
+            public const int E_POINTER = unchecked((int)0x80004003);
+            public const int SeekError = unchecked((int)0x80070019); // HRESULT_FROM_WIN32(ERROR_SEEK)
             public const int NotSupported = unchecked((int)0x80070032); // HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED)
             public const int InvalidData = unchecked((int)0x8007000D); // HRESULT_FROM_WIN32(ERROR_INVALID_DATA)
         }
@@ -205,7 +209,7 @@ namespace DdsFileTypePlus
             return hr < 0;
         }
 
-        public static DdsImage Load(Stream stream)
+        public static unsafe DdsImage Load(Stream stream)
         {
             StreamIOCallbacks streamIO = new StreamIOCallbacks(stream);
             IOCallbacks callbacks = new IOCallbacks
@@ -233,22 +237,29 @@ namespace DdsFileTypePlus
 
             if (FAILED(hr))
             {
-                switch (hr)
+                if (streamIO.CallbackExceptionInfo != null)
                 {
-                    case HResult.InvalidData:
-                        throw new FormatException("The DDS file is invalid.");
-                    case HResult.NotSupported:
-                        throw new FormatException("The file is not a supported DDS format.");
-                    default:
-                        Marshal.ThrowExceptionForHR(hr);
-                        break;
+                    streamIO.CallbackExceptionInfo.Throw();
+                }
+                else
+                {
+                    switch (hr)
+                    {
+                        case HResult.InvalidData:
+                            throw new FormatException("The DDS file is invalid.");
+                        case HResult.NotSupported:
+                            throw new FormatException("The file is not a supported DDS format.");
+                        default:
+                            Marshal.ThrowExceptionForHR(hr);
+                            break;
+                    }
                 }
             }
 
             return DdsImageFactory(info);
         }
 
-        public static void Save(
+        public static unsafe void Save(
             DDSSaveInfo info,
             TextureCollection textures,
             Stream output,
@@ -288,7 +299,14 @@ namespace DdsFileTypePlus
 
             if (FAILED(hr))
             {
-                Marshal.ThrowExceptionForHR(hr);
+                if (streamIO.CallbackExceptionInfo != null)
+                {
+                    streamIO.CallbackExceptionInfo.Throw();
+                }
+                else
+                {
+                    Marshal.ThrowExceptionForHR(hr);
+                }
             }
         }
 
@@ -321,43 +339,77 @@ namespace DdsFileTypePlus
             public StreamIOCallbacks(Stream stream)
             {
                 this.stream = stream;
+                this.CallbackExceptionInfo = null;
             }
 
-            public uint Read(IntPtr buffer, uint count)
+            public ExceptionDispatchInfo CallbackExceptionInfo
             {
+                get;
+                private set;
+            }
+
+            public unsafe int Read(IntPtr buffer, uint count, uint* bytesRead)
+            {
+                if (bytesRead != null)
+                {
+                    *bytesRead = 0;
+                }
+
                 if (count == 0)
                 {
-                    return 0;
+                    return HResult.S_OK;
                 }
 
                 int bufferSize = (int)Math.Min(MaxBufferSize, count);
-                byte[] bytes = new byte[bufferSize];
-
-                long totalBytesRead = 0;
-                long remaining = count;
-
-                do
+                try
                 {
-                    int bytesRead = this.stream.Read(bytes, 0, (int)Math.Min(MaxBufferSize, remaining));
+                    byte[] bytes = new byte[bufferSize];
 
-                    if (bytesRead == 0)
+                    long totalBytesRead = 0;
+                    long remaining = count;
+
+                    do
                     {
-                        break;
+                        int streamBytesRead = this.stream.Read(bytes, 0, (int)Math.Min(MaxBufferSize, remaining));
+
+                        if (streamBytesRead == 0)
+                        {
+                            break;
+                        }
+
+                        Marshal.Copy(bytes, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), streamBytesRead);
+
+                        totalBytesRead += streamBytesRead;
+                        remaining -= streamBytesRead;
+
+                    } while (remaining > 0);
+
+                    if (bytesRead != null)
+                    {
+                        *bytesRead = (uint)totalBytesRead;
                     }
-
-                    Marshal.Copy(bytes, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), bytesRead);
-
-                    totalBytesRead += bytesRead;
-                    remaining -= bytesRead;
-
-                } while (remaining > 0);
-
-                return (uint)totalBytesRead;
+                    return HResult.S_OK;
+                }
+                catch (Exception ex)
+                {
+                    this.CallbackExceptionInfo = ExceptionDispatchInfo.Capture(ex);
+                    return ex.HResult;
+                }
             }
 
-            public uint Write(IntPtr buffer, uint count)
+            public unsafe int Write(IntPtr buffer, uint count, uint* bytesWritten)
             {
-                if (count > 0)
+                if (bytesWritten != null)
+                {
+                    *bytesWritten = 0;
+                }
+
+                if (count == 0)
+                {
+                    return HResult.S_OK;
+                }
+
+                try
                 {
                     int bufferSize = (int)Math.Min(MaxBufferSize, count);
                     byte[] bytes = new byte[bufferSize];
@@ -377,19 +429,67 @@ namespace DdsFileTypePlus
                         remaining -= copySize;
 
                     } while (remaining > 0);
+
+                    if (bytesWritten != null)
+                    {
+                        *bytesWritten = count;
+                    }
+
+                    return HResult.S_OK;
+                }
+                catch (Exception ex)
+                {
+                    this.CallbackExceptionInfo = ExceptionDispatchInfo.Capture(ex);
+                    return ex.HResult;
+                }
+            }
+
+            public int Seek(long offset, int origin)
+            {
+                int hr = HResult.S_OK;
+
+                try
+                {
+                    long newPosition = this.stream.Seek(offset, (SeekOrigin)origin);
+
+                    if (newPosition != offset)
+                    {
+                        hr = HResult.SeekError;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    this.CallbackExceptionInfo = ExceptionDispatchInfo.Capture(ex);
+                    hr = ex.HResult;
                 }
 
-                return count;
+                return hr;
             }
 
-            public long Seek(long offset, int origin)
+            public unsafe int GetSize(long* size)
             {
-                return this.stream.Seek(offset, (SeekOrigin)origin);
-            }
+                if (size != null)
+                {
+                    *size = 0;
+                }
+                else
+                {
+                    return HResult.E_POINTER;
+                }
 
-            public long GetSize()
-            {
-                return this.stream.Length;
+                int hr = HResult.S_OK;
+
+                try
+                {
+                    *size = this.stream.Length;
+                }
+                catch (Exception ex)
+                {
+                    this.CallbackExceptionInfo = ExceptionDispatchInfo.Capture(ex);
+                    hr = ex.HResult;
+                }
+
+                return hr;
             }
         }
     }
