@@ -14,9 +14,9 @@ using PaintDotNet;
 
 namespace DdsFileTypePlus
 {
-    public sealed class DdsFileTypeFactory : IFileTypeFactory
+    public sealed class DdsFileTypeFactory : IFileTypeFactory2
     {
-        public FileType[] GetFileTypeInstances()
+        public FileType[] GetFileTypeInstances(IFileTypeFactoryHost host)
         {
             return new FileType[] { new DdsFileType() };
         }
