@@ -16,9 +16,9 @@ namespace DdsFileTypePlus
 {
     public sealed class DdsFileTypeFactory : IFileTypeFactory2
     {
-        public FileType[] GetFileTypeInstances(IFileTypeFactoryHost host)
+        public FileType[] GetFileTypeInstances(IFileTypeHost host)
         {
-            return new FileType[] { new DdsFileType() };
+            return new FileType[] { new DdsFileType(host.Services) };
         }
     }
 }
