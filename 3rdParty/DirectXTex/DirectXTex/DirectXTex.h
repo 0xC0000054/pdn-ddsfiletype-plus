@@ -337,16 +337,16 @@ namespace DirectX
         size_t  m_size;
     };
 
-	typedef void(__stdcall *ProgressProc)(_In_ size_t done, _In_ size_t total);
+    typedef void(__stdcall *ProgressProc)(_In_ size_t done, _In_ size_t total);
 
     //---------------------------------------------------------------------------------
     // User-defined I/O callbacks for loading and saving images
     struct ImageIOCallbacks
     {
-        DWORD(__stdcall *Read)(void* buffer, const DWORD count);
-        DWORD(__stdcall *Write)(const void* buffer, const DWORD count);
-        INT64(__stdcall *Seek)(const INT64 position, const INT32 origin);
-        INT64(__stdcall *GetSize)();
+        HRESULT(__stdcall *Read)(void* buffer, const DWORD count, DWORD* bytesRead);
+        HRESULT(__stdcall *Write)(const void* buffer, const DWORD count, DWORD* bytesWritten);
+        HRESULT(__stdcall *Seek)(const INT64 position, const INT32 origin);
+        HRESULT(__stdcall *GetSize)(INT64* size);
     };
 
     //---------------------------------------------------------------------------------
