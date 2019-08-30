@@ -434,7 +434,7 @@ HRESULT __stdcall Save(
                 break;
             }
 
-            dcHelper.reset(new(std::nothrow) DirectComputeHelper);
+            dcHelper.reset(new(std::nothrow) DirectComputeHelper(input->enableHardwareAcceleration));
             if (dcHelper != nullptr)
             {
                 useDirectCompute = dcHelper->ComputeDeviceAvailable();

@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
+using PaintDotNet.AppModel;
 using System;
 using System.Drawing;
 using System.IO;
@@ -55,6 +56,7 @@ namespace DdsFileTypePlus
         }
 
         public static void Save(
+            IServiceProvider services,
             Document input,
             Stream output,
             DdsFileFormat format,
@@ -103,6 +105,7 @@ namespace DdsFileTypePlus
             }
 
             int mipLevels = generateMipmaps ? GetMipCount(width, height) : 1;
+            bool enableHardwareAcceleration = (bool)services.GetService<ISettingsService>().GetSetting(AppSettingPaths.UI.EnableHardwareAcceleration).Value;
 
             DdsNative.DDSSaveInfo info = new DdsNative.DDSSaveInfo
             {
@@ -113,7 +116,8 @@ namespace DdsFileTypePlus
                 format = format,
                 errorMetric = errorMetric,
                 compressionMode = compressionMode,
-                cubeMap = cubeMapFaceSize.HasValue
+                cubeMap = cubeMapFaceSize.HasValue,
+                enableHardwareAcceleration = enableHardwareAcceleration
             };
 
             using (TextureCollection textures = GetTextures(scratchSurface, cubeMapFaceSize, mipLevels, sampling))

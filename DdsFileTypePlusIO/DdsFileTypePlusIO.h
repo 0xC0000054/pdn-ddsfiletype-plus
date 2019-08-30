@@ -84,6 +84,7 @@ extern "C" {
         DdsErrorMetric errorMetric;
         BC7CompressionMode compressionMode;
         bool cubeMap;
+        bool enableHardwareAcceleration;
     };
 
     struct DDSBitmapData

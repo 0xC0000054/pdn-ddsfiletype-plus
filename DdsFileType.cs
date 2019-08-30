@@ -11,16 +11,19 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
-using System.Collections.Generic;
-using PaintDotNet.PropertySystem;
 using PaintDotNet.IndirectUI;
+using PaintDotNet.PropertySystem;
+using System;
+using System.Collections.Generic;
 using System.IO;
 
 namespace DdsFileTypePlus
 {
     public sealed class DdsFileType : PropertyBasedFileType
     {
-        public DdsFileType() :
+        private readonly IServiceProvider services;
+
+        public DdsFileType(IServiceProvider services) :
             base("DirectDraw Surface (DDS)",
                  new FileTypeOptions()
                  {
@@ -28,6 +31,7 @@ namespace DdsFileTypePlus
                      SaveExtensions = new string[] { ".dds2" }
                  })
         {
+            this.services = services;
         }
 
         public override PropertyCollection OnCreateSavePropertyCollection()
@@ -143,7 +147,7 @@ namespace DdsFileTypePlus
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
             ResamplingAlgorithm mipSampling = (ResamplingAlgorithm)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
 
-            DdsFile.Save(input, output, fileFormat, errorMetric, compressionMode, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
+            DdsFile.Save(this.services, input, output, fileFormat, errorMetric, compressionMode, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
         }
 
         protected override bool IsReflexive(PropertyBasedSaveConfigToken token)
