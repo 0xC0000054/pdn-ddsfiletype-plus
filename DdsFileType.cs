@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
+using PaintDotNet.Dds;
 using PaintDotNet.IndirectUI;
 using PaintDotNet.PropertySystem;
 using System;
@@ -22,9 +23,10 @@ namespace DdsFileTypePlus
     public sealed class DdsFileType : PropertyBasedFileType
     {
         private readonly IServiceProvider services;
+        private readonly IDdsFileTypePlusStrings strings;
 
         public DdsFileType(IServiceProvider services) :
-            base("DirectDraw Surface (DDS)",
+            base(GetString(services.GetService<IDdsFileTypePlusStrings>(), DdsFileTypePlusStringName.FileType_Name),
                  new FileTypeOptions()
                  {
                      LoadExtensions = new string[] { ".dds2" },
@@ -32,6 +34,126 @@ namespace DdsFileTypePlus
                  })
         {
             this.services = services;
+            this.strings = services.GetService<IDdsFileTypePlusStrings>();
+        }
+
+        private string GetString(DdsFileTypePlusStringName name)
+        {
+            return GetString(this.strings, name);
+        }
+
+        private static string GetString(IDdsFileTypePlusStrings strings, DdsFileTypePlusStringName name)
+        {
+            string value = strings?.TryGetString(name);
+            if (value != null)
+            {
+                return value;
+            }
+
+            switch (name)
+            {
+                case DdsFileTypePlusStringName.FileType_Name:
+                    return "DirectDraw Surface (DDS)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC1:
+                    return "BC1 (Linear, DXT1)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC1Srgb:
+                    return "BC1 (sRGB, DX 10+)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC2:
+                    return "BC2 (Linear, DXT3)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC2Srgb:
+                    return "BC2 (sRGB, DX 10+)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC3:
+                    return "BC3 (Linear, DXT5)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC3Srgb:
+                    return "BC3 (sRGB, DX 10+)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC4Unsigned:
+                    return "BC4 (Linear, Unsigned)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC5Unsigned:
+                    return "BC5 (Linear, Unsigned)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC5Signed:
+                    return "BC5 (Linear, Signed)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC6HUnsigned:
+                    return "BC6H (Linear, Unsigned, DX 11+)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC7:
+                    return "BC7 (Linear, DX 11+)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_BC7Srgb:
+                    return "BC7 (sRGB, DX 11+)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8:
+                    return "B8G8R8A8 (Linear, A8R8G8B8)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8:
+                    return "B8G8R8X8 (Linear, X8R8G8B8)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8:
+                    return "R8G8B8A8 (Linear, A8B8G8R8)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1:
+                    return "B5G5R5A1 (Linear, A1R5G5B5)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_B4G4R4A4:
+                    return "B4G4R4A4 (Linear, A4R4G4B4)";
+
+                case DdsFileTypePlusStringName.DdsFileFormat_B5G6R5:
+                    return "B5G6R5 (Linear, R5G6B5)";
+
+                case DdsFileTypePlusStringName.BC7CompressionMode_DisplayName:
+                    return "BC6H / BC7 Compression Mode";
+
+                case DdsFileTypePlusStringName.BC7CompressionMode_Fast:
+                    return "Fast";
+
+                case DdsFileTypePlusStringName.BC7CompressionMode_Normal:
+                    return "Normal";
+
+                case DdsFileTypePlusStringName.BC7CompressionMode_Slow:
+                    return "Slow";
+
+                case DdsFileTypePlusStringName.ErrorMetric_DisplayName:
+                    return "Error Metric";
+
+                case DdsFileTypePlusStringName.ErrorMetric_Perceptual:
+                    return "Perceptual";
+
+                case DdsFileTypePlusStringName.ErrorMetric_Uniform:
+                    return "Uniform";
+
+                case DdsFileTypePlusStringName.CubeMap_Description:
+                    return "Cube Map from crossed image";
+
+                case DdsFileTypePlusStringName.GenerateMipMaps_Description:
+                    return "Generate Mip Maps";
+
+                case DdsFileTypePlusStringName.ResamplingAlgorithm_NearestNeighbor:
+                    return "Nearest Neighbor";
+
+                case DdsFileTypePlusStringName.ResamplingAlgorithm_Bicubic:
+                    return "Bicubic";
+
+                case DdsFileTypePlusStringName.ResamplingAlgorithm_Bilinear:
+                    return "Bilinear";
+
+                case DdsFileTypePlusStringName.ResamplingAlgorithm_Fant:
+                    return "Fant";
+
+                case DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling:
+                    return "Super Sampling";
+
+                default:
+                    throw ExceptionUtil.InvalidEnumArgumentException(name, nameof(name));
+            }
         }
 
         public override PropertyCollection OnCreateSavePropertyCollection()
@@ -83,52 +205,52 @@ namespace DdsFileTypePlus
 
             PropertyControlInfo formatPCI = configUI.FindControlForPropertyName(PropertyNames.FileFormat);
             formatPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC1, "BC1 (Linear, DXT1)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC1Srgb, "BC1 (sRGB, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC2, "BC2 (Linear, DXT3)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, "BC2 (sRGB, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC3, "BC3 (Linear, DXT5)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, "BC3 (sRGB, DX 10+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, "BC4 (Linear, Unsigned)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, "BC5 (Linear, Unsigned)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, "BC5 (Linear, Signed)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, "BC6H (Linear, Unsigned, DX 11+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC7, "BC7 (Linear, DX 11+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, "BC7 (sRGB, DX 11+)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, "B8G8R8A8 (Linear, A8R8G8B8)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, "B8G8R8X8 (Linear, X8R8G8B8)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, "R8G8B8A8 (Linear, A8B8G8R8)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, "B5G5R5A1 (Linear, A1R5G5B5)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, "B4G4R4A4 (Linear, A4R4G4B4)");
-            formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, "B5G6R5 (Linear, R5G6B5)");
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC1, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC1));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC1Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC1Srgb));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC2, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC2));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC2Srgb));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC3));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC3Srgb));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC4Unsigned));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC5Unsigned));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC5Signed));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC6HUnsigned));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC7, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC7));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC7Srgb));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, GetString(DdsFileTypePlusStringName.DdsFileFormat_B4G4R4A4));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G6R5));
 
             PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode);
-            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = "BC6H / BC7 Compression Mode";
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Fast, "Fast");
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Normal, "Normal");
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Slow, "Slow");
+            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.BC7CompressionMode_DisplayName);
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Fast, GetString(DdsFileTypePlusStringName.BC7CompressionMode_Fast));
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Normal, GetString(DdsFileTypePlusStringName.BC7CompressionMode_Normal));
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Slow, GetString(DdsFileTypePlusStringName.BC7CompressionMode_Slow));
 
             PropertyControlInfo errorMetricPCI = configUI.FindControlForPropertyName(PropertyNames.ErrorMetric);
-            errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = "Error Metric";
+            errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.ErrorMetric_DisplayName);
             errorMetricPCI.ControlType.Value = PropertyControlType.RadioButton;
-            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Perceptual, "Perceptual");
-            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Uniform, "Uniform");
+            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Perceptual, GetString(DdsFileTypePlusStringName.ErrorMetric_Perceptual));
+            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Uniform, GetString(DdsFileTypePlusStringName.ErrorMetric_Uniform));
 
             PropertyControlInfo cubemapPCI = configUI.FindControlForPropertyName(PropertyNames.CubeMap);
             cubemapPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            cubemapPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = "Cube Map from crossed image";
+            cubemapPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(DdsFileTypePlusStringName.CubeMap_Description);
 
             PropertyControlInfo generateMipPCI = configUI.FindControlForPropertyName(PropertyNames.GenerateMipMaps);
             generateMipPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            generateMipPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = "Generate Mip Maps";
+            generateMipPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(DdsFileTypePlusStringName.GenerateMipMaps_Description);
 
             PropertyControlInfo mipResamplingPCI = configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm);
             mipResamplingPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, "Nearest Neighbor");
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bicubic, "Bicubic");
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bilinear, "Bilinear");
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, "Fant");
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, "Super Sampling");
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_NearestNeighbor));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bicubic, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Bicubic));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bilinear, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Bilinear));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Fant));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling));
 
             return configUI;
         }
