@@ -88,6 +88,8 @@ namespace DdsFileTypePlus
             public BC7CompressionMode compressionMode;
             [MarshalAs(UnmanagedType.U1)]
             public bool cubeMap;
+            [MarshalAs(UnmanagedType.U1)]
+            public bool enableHardwareAcceleration;
         }
 
         [StructLayout(LayoutKind.Sequential)]

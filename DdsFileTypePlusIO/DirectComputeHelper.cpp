@@ -13,7 +13,7 @@
 #include "stdafx.h"
 #include "DirectComputeHelper.h"
 
-DirectComputeHelper::DirectComputeHelper()
+DirectComputeHelper::DirectComputeHelper(bool enableHardwareAcceleration)
 {
     hModD3D11 = LoadLibraryW(L"d3d11.dll");
     computeDevice = nullptr;
@@ -35,28 +35,42 @@ DirectComputeHelper::DirectComputeHelper()
 #ifdef _DEBUG
             createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-            D3D_FEATURE_LEVEL featureLevelOut;
-
-            HRESULT hr = dynamicD3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
-                D3D11_SDK_VERSION, &computeDevice, &featureLevelOut, nullptr);
-
-            if (SUCCEEDED(hr))
+            if (enableHardwareAcceleration)
             {
-                if (featureLevelOut < D3D_FEATURE_LEVEL_11_0)
-                {
-                    D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS hwopts;
-                    hr = computeDevice->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts, sizeof(hwopts));
+                D3D_FEATURE_LEVEL featureLevelOut;
 
-                    if (FAILED(hr) || !hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
+                HRESULT hr = dynamicD3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
+                    D3D11_SDK_VERSION, &computeDevice, &featureLevelOut, nullptr);
+
+                if (SUCCEEDED(hr))
+                {
+                    if (featureLevelOut < D3D_FEATURE_LEVEL_11_0)
                     {
-                        computeDevice->Release();
-                        computeDevice = nullptr;
+                        D3D11_FEATURE_DATA_D3D10_X_HARDWARE_OPTIONS hwopts;
+                        hr = computeDevice->CheckFeatureSupport(D3D11_FEATURE_D3D10_X_HARDWARE_OPTIONS, &hwopts, sizeof(hwopts));
+
+                        if (FAILED(hr) || !hwopts.ComputeShaders_Plus_RawAndStructuredBuffers_Via_Shader_4_x)
+                        {
+                            computeDevice->Release();
+                            computeDevice = nullptr;
+                        }
                     }
                 }
+                else
+                {
+                    computeDevice = nullptr;
+                }
             }
-            else
+
+            if (computeDevice == nullptr)
             {
-                computeDevice = nullptr;
+                HRESULT hr = dynamicD3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_WARP, nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
+                    D3D11_SDK_VERSION, &computeDevice, nullptr, nullptr);
+
+                if (FAILED(hr))
+                {
+                    computeDevice = nullptr;
+                }
             }
         }
     }
