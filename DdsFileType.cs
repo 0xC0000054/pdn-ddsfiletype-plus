@@ -42,6 +42,9 @@ namespace DdsFileTypePlus
             return GetString(this.strings, name);
         }
 
+        private const DdsFileTypePlusStringName ForumLink_DisplayName = (DdsFileTypePlusStringName)33;
+        private const DdsFileTypePlusStringName ForumLink_Description = (DdsFileTypePlusStringName)34;
+
         private static string GetString(IDdsFileTypePlusStrings strings, DdsFileTypePlusStringName name)
         {
             string value = strings?.TryGetString(name);
@@ -150,6 +153,10 @@ namespace DdsFileTypePlus
 
                 case DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling:
                     return "Super Sampling";
+                case ForumLink_DisplayName:
+                    return "More Info";
+                case ForumLink_Description:
+                    return "Forum Discussion";
 
                 default:
                     throw ExceptionUtil.InvalidEnumArgumentException(name, nameof(name));
@@ -165,7 +172,9 @@ namespace DdsFileTypePlus
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
                 new BooleanProperty(PropertyNames.CubeMap, false),
                 new BooleanProperty(PropertyNames.GenerateMipMaps, false),
-                StaticListChoiceProperty.CreateForEnum(PropertyNames.MipMapResamplingAlgorithm, ResamplingAlgorithm.SuperSampling, false)
+                StaticListChoiceProperty.CreateForEnum(PropertyNames.MipMapResamplingAlgorithm, ResamplingAlgorithm.SuperSampling, false),
+                new UriProperty(PropertyNames.ForumLink, new Uri("https://forums.getpaint.net/topic/111731-dds-filetype-plus")),
+                new UriProperty(PropertyNames.GitHubLink, new Uri("https://github.com/0xC0000054/pdn-ddsfiletype-plus"))
             };
 
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
@@ -252,6 +261,14 @@ namespace DdsFileTypePlus
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Fant));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling));
 
+            PropertyControlInfo forumLinkPCI = configUI.FindControlForPropertyName(PropertyNames.ForumLink);
+            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(ForumLink_DisplayName);
+            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(ForumLink_Description);
+
+            PropertyControlInfo githubLinkPCI = configUI.FindControlForPropertyName(PropertyNames.GitHubLink);
+            githubLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            githubLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = "GitHub"; // GitHub is a brand name that should not be localized.
+
             return configUI;
         }
 
@@ -286,7 +303,9 @@ namespace DdsFileTypePlus
             ErrorMetric,
             CubeMap,
             GenerateMipMaps,
-            MipMapResamplingAlgorithm
+            MipMapResamplingAlgorithm,
+            ForumLink,
+            GitHubLink
         }
     }
 }
