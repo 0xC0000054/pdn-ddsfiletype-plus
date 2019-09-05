@@ -29,8 +29,8 @@ namespace DdsFileTypePlus
             base(GetString(services.GetService<IDdsFileTypePlusStrings>(), DdsFileTypePlusStringName.FileType_Name),
                  new FileTypeOptions()
                  {
-                     LoadExtensions = new string[] { ".dds2" },
-                     SaveExtensions = new string[] { ".dds2" }
+                     LoadExtensions = new string[] { ".dds" },
+                     SaveExtensions = new string[] { ".dds" }
                  })
         {
             this.services = services;
