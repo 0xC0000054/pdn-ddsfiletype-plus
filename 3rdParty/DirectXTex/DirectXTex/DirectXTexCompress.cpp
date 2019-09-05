@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------
 // DirectXTexCompress.cpp
-//  
+//
 // DirectX Texture Library - Texture compression
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -72,7 +72,8 @@ namespace
         const Image& result,
         DWORD bcflags,
         DWORD srgb,
-        float threshold)
+        float threshold,
+        ProgressProc progressProc)
     {
         if (!image.pixels || !result.pixels)
             return E_POINTER;
@@ -109,6 +110,14 @@ namespace
         const size_t rowPitch = image.rowPitch;
         for (size_t h = 0; h < image.height; h += 4)
         {
+            if (progressProc)
+            {
+                if (!progressProc(h, image.height))
+                {
+                    return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                }
+            }
+
             const uint8_t *sptr = pSrc;
             uint8_t* dptr = pDest;
             size_t ph = std::min<size_t>(4, image.height - h);
@@ -201,7 +210,8 @@ namespace
         const Image& result,
         DWORD bcflags,
         DWORD srgb,
-        float threshold)
+        float threshold,
+        ProgressProc progressProc)
     {
         if (!image.pixels || !result.pixels)
             return E_POINTER;
@@ -237,9 +247,20 @@ namespace
 
         bool fail = false;
 
+        size_t progress = 0;
+        bool abort = false;
+
 #pragma omp parallel for
         for (int nb = 0; nb < static_cast<int>(nBlocks); ++nb)
         {
+#pragma omp flush (abort)
+            if (abort)
+            {
+                // Short circuit the loop body if an abort is requested.
+                // OpenMP 2.0 does not support cancellation of a 'parallel for' loop.
+                continue;
+            }
+
             int nbWidth = std::max<int>(1, int((image.width + 3) / 4));
 
             int y = nb / nbWidth;
@@ -321,9 +342,28 @@ namespace
                 pfEncode(pDest, temp, bcflags);
             else
                 D3DXEncodeBC1(pDest, temp, threshold, bcflags);
+
+#pragma omp atomic
+            progress++;
+
+            if (progressProc)
+            {
+                if (!progressProc(progress, nBlocks))
+                {
+                    abort = true;
+#pragma omp flush (abort)
+                }
+            }
         }
 
-        return (fail) ? E_FAIL : S_OK;
+        if (abort)
+        {
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+        else
+        {
+            return (fail) ? E_FAIL : S_OK;
+        }
     }
 #endif // _OPENMP
 
@@ -593,7 +633,7 @@ HRESULT DirectX::Compress(
     DWORD compress,
     float threshold,
     ScratchImage& image,
-	ProgressProc progressProc)
+    ProgressProc progressProc)
 {
     if (IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
@@ -614,10 +654,14 @@ HRESULT DirectX::Compress(
         return E_POINTER;
     }
 
-	if (progressProc)
-	{
-		progressProc(0, img->height);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(0, img->height))
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     // Compress single image
     if (compress & TEX_COMPRESS_PARALLEL)
@@ -625,18 +669,21 @@ HRESULT DirectX::Compress(
 #ifndef _OPENMP
         return E_NOTIMPL;
 #else
-        hr = CompressBC_Parallel(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold);
+        hr = CompressBC_Parallel(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
 #endif // _OPENMP
     }
     else
     {
-        hr = CompressBC(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold);
+        hr = CompressBC(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
     }
 
-	if (progressProc)
-	{
-		progressProc(img->height, img->height);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(img->height, img->height))
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     if (FAILED(hr))
         image.Release();
@@ -653,7 +700,7 @@ HRESULT DirectX::Compress(
     DWORD compress,
     float threshold,
     ScratchImage& cImages,
-	ProgressProc progressProc)
+    ProgressProc progressProc)
 {
     if (!srcImages || !nimages)
         return E_INVALIDARG;
@@ -686,10 +733,14 @@ HRESULT DirectX::Compress(
         return E_POINTER;
     }
 
-	if (progressProc)
-	{
-		progressProc(0, nimages);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(0, nimages))
+        {
+            cImages.Release();
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     for (size_t index = 0; index < nimages; ++index)
     {
@@ -710,7 +761,7 @@ HRESULT DirectX::Compress(
 #else
             if (compress & TEX_COMPRESS_PARALLEL)
             {
-                hr = CompressBC_Parallel(src, dest[index], GetBCFlags(compress), GetSRGBFlags(compress), threshold);
+                hr = CompressBC_Parallel(src, dest[index], GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
                 if (FAILED(hr))
                 {
                     cImages.Release();
@@ -721,24 +772,23 @@ HRESULT DirectX::Compress(
         }
         else
         {
-            hr = CompressBC(src, dest[index], GetBCFlags(compress), GetSRGBFlags(compress), threshold);
+            hr = CompressBC(src, dest[index], GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
             if (FAILED(hr))
             {
                 cImages.Release();
                 return hr;
             }
         }
-
-		if (progressProc)
-		{
-			progressProc(index, nimages);
-		}
     }
 
-	if (progressProc)
-	{
-		progressProc(nimages, nimages);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(nimages, nimages))
+        {
+            cImages.Release();
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     return S_OK;
 }

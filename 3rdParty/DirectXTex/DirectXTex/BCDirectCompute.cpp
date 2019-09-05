@@ -1,6 +1,6 @@
 //-------------------------------------------------------------------------------------
 // BCDirectCompute.cpp
-//  
+//
 // Direct3D 11 Compute Shader BC Compressor
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
@@ -583,10 +583,14 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, P
         start_block_id += n;
         num_blocks -= n;
 
-		if (progressProc)
-		{
-			progressProc(start_block_id, num_total_blocks);
-		}
+        if (progressProc)
+        {
+            if (!progressProc(start_block_id, num_total_blocks))
+            {
+                ResetContext(pContext);
+                return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            }
+        }
     }
 
     ResetContext(pContext);

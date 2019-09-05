@@ -1,7 +1,7 @@
 //-------------------------------------------------------------------------------------
 // DirectXTexConvert.cpp
-//  
-// DirectX Texture Library - Image pixel format conversion 
+//
+// DirectX Texture Library - Image pixel format conversion
 //
 // Copyright (c) Microsoft Corporation. All rights reserved.
 // Licensed under the MIT License.
@@ -4567,7 +4567,8 @@ namespace
         _In_ DWORD filter,
         _In_ const Image& destImage,
         _In_ float threshold,
-        size_t z)
+        size_t z,
+        ProgressProc progressProc)
     {
         assert(srcImage.width == destImage.width);
         assert(srcImage.height == destImage.height);
@@ -4591,6 +4592,14 @@ namespace
 
             for (size_t h = 0; h < srcImage.height; ++h)
             {
+                if (progressProc)
+                {
+                    if (!progressProc(h, srcImage.height))
+                    {
+                       return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                    }
+                }
+
                 if (!_LoadScanline(scanline.get(), width, pSrc, srcImage.rowPitch, srcImage.format))
                     return E_FAIL;
 
@@ -4614,6 +4623,14 @@ namespace
                 // Ordered dithering
                 for (size_t h = 0; h < srcImage.height; ++h)
                 {
+                    if (progressProc)
+                    {
+                        if (!progressProc(h, srcImage.height))
+                        {
+                            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                        }
+                    }
+
                     if (!_LoadScanline(scanline.get(), width, pSrc, srcImage.rowPitch, srcImage.format))
                         return E_FAIL;
 
@@ -4631,6 +4648,14 @@ namespace
                 // No dithering
                 for (size_t h = 0; h < srcImage.height; ++h)
                 {
+                    if (progressProc)
+                    {
+                        if (!progressProc(h, srcImage.height))
+                        {
+                            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                        }
+                    }
+
                     if (!_LoadScanline(scanline.get(), width, pSrc, srcImage.rowPitch, srcImage.format))
                         return E_FAIL;
 
@@ -4842,10 +4867,14 @@ HRESULT DirectX::Convert(
         return E_POINTER;
     }
 
-	if (progressProc)
-	{
-		progressProc(0, rimage->height);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(0, rimage->height))
+        {
+            image.Release();
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     WICPixelFormatGUID pfGUID, targetGUID;
     if (UseWICConversion(filter, srcImage.format, format, pfGUID, targetGUID))
@@ -4854,13 +4883,16 @@ HRESULT DirectX::Convert(
     }
     else
     {
-        hr = ConvertCustom(srcImage, filter, *rimage, threshold, 0);
+        hr = ConvertCustom(srcImage, filter, *rimage, threshold, 0, progressProc);
     }
 
-	if (progressProc)
-	{
-		progressProc(rimage->height, rimage->height);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(rimage->height, rimage->height))
+        {
+            hr = HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     if (FAILED(hr))
     {
@@ -4916,11 +4948,15 @@ HRESULT DirectX::Convert(
         result.Release();
         return E_POINTER;
     }
-	
-	if (progressProc)
-	{
-		progressProc(0, nimages);
-	}
+
+    if (progressProc)
+    {
+        if (!progressProc(0, nimages))
+        {
+            result.Release();
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     WICPixelFormatGUID pfGUID, targetGUID;
     bool usewic = !metadata.IsPMAlpha() && UseWICConversion(filter, metadata.format, format, pfGUID, targetGUID);
@@ -4959,13 +4995,8 @@ HRESULT DirectX::Convert(
             }
             else
             {
-                hr = ConvertCustom(src, filter, dst, threshold, 0);
+                hr = ConvertCustom(src, filter, dst, threshold, 0, progressProc);
             }
-
-			if (progressProc)
-			{
-				progressProc(index, nimages);
-			}
 
             if (FAILED(hr))
             {
@@ -5017,13 +5048,8 @@ HRESULT DirectX::Convert(
                 }
                 else
                 {
-                    hr = ConvertCustom(src, filter, dst, threshold, slice);
+                    hr = ConvertCustom(src, filter, dst, threshold, slice, progressProc);
                 }
-
-				if (progressProc)
-				{
-					progressProc(index, nimages);
-				}
 
                 if (FAILED(hr))
                 {
@@ -5043,10 +5069,14 @@ HRESULT DirectX::Convert(
         return E_FAIL;
     }
 
-	if (progressProc)
-	{
-		progressProc(nimages, nimages);
-	}
+    if (progressProc)
+    {
+        if (!progressProc(nimages, nimages))
+        {
+            result.Release();
+            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+        }
+    }
 
     return S_OK;
 }
