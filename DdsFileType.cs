@@ -42,9 +42,6 @@ namespace DdsFileTypePlus
             return GetString(this.strings, name);
         }
 
-        private const DdsFileTypePlusStringName ForumLink_DisplayName = (DdsFileTypePlusStringName)33;
-        private const DdsFileTypePlusStringName ForumLink_Description = (DdsFileTypePlusStringName)34;
-
         private static string GetString(IDdsFileTypePlusStrings strings, DdsFileTypePlusStringName name)
         {
             string value = strings?.TryGetString(name);
@@ -153,9 +150,9 @@ namespace DdsFileTypePlus
 
                 case DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling:
                     return "Super Sampling";
-                case ForumLink_DisplayName:
+                case DdsFileTypePlusStringName.ForumLink_DisplayName:
                     return "More Info";
-                case ForumLink_Description:
+                case DdsFileTypePlusStringName.ForumLink_Description:
                     return "Forum Discussion";
 
                 default:
@@ -262,8 +259,8 @@ namespace DdsFileTypePlus
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling));
 
             PropertyControlInfo forumLinkPCI = configUI.FindControlForPropertyName(PropertyNames.ForumLink);
-            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(ForumLink_DisplayName);
-            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(ForumLink_Description);
+            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.ForumLink_DisplayName);
+            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(DdsFileTypePlusStringName.ForumLink_Description);
 
             PropertyControlInfo githubLinkPCI = configUI.FindControlForPropertyName(PropertyNames.GitHubLink);
             githubLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
