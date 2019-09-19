@@ -337,7 +337,7 @@ namespace DirectX
         size_t  m_size;
     };
 
-    typedef void(__stdcall *ProgressProc)(_In_ size_t done, _In_ size_t total);
+    typedef bool(__stdcall *ProgressProc)(_In_ size_t done, _In_ size_t total);
 
     //---------------------------------------------------------------------------------
     // User-defined I/O callbacks for loading and saving images

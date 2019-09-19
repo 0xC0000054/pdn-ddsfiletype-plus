@@ -470,7 +470,9 @@ HRESULT __stdcall Save(
             return E_OUTOFMEMORY;
         }
 
-        hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, TEX_FILTER_DEFAULT,
+        DWORD filter = TEX_FILTER_DEFAULT | TEX_FILTER_SEPARATE_ALPHA;
+
+        hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, filter,
             TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
 
         if (FAILED(hr))

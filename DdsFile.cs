@@ -79,7 +79,15 @@ namespace DdsFileTypePlus
                 ddsProgress = (UIntPtr done, UIntPtr total) =>
                 {
                     double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
-                    progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
+                    try
+                    {
+                        progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
+                        return true;
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        return false;
+                    }
                 };
             }
 

@@ -123,7 +123,8 @@ namespace DdsFileTypePlus
         }
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-        public delegate void DdsProgressCallback(UIntPtr done, UIntPtr total);
+        [return: MarshalAs(UnmanagedType.U1)]
+        public delegate bool DdsProgressCallback(UIntPtr done, UIntPtr total);
 
         [UnmanagedFunctionPointer(CallingConvention.StdCall)]
         private unsafe delegate int ReadDelegate(IntPtr buffer, uint count, uint* bytesRead);
@@ -201,6 +202,7 @@ namespace DdsFileTypePlus
         {
             public const int S_OK = 0;
             public const int E_POINTER = unchecked((int)0x80004003);
+            public const int CanceledError = unchecked((int)0x800704C7); // HRESULT_FROM_WIN32(ERROR_CANCELLED)
             public const int SeekError = unchecked((int)0x80070019); // HRESULT_FROM_WIN32(ERROR_SEEK)
             public const int NotSupported = unchecked((int)0x80070032); // HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED)
             public const int InvalidData = unchecked((int)0x8007000D); // HRESULT_FROM_WIN32(ERROR_INVALID_DATA)
@@ -307,7 +309,14 @@ namespace DdsFileTypePlus
                 }
                 else
                 {
-                    Marshal.ThrowExceptionForHR(hr);
+                    switch (hr)
+                    {
+                        case HResult.CanceledError:
+                            throw new OperationCanceledException();
+                        default:
+                            Marshal.ThrowExceptionForHR(hr);
+                            break;
+                    }
                 }
             }
         }
