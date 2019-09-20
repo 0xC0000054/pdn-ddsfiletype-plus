@@ -250,7 +250,9 @@ namespace
         size_t progress = 0;
         bool abort = false;
 
-#pragma omp parallel for
+        const size_t progressTotal = std::max<size_t>(1, (image.height + 3) / 4);
+
+#pragma omp parallel for shared(progress)
         for (int nb = 0; nb < static_cast<int>(nBlocks); ++nb)
         {
 #pragma omp flush (abort)
@@ -343,12 +345,13 @@ namespace
             else
                 D3DXEncodeBC1(pDest, temp, threshold, bcflags);
 
-#pragma omp atomic
-            progress++;
-
-            if (progressProc)
+            // Report progress when a new row is reached.
+            if (progressProc && x == 0)
             {
-                if (!progressProc(progress, nBlocks))
+#pragma omp atomic
+                progress += 4;
+
+                if (!progressProc(progress, progressTotal))
                 {
                     abort = true;
 #pragma omp flush (abort)
