@@ -346,7 +346,7 @@ namespace
                 D3DXEncodeBC1(pDest, temp, threshold, bcflags);
 
             // Report progress when a new row is reached.
-            if (progressProc && x == 0)
+            if (x == 0 && progressProc)
             {
 #pragma omp atomic
                 progress += 4;
