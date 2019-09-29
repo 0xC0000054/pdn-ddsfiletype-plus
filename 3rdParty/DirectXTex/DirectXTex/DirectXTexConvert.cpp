@@ -4886,7 +4886,7 @@ HRESULT DirectX::Convert(
         hr = ConvertCustom(srcImage, filter, *rimage, threshold, 0, progressProc);
     }
 
-    if (progressProc)
+    if (progressProc && SUCCEEDED(hr))
     {
         if (!progressProc(rimage->height, rimage->height))
         {

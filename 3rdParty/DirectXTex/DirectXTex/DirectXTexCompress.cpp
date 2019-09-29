@@ -680,7 +680,7 @@ HRESULT DirectX::Compress(
         hr = CompressBC(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
     }
 
-    if (progressProc)
+    if (progressProc && SUCCEEDED(hr))
     {
         if (!progressProc(img->height, img->height))
         {
