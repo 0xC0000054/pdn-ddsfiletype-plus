@@ -20,6 +20,7 @@ using System.IO;
 
 namespace DdsFileTypePlus
 {
+    [PluginSupportInfo(typeof(PluginSupportInfo))]
     public sealed class DdsFileType : PropertyBasedFileType
     {
         private readonly IServiceProvider services;
