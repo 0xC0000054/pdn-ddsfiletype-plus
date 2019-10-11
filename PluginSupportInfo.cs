@@ -29,7 +29,7 @@ namespace DdsFileTypePlus
                 object[] attributes = typeof(PluginSupportInfo).Assembly.GetCustomAttributes(typeof(AssemblyCopyrightAttribute), false);
 
                 return ((AssemblyCopyrightAttribute)attributes[0]).Copyright;
-}
+            }
         }
 
         public Version Version => typeof(PluginSupportInfo).Assembly.GetName().Version;
