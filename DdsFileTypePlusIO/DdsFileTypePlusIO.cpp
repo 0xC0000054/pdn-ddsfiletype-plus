@@ -493,7 +493,7 @@ HRESULT __stdcall Save(
         }
         else if (metadata.GetAlphaMode() == TEX_ALPHA_MODE_UNKNOWN)
         {
-            metadata.SetAlphaMode(TEX_ALPHA_MODE_STRAIGHT);
+            metadata.SetAlphaMode(TEX_ALPHA_MODE_CUSTOM);
         }
     }
 
