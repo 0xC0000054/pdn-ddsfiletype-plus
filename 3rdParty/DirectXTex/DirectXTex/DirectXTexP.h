@@ -51,9 +51,29 @@
 // warning #161: unrecognized #pragma
 #endif
 
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wc++98-compat"
+#pragma clang diagnostic ignored "-Wc++98-compat-pedantic"
+#pragma clang diagnostic ignored "-Wc++98-compat-local-type-template-args"
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+#pragma clang diagnostic ignored "-Wfloat-equal"
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+#pragma clang diagnostic ignored "-Wgnu-anonymous-struct"
+#pragma clang diagnostic ignored "-Wlanguage-extension-token"
+#pragma clang diagnostic ignored "-Wmissing-variable-declarations"
+#pragma clang diagnostic ignored "-Wnested-anon-types"
+#pragma clang diagnostic ignored "-Wreserved-id-macro"
+#pragma clang diagnostic ignored "-Wswitch-enum"
+#pragma clang diagnostic ignored "-Wtautological-type-limit-compare"
+#pragma clang diagnostic ignored "-Wunknown-pragmas"
+#endif
+
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+
 #pragma warning(push)
 #pragma warning(disable : 4005)
-#define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define NODRAWTEXT
 #define NOGDI
@@ -67,7 +87,7 @@
 #define _WIN32_WINNT_WIN10 0x0A00
 #endif
 
-#include <windows.h>
+#include <Windows.h>
 
 #if defined(_XBOX_ONE) && defined(_TITLE)
 #include <d3d12_x.h>
@@ -81,8 +101,8 @@
 
 #define _XM_NO_XMVECTOR_OVERLOADS_
 
-#include <directxmath.h>
-#include <directxpackedvector.h>
+#include <DirectXMath.h>
+#include <DirectXPackedVector.h>
 #include <assert.h>
 
 #include <malloc.h>
@@ -90,12 +110,13 @@
 
 #include <vector>
 
+#include <time.h>
 #include <stdlib.h>
 #include <search.h>
 
-#include <ole2.h>
+#include <Ole2.h>
 
-#include "directxtex.h"
+#include "DirectXTex.h"
 
 #include <wincodec.h>
 

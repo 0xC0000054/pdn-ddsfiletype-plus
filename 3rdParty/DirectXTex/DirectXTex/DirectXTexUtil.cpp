@@ -9,7 +9,7 @@
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //-------------------------------------------------------------------------------------
 
-#include "DirectXTexp.h"
+#include "DirectXTexP.h"
 
 #if defined(_XBOX_ONE) && defined(_TITLE)
 static_assert(XBOX_DXGI_FORMAT_R10G10B10_7E3_A2_FLOAT == DXGI_FORMAT_R10G10B10_7E3_A2_FLOAT, "Xbox One XDK mismatch detected");
@@ -222,7 +222,7 @@ DWORD DirectX::_CheckWICColorSpace(_In_ const GUID& sourceGUID, _In_ const GUID&
 
     if ((srgb & (TEX_FILTER_SRGB_IN | TEX_FILTER_SRGB_OUT)) == (TEX_FILTER_SRGB_IN | TEX_FILTER_SRGB_OUT))
     {
-        srgb &= ~(TEX_FILTER_SRGB_IN | TEX_FILTER_SRGB_OUT);
+        srgb &= ~static_cast<uint32_t>(TEX_FILTER_SRGB_IN | TEX_FILTER_SRGB_OUT);
     }
 
     return srgb;

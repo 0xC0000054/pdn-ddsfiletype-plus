@@ -9,9 +9,9 @@
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //-------------------------------------------------------------------------------------
 
-#include "DirectXTexp.h"
+#include "DirectXTexP.h"
 
-#include "bcdirectcompute.h"
+#include "BCDirectCompute.h"
 
 using namespace DirectX;
 

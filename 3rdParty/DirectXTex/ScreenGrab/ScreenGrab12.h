@@ -19,8 +19,7 @@
 
 #include <d3d12.h>
 
-#include <ocidl.h>
-#include <stdint.h>
+#include <OCIdl.h>
 #include <functional>
 
 
@@ -41,5 +40,6 @@ namespace DirectX
         D3D12_RESOURCE_STATES beforeState = D3D12_RESOURCE_STATE_RENDER_TARGET,
         D3D12_RESOURCE_STATES afterState = D3D12_RESOURCE_STATE_RENDER_TARGET,
         _In_opt_ const GUID* targetFormat = nullptr,
-        _In_opt_ std::function<void __cdecl(IPropertyBag2*)> setCustomProps = nullptr);
+        _In_opt_ std::function<void __cdecl(IPropertyBag2*)> setCustomProps = nullptr,
+        bool forceSRGB = false);
 }

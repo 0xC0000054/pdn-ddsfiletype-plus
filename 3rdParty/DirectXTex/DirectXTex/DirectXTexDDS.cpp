@@ -9,9 +9,9 @@
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //-------------------------------------------------------------------------------------
 
-#include "DirectXTexp.h"
+#include "DirectXTexP.h"
 
-#include "dds.h"
+#include "DDS.h"
 
 using namespace DirectX;
 
@@ -69,6 +69,9 @@ namespace
 
         { DXGI_FORMAT_BC4_UNORM,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC, MAKEFOURCC('A', 'T', 'I', '1'), 0, 0, 0, 0, 0 } },
         { DXGI_FORMAT_BC5_UNORM,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC, MAKEFOURCC('A', 'T', 'I', '2'), 0, 0, 0, 0, 0 } },
+
+        { DXGI_FORMAT_BC6H_UF16,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC, MAKEFOURCC('B', 'C', '6', 'H'), 0, 0, 0, 0, 0 } },
+        { DXGI_FORMAT_BC7_UNORM,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC, MAKEFOURCC('B', 'C', '7', 'L'), 0, 0, 0, 0, 0 } },
 
         { DXGI_FORMAT_R8G8_B8G8_UNORM,    CONV_FLAGS_NONE,        DDSPF_R8G8_B8G8 }, // D3DFMT_R8G8_B8G8
         { DXGI_FORMAT_G8R8_G8B8_UNORM,    CONV_FLAGS_NONE,        DDSPF_G8R8_G8B8 }, // D3DFMT_G8R8_G8B8
@@ -373,7 +376,7 @@ namespace
 
             static_assert(static_cast<int>(TEX_MISC_TEXTURECUBE) == static_cast<int>(DDS_RESOURCE_MISC_TEXTURECUBE), "DDS header mismatch");
 
-            metadata.miscFlags = d3d10ext->miscFlag & ~TEX_MISC_TEXTURECUBE;
+            metadata.miscFlags = d3d10ext->miscFlag & ~static_cast<uint32_t>(TEX_MISC_TEXTURECUBE);
 
             switch (d3d10ext->resourceDimension)
             {
@@ -469,9 +472,6 @@ namespace
             if (metadata.format == DXGI_FORMAT_UNKNOWN)
                 return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
-            if (convFlags & CONV_FLAGS_PMALPHA)
-                metadata.miscFlags2 |= TEX_ALPHA_MODE_PREMULTIPLIED;
-
             // Special flag for handling LUMINANCE legacy formats
             if (flags & DDS_FLAGS_EXPAND_LUMINANCE)
             {
@@ -555,6 +555,16 @@ namespace
             default:
                 break;
             }
+        }
+
+        // Implicit alpha mode
+        if (convFlags & CONV_FLAGS_NOALPHA)
+        {
+            metadata.SetAlphaMode(TEX_ALPHA_MODE_OPAQUE);
+        }
+        else if (convFlags & CONV_FLAGS_PMALPHA)
+        {
+            metadata.SetAlphaMode(TEX_ALPHA_MODE_PREMULTIPLIED);
         }
 
         return S_OK;
@@ -767,7 +777,7 @@ HRESULT DirectX::_EncodeDDSHeader(
 
         static_assert(static_cast<int>(TEX_MISC_TEXTURECUBE) == static_cast<int>(DDS_RESOURCE_MISC_TEXTURECUBE), "DDS header mismatch");
 
-        ext->miscFlag = metadata.miscFlags & ~TEX_MISC_TEXTURECUBE;
+        ext->miscFlag = metadata.miscFlags & ~static_cast<uint32_t>(TEX_MISC_TEXTURECUBE);
 
         if (metadata.miscFlags & TEX_MISC_TEXTURECUBE)
         {
@@ -882,9 +892,9 @@ namespace
                 for (size_t ocount = 0, icount = 0; ((icount < (inSize - 2)) && (ocount < (outSize - 3))); icount += 3, ocount += 4)
                 {
                     // 24bpp Direct3D 9 files are actually BGR, so need to swizzle as well
-                    uint32_t t1 = (*(sPtr) << 16);
-                    uint32_t t2 = (*(sPtr + 1) << 8);
-                    uint32_t t3 = *(sPtr + 2);
+                    uint32_t t1 = uint32_t(*(sPtr) << 16);
+                    uint32_t t2 = uint32_t(*(sPtr + 1) << 8);
+                    uint32_t t3 = uint32_t(*(sPtr + 2));
 
                     *(dPtr++) = t1 | t2 | t3 | 0xff000000;
                     sPtr += 3;
@@ -907,9 +917,9 @@ namespace
                     {
                         uint8_t t = *(sPtr++);
 
-                        uint32_t t1 = (t & 0xe0) | ((t & 0xe0) >> 3) | ((t & 0xc0) >> 6);
-                        uint32_t t2 = ((t & 0x1c) << 11) | ((t & 0x1c) << 8) | ((t & 0x18) << 5);
-                        uint32_t t3 = ((t & 0x03) << 22) | ((t & 0x03) << 20) | ((t & 0x03) << 18) | ((t & 0x03) << 16);
+                        uint32_t t1 = uint32_t((t & 0xe0) | ((t & 0xe0) >> 3) | ((t & 0xc0) >> 6));
+                        uint32_t t2 = uint32_t(((t & 0x1c) << 11) | ((t & 0x1c) << 8) | ((t & 0x18) << 5));
+                        uint32_t t3 = uint32_t(((t & 0x03) << 22) | ((t & 0x03) << 20) | ((t & 0x03) << 18) | ((t & 0x03) << 16));
 
                         *(dPtr++) = t1 | t2 | t3 | 0xff000000;
                     }
@@ -956,10 +966,10 @@ namespace
                 {
                     uint16_t t = *(sPtr++);
 
-                    uint32_t t1 = (t & 0x00e0) | ((t & 0x00e0) >> 3) | ((t & 0x00c0) >> 6);
-                    uint32_t t2 = ((t & 0x001c) << 11) | ((t & 0x001c) << 8) | ((t & 0x0018) << 5);
-                    uint32_t t3 = ((t & 0x0003) << 22) | ((t & 0x0003) << 20) | ((t & 0x0003) << 18) | ((t & 0x0003) << 16);
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : ((t & 0xff00) << 16);
+                    uint32_t t1 = uint32_t((t & 0x00e0) | ((t & 0x00e0) >> 3) | ((t & 0x00c0) >> 6));
+                    uint32_t t2 = uint32_t(((t & 0x001c) << 11) | ((t & 0x001c) << 8) | ((t & 0x0018) << 5));
+                    uint32_t t3 = uint32_t(((t & 0x0003) << 22) | ((t & 0x0003) << 20) | ((t & 0x0003) << 18) | ((t & 0x0003) << 16));
+                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
 
                     *(dPtr++) = t1 | t2 | t3 | ta;
                 }
@@ -1002,7 +1012,7 @@ namespace
                     uint16_t t = *(sPtr++);
 
                     uint32_t t1 = pal8[t & 0xff];
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : ((t & 0xff00) << 16);
+                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
 
                     *(dPtr++) = t1 | ta;
                 }
@@ -1044,8 +1054,8 @@ namespace
                     {
                         uint8_t t = *(sPtr++);
 
-                        uint32_t t1 = ((t & 0x0f) << 4) | (t & 0x0f);
-                        uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : (((t & 0xf0) << 24) | ((t & 0xf0) << 20));
+                        uint32_t t1 = uint32_t(((t & 0x0f) << 4) | (t & 0x0f));
+                        uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t(((t & 0xf0) << 24) | ((t & 0xf0) << 20));
 
                         *(dPtr++) = t1 | (t1 << 8) | (t1 << 16) | ta;
                     }
@@ -1069,12 +1079,12 @@ namespace
 
                 for (size_t ocount = 0, icount = 0; ((icount < (inSize - 1)) && (ocount < (outSize - 3))); icount += 2, ocount += 4)
                 {
-                    uint16_t t = *(sPtr++);
+                    uint32_t t = *(sPtr++);
 
-                    uint32_t t1 = ((t & 0x0f00) >> 4) | ((t & 0x0f00) >> 8);
-                    uint32_t t2 = ((t & 0x00f0) << 8) | ((t & 0x00f0) << 4);
-                    uint32_t t3 = ((t & 0x000f) << 20) | ((t & 0x000f) << 16);
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : (((t & 0xf000) << 16) | ((t & 0xf000) << 12));
+                    uint32_t t1 = uint32_t((t & 0x0f00) >> 4) | ((t & 0x0f00) >> 8);
+                    uint32_t t2 = uint32_t((t & 0x00f0) << 8) | ((t & 0x00f0) << 4);
+                    uint32_t t3 = uint32_t((t & 0x000f) << 20) | ((t & 0x000f) << 16);
+                    uint32_t ta = uint32_t((flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : (((t & 0xf000) << 16) | ((t & 0xf000) << 12)));
 
                     *(dPtr++) = t1 | t2 | t3 | ta;
                 }
@@ -1142,10 +1152,10 @@ namespace
                 {
                     uint16_t t = *(sPtr++);
 
-                    uint32_t t1 = (t & 0xff);
-                    uint32_t t2 = (t1 << 8);
-                    uint32_t t3 = (t1 << 16);
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : ((t & 0xff00) << 16);
+                    uint32_t t1 = uint32_t(t & 0xff);
+                    uint32_t t2 = uint32_t(t1 << 8);
+                    uint32_t t3 = uint32_t(t1 << 16);
+                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
 
                     *(dPtr++) = t1 | t2 | t3 | ta;
                 }
@@ -1229,7 +1239,7 @@ namespace
             return E_FAIL;
         }
 
-        DWORD tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0;
+        DWORD tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0u;
         if (convFlags & CONV_FLAGS_SWIZZLE)
             tflags |= TEXP_SCANLINE_LEGACY;
 
@@ -1451,7 +1461,7 @@ namespace
         if (IsPlanar(metadata.format))
             return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
 
-        DWORD tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0;
+        DWORD tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0u;
         if (convFlags & CONV_FLAGS_SWIZZLE)
             tflags |= TEXP_SCANLINE_LEGACY;
 
