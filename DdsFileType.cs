@@ -302,6 +302,11 @@ namespace DdsFileTypePlus
 
         protected override bool IsReflexive(PropertyBasedSaveConfigToken token)
         {
+            if (token.GetProperty<BooleanProperty>(PropertyNames.CubeMap).Value)
+            {
+                return false;
+            }
+
             DdsFileFormat format = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
 
             return format == DdsFileFormat.B8G8R8A8 || format == DdsFileFormat.R8G8B8A8;
