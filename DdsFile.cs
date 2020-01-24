@@ -73,24 +73,6 @@ namespace DdsFileTypePlus
                 input.Render(args, true);
             }
 
-            DdsNative.DdsProgressCallback ddsProgress = null;
-            if (progressCallback != null)
-            {
-                ddsProgress = (UIntPtr done, UIntPtr total) =>
-                {
-                    double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
-                    try
-                    {
-                        progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
-                        return true;
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        return false;
-                    }
-                };
-            }
-
             int width = scratchSurface.Width;
             int height = scratchSurface.Height;
             int arraySize = 1;
@@ -115,22 +97,47 @@ namespace DdsFileTypePlus
             int mipLevels = generateMipmaps ? GetMipCount(width, height) : 1;
             bool enableHardwareAcceleration = (bool)services.GetService<ISettingsService>().GetSetting(AppSettingPaths.UI.EnableHardwareAcceleration).Value;
 
-            DdsNative.DDSSaveInfo info = new DdsNative.DDSSaveInfo
-            {
-                width = width,
-                height = height,
-                arraySize = arraySize,
-                mipLevels = mipLevels,
-                format = format,
-                errorMetric = errorMetric,
-                compressionMode = compressionMode,
-                cubeMap = cubeMapFaceSize.HasValue,
-                enableHardwareAcceleration = enableHardwareAcceleration
-            };
-
             using (TextureCollection textures = GetTextures(scratchSurface, cubeMapFaceSize, mipLevels, sampling))
             {
-                DdsNative.Save(info, textures, output, ddsProgress);
+                if (format == DdsFileFormat.R8G8B8X8 || format == DdsFileFormat.B8G8R8)
+                {
+                    new DX9DdsWriter(width, height, arraySize, mipLevels, format).Save(textures, output, progressCallback);
+                }
+                else
+                {
+                    DdsNative.DdsProgressCallback ddsProgress = null;
+                    if (progressCallback != null)
+                    {
+                        ddsProgress = (UIntPtr done, UIntPtr total) =>
+                        {
+                            double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
+                            try
+                            {
+                                progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
+                                return true;
+                            }
+                            catch (OperationCanceledException)
+                            {
+                                return false;
+                            }
+                        };
+                    }
+
+                    DdsNative.DDSSaveInfo info = new DdsNative.DDSSaveInfo
+                    {
+                        width = width,
+                        height = height,
+                        arraySize = arraySize,
+                        mipLevels = mipLevels,
+                        format = format,
+                        errorMetric = errorMetric,
+                        compressionMode = compressionMode,
+                        cubeMap = cubeMapFaceSize.HasValue,
+                        enableHardwareAcceleration = enableHardwareAcceleration
+                    };
+
+                    DdsNative.Save(info, textures, output, ddsProgress);
+                }
             }
         }
 

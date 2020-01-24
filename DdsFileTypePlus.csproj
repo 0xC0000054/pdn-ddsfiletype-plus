@@ -55,6 +55,7 @@
     <Compile Include="DdsFileType.cs" />
     <Compile Include="DdsFileTypeFactory.cs" />
     <Compile Include="DdsNative.cs" />
+    <Compile Include="DX9DdsWriter.cs" />
     <Compile Include="PluginSupportInfo.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Texture.cs" />
