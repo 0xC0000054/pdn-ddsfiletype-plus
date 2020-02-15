@@ -31,6 +31,8 @@
 
 #include <dxgiformat.h>
 
+#pragma warning(disable : 4619 4616 26812)
+
 #include "DirectXTex.h"
 
 //Uncomment to add support for OpenEXR (.exr)
@@ -361,7 +363,7 @@ namespace
 
     struct find_closer { void operator()(HANDLE h) { assert(h != INVALID_HANDLE_VALUE); if (h) FindClose(h); } };
 
-    typedef std::unique_ptr<void, find_closer> ScopedFindHandle;
+    using ScopedFindHandle = std::unique_ptr<void, find_closer>;
 
 #ifdef _PREFAST_
 #pragma prefast(disable : 26018, "Only used with static internal arrays")
@@ -476,7 +478,7 @@ namespace
         {
             if (static_cast<DXGI_FORMAT>(pFormat->dwValue) == Format)
             {
-                wprintf(pFormat->pName);
+                wprintf(L"%ls", pFormat->pName);
                 return;
             }
         }
@@ -485,7 +487,7 @@ namespace
         {
             if (static_cast<DXGI_FORMAT>(pFormat->dwValue) == Format)
             {
-                wprintf(pFormat->pName);
+                wprintf(L"%ls", pFormat->pName);
                 return;
             }
         }
@@ -834,7 +836,7 @@ namespace
                 for (size_t j = 1; j <= 14; ++j)
                 {
                     if (blockHist[j] > 0)
-                        wprintf(L"\t     Mode %02Iu blocks - %zu\n", j, blockHist[j]);
+                        wprintf(L"\t     Mode %02zu blocks - %zu\n", j, blockHist[j]);
                 }
                 if (blockHist[0] > 0)
                     wprintf(L"\tReserved mode blcks - %zu\n", blockHist[0]);
@@ -845,7 +847,7 @@ namespace
                 for (size_t j = 0; j <= 7; ++j)
                 {
                     if (blockHist[j] > 0)
-                        wprintf(L"\t     Mode %02Iu blocks - %zu\n", j, blockHist[j]);
+                        wprintf(L"\t     Mode %02zu blocks - %zu\n", j, blockHist[j]);
                 }
                 if (blockHist[8] > 0)
                     wprintf(L"\tReserved mode blcks - %zu\n", blockHist[8]);
@@ -3423,7 +3425,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 if (info1.depth > 1)
                 {
-                    wprintf(L"Results by mip (%3Iu) and slice (%3Iu)\n\n", info1.mipLevels, info1.depth);
+                    wprintf(L"Results by mip (%3zu) and slice (%3zu)\n\n", info1.mipLevels, info1.depth);
 
                     size_t depth = info1.depth;
                     for (size_t mip = 0; mip < info1.mipLevels; ++mip)
@@ -3438,7 +3440,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 || img1->height != img2->height
                                 || img1->width != img2->width)
                             {
-                                wprintf(L"ERROR: Unexpected mismatch at slice %3Iu, mip %3Iu\n", slice, mip);
+                                wprintf(L"ERROR: Unexpected mismatch at slice %3zu, mip %3zu\n", slice, mip);
                                 return 1;
                             }
                             else
@@ -3447,7 +3449,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = ComputeMSE(*img1, *img2, mse, mseV);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"Failed comparing images at slice %3Iu, mip %3Iu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"Failed comparing images at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
 
@@ -3464,7 +3466,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                                 ++total_images;
 
-                                wprintf(L"[%3Iu,%3Iu]: %f (%f %f %f %f) PSNR %f dB\n", mip, slice, mse, mseV[0], mseV[1], mseV[2], mseV[3],
+                                wprintf(L"[%3zu,%3zu]: %f (%f %f %f %f) PSNR %f dB\n", mip, slice, mse, mseV[0], mseV[1], mseV[2], mseV[3],
                                     10.0 * log10(3.0 / (double(mseV[0]) + double(mseV[1]) + double(mseV[2]))));
                             }
                         }
@@ -3475,7 +3477,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 }
                 else
                 {
-                    wprintf(L"Results by item (%3Iu) and mip (%3Iu)\n\n", info1.arraySize, info1.mipLevels);
+                    wprintf(L"Results by item (%3zu) and mip (%3zu)\n\n", info1.arraySize, info1.mipLevels);
 
                     for (size_t item = 0; item < info1.arraySize; ++item)
                     {
@@ -3489,7 +3491,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 || img1->height != img2->height
                                 || img1->width != img2->width)
                             {
-                                wprintf(L"ERROR: Unexpected mismatch at item %3Iu, mip %3Iu\n", item, mip);
+                                wprintf(L"ERROR: Unexpected mismatch at item %3zu, mip %3zu\n", item, mip);
                                 return 1;
                             }
                             else
@@ -3498,7 +3500,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = ComputeMSE(*img1, *img2, mse, mseV);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"Failed comparing images at item %3Iu, mip %3Iu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"Failed comparing images at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
 
@@ -3515,7 +3517,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                                 ++total_images;
 
-                                wprintf(L"[%3Iu,%3Iu]: %f (%f %f %f %f) PSNR %f dB\n", item, mip, mse, mseV[0], mseV[1], mseV[2], mseV[3],
+                                wprintf(L"[%3zu,%3zu]: %f (%f %f %f %f) PSNR %f dB\n", item, mip, mse, mseV[0], mseV[1], mseV[2], mseV[3],
                                     10.0 * log10(3.0 / (double(mseV[0]) + double(mseV[1]) + double(mseV[2]))));
                             }
                         }
@@ -3579,17 +3581,17 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 switch (info.dimension)
                 {
                 case TEX_DIMENSION_TEXTURE1D:
-                    wprintf((info.arraySize > 1) ? L"1DArray\n" : L"1D\n");
+                    wprintf(L"%ls", (info.arraySize > 1) ? L"1DArray\n" : L"1D\n");
                     break;
 
                 case TEX_DIMENSION_TEXTURE2D:
                     if (info.IsCubemap())
                     {
-                        wprintf((info.arraySize > 6) ? L"CubeArray\n" : L"Cube\n");
+                        wprintf(L"%ls", (info.arraySize > 6) ? L"CubeArray\n" : L"Cube\n");
                     }
                     else
                     {
-                        wprintf((info.arraySize > 1) ? L"2DArray\n" : L"2D\n");
+                        wprintf(L"%ls", (info.arraySize > 1) ? L"2DArray\n" : L"2D\n");
                     }
                     break;
 
@@ -3641,7 +3643,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 if (info.depth > 1)
                 {
-                    wprintf(L"Writing by mip (%3Iu) and slice (%3Iu)...", info.mipLevels, info.depth);
+                    wprintf(L"Writing by mip (%3zu) and slice (%3zu)...", info.mipLevels, info.depth);
 
                     size_t depth = info.depth;
                     for (size_t mip = 0; mip < info.mipLevels; ++mip)
@@ -3652,7 +3654,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                             if (!img)
                             {
-                                wprintf(L"ERROR: Unexpected error at slice %3Iu, mip %3Iu\n", slice, mip);
+                                wprintf(L"ERROR: Unexpected error at slice %3zu, mip %3zu\n", slice, mip);
                                 return 1;
                             }
                             else
@@ -3660,11 +3662,11 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 wchar_t subFname[_MAX_FNAME];
                                 if (info.mipLevels > 1)
                                 {
-                                    swprintf_s(subFname, L"%ls_slice%03Iu_mip%03Iu", fname, slice, mip);
+                                    swprintf_s(subFname, L"%ls_slice%03zu_mip%03zu", fname, slice, mip);
                                 }
                                 else
                                 {
-                                    swprintf_s(subFname, L"%ls_slice%03Iu", fname, slice);
+                                    swprintf_s(subFname, L"%ls_slice%03zu", fname, slice);
                                 }
 
                                 _wmakepath_s(szOutputFile, nullptr, nullptr, subFname, ext);
@@ -3685,7 +3687,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 }
                 else
                 {
-                    wprintf(L"Writing by item (%3Iu) and mip (%3Iu)...", info.arraySize, info.mipLevels);
+                    wprintf(L"Writing by item (%3zu) and mip (%3zu)...", info.arraySize, info.mipLevels);
 
                     for (size_t item = 0; item < info.arraySize; ++item)
                     {
@@ -3695,7 +3697,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                             if (!img)
                             {
-                                wprintf(L"ERROR: Unexpected error at item %3Iu, mip %3Iu\n", item, mip);
+                                wprintf(L"ERROR: Unexpected error at item %3zu, mip %3zu\n", item, mip);
                                 return 1;
                             }
                             else
@@ -3703,11 +3705,11 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 wchar_t subFname[_MAX_FNAME];
                                 if (info.mipLevels > 1)
                                 {
-                                    swprintf_s(subFname, L"%ls_item%03Iu_mip%03Iu", fname, item, mip);
+                                    swprintf_s(subFname, L"%ls_item%03zu_mip%03zu", fname, item, mip);
                                 }
                                 else
                                 {
-                                    swprintf_s(subFname, L"%ls_item%03Iu", fname, item);
+                                    swprintf_s(subFname, L"%ls_item%03zu", fname, item);
                                 }
 
                                 _wmakepath_s(szOutputFile, nullptr, nullptr, subFname, ext);
@@ -3747,7 +3749,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 if (info.depth > 1)
                 {
-                    wprintf(L"Results by mip (%3Iu) and slice (%3Iu)\n", info.mipLevels, info.depth);
+                    wprintf(L"Results by mip (%3zu) and slice (%3zu)\n", info.mipLevels, info.depth);
 
                     size_t depth = info.depth;
                     for (size_t mip = 0; mip < info.mipLevels; ++mip)
@@ -3758,17 +3760,17 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                             if (!img)
                             {
-                                wprintf(L"ERROR: Unexpected error at slice %3Iu, mip %3Iu\n", slice, mip);
+                                wprintf(L"ERROR: Unexpected error at slice %3zu, mip %3zu\n", slice, mip);
                                 return 1;
                             }
                             else
                             {
-                                wprintf(L"\n[%3Iu, %3Iu]:\n", mip, slice);
+                                wprintf(L"\n[%3zu, %3zu]:\n", mip, slice);
 
                                 hr = DumpBCImage(*img, pixelx, pixely);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed dumping image at slice %3Iu, mip %3Iu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed dumping image at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
                             }
@@ -3786,7 +3788,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 }
                 else
                 {
-                    wprintf(L"Results by item (%3Iu) and mip (%3Iu)\n", info.arraySize, info.mipLevels);
+                    wprintf(L"Results by item (%3zu) and mip (%3zu)\n", info.arraySize, info.mipLevels);
 
                     for (size_t item = 0; item < info.arraySize; ++item)
                     {
@@ -3799,19 +3801,19 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                             if (!img)
                             {
-                                wprintf(L"ERROR: Unexpected error at item %3Iu, mip %3Iu\n", item, mip);
+                                wprintf(L"ERROR: Unexpected error at item %3zu, mip %3zu\n", item, mip);
                                 return 1;
                             }
                             else
                             {
                                 if (image->GetImageCount() > 1)
                                 {
-                                    wprintf(L"\n[%3Iu, %3Iu]:\n", item, mip);
+                                    wprintf(L"\n[%3zu, %3zu]:\n", item, mip);
                                 }
                                 hr = DumpBCImage(*img, tpixelx, tpixely);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed dumping image at item %3Iu, mip %3Iu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed dumping image at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
                             }
@@ -3865,7 +3867,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 if (info.depth > 1)
                 {
-                    wprintf(L"Results by mip (%3Iu) and slice (%3Iu)\n\n", info.mipLevels, info.depth);
+                    wprintf(L"Results by mip (%3zu) and slice (%3zu)\n\n", info.mipLevels, info.depth);
 
                     size_t depth = info.depth;
                     for (size_t mip = 0; mip < info.mipLevels; ++mip)
@@ -3876,7 +3878,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                             if (!img)
                             {
-                                wprintf(L"ERROR: Unexpected error at slice %3Iu, mip %3Iu\n", slice, mip);
+                                wprintf(L"ERROR: Unexpected error at slice %3zu, mip %3zu\n", slice, mip);
                                 return 1;
                             }
                             else
@@ -3885,11 +3887,11 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = Analyze(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing image at slice %3Iu, mip %3Iu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing image at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
 
-                                wprintf(L"Result slice %3Iu, mip %3Iu:\n", slice, mip);
+                                wprintf(L"Result slice %3zu, mip %3zu:\n", slice, mip);
                                 data.Print();
                             }
 
@@ -3899,7 +3901,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = AnalyzeBC(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing BC image at slice %3Iu, mip %3Iu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing BC image at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
 
@@ -3914,7 +3916,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 }
                 else
                 {
-                    wprintf(L"Results by item (%3Iu) and mip (%3Iu)\n\n", info.arraySize, info.mipLevels);
+                    wprintf(L"Results by item (%3zu) and mip (%3zu)\n\n", info.arraySize, info.mipLevels);
 
                     for (size_t item = 0; item < info.arraySize; ++item)
                     {
@@ -3924,7 +3926,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                             if (!img)
                             {
-                                wprintf(L"ERROR: Unexpected error at item %3Iu, mip %3Iu\n", item, mip);
+                                wprintf(L"ERROR: Unexpected error at item %3zu, mip %3zu\n", item, mip);
                                 return 1;
                             }
                             else
@@ -3933,13 +3935,13 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = Analyze(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing image at item %3Iu, mip %3Iu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing image at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
 
                                 if (image->GetImageCount() > 1)
                                 {
-                                    wprintf(L"Result item %3Iu, mip %3Iu:\n", item, mip);
+                                    wprintf(L"Result item %3zu, mip %3zu:\n", item, mip);
                                 }
                                 data.Print();
                             }
@@ -3950,7 +3952,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = AnalyzeBC(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing BC image at item %3Iu, mip %3Iu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing BC image at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
                                     return 1;
                                 }
 

@@ -37,7 +37,7 @@
 #pragma warning(pop)
 
 #pragma warning(push)
-#pragma warning(disable : 4471)
+#pragma warning(disable : 4471 5204)
     #include <windows.storage.streams.h>
 #pragma warning(pop)
 
@@ -60,7 +60,7 @@
 #else
 
     #pragma prefast(suppress:6387 28196, "a simple wrapper around an existing annotated function" );
-    static inline HRESULT CreateMemoryStream(_Outptr_ IStream** stream)
+    static inline HRESULT CreateMemoryStream(_Outptr_ IStream** stream) noexcept
     {
         return CreateStreamOnHGlobal(nullptr, TRUE, stream);
     }
@@ -150,7 +150,7 @@ namespace
         DWORD flags,
         bool iswic2,
         _Out_opt_ WICPixelFormatGUID* pConvert,
-        _Out_ TEX_ALPHA_MODE* alphaMode)
+        _Out_ TEX_ALPHA_MODE* alphaMode) noexcept
     {
         if (pConvert)
             memset(pConvert, 0, sizeof(WICPixelFormatGUID));
@@ -395,7 +395,7 @@ namespace
             return E_POINTER;
 
         bool iswic2 = false;
-        IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+        auto pWIC = GetWICFactory(iswic2);
         if (!pWIC)
             return E_NOINTERFACE;
 
@@ -457,7 +457,7 @@ namespace
             return hr;
 
         bool iswic2 = false;
-        IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+        auto pWIC = GetWICFactory(iswic2);
         if (!pWIC)
             return E_NOINTERFACE;
 
@@ -733,7 +733,7 @@ namespace
         {
             // Conversion required to write
             bool iswic2 = false;
-            IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+            auto pWIC = GetWICFactory(iswic2);
             if (!pWIC)
                 return E_NOINTERFACE;
 
@@ -794,7 +794,7 @@ namespace
 
         // Initialize WIC
         bool iswic2 = false;
-        IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+        auto pWIC = GetWICFactory(iswic2);
         if (!pWIC)
             return E_NOINTERFACE;
 
@@ -862,7 +862,7 @@ namespace
 
         // Initialize WIC
         bool iswic2 = false;
-        IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+        auto pWIC = GetWICFactory(iswic2);
         if (!pWIC)
             return E_NOINTERFACE;
 
@@ -937,7 +937,7 @@ HRESULT DirectX::GetMetadataFromWICMemory(
         return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
 
     bool iswic2 = false;
-    IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+    auto pWIC = GetWICFactory(iswic2);
     if (!pWIC)
         return E_NOINTERFACE;
 
@@ -986,7 +986,7 @@ HRESULT DirectX::GetMetadataFromWICFile(
         return E_INVALIDARG;
 
     bool iswic2 = false;
-    IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+    auto pWIC = GetWICFactory(iswic2);
     if (!pWIC)
         return E_NOINTERFACE;
 
@@ -1029,7 +1029,7 @@ HRESULT DirectX::LoadFromWICMemory(
         return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
 
     bool iswic2 = false;
-    IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+    auto pWIC = GetWICFactory(iswic2);
     if (!pWIC)
         return E_NOINTERFACE;
 
@@ -1100,7 +1100,7 @@ HRESULT DirectX::LoadFromWICFile(
         return E_INVALIDARG;
 
     bool iswic2 = false;
-    IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+    auto pWIC = GetWICFactory(iswic2);
     if (!pWIC)
         return E_NOINTERFACE;
 
@@ -1278,7 +1278,7 @@ HRESULT DirectX::SaveToWICFile(
         return E_POINTER;
 
     bool iswic2 = false;
-    IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+    auto pWIC = GetWICFactory(iswic2);
     if (!pWIC)
         return E_NOINTERFACE;
 
@@ -1316,7 +1316,7 @@ HRESULT DirectX::SaveToWICFile(
         return E_INVALIDARG;
 
     bool iswic2 = false;
-    IWICImagingFactory* pWIC = GetWICFactory(iswic2);
+    auto pWIC = GetWICFactory(iswic2);
     if (!pWIC)
         return E_NOINTERFACE;
 
