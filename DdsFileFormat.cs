@@ -12,6 +12,7 @@
 
 namespace DdsFileTypePlus
 {
+    // This must be kept in sync with DdsFileFormat in DdsFileTypePlusIO.h
     public enum DdsFileFormat
     {
         BC1,

@@ -27,6 +27,7 @@ extern "C" {
         int32_t stride;
     };
 
+    // This must be kept in sync with DdsFileFormat.cs
     enum DdsFileFormat
     {
         // DXT1
