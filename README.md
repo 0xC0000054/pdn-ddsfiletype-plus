@@ -30,7 +30,7 @@ See [License.txt](License.txt) for more information.
 
 ## Prerequsites
 
-* Visual Studio 2017
+* Visual Studio 2019
 * Paint.NET 4.0.17 or later
 
 ## Building the plugin
