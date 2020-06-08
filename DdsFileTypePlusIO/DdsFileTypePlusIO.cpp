@@ -98,7 +98,20 @@ namespace
         metadata.depth = 1;
         metadata.arraySize = info->arraySize;
         metadata.mipLevels = info->mipLevels;
-        metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+
+        switch (info->format)
+        {
+        case DDS_FORMAT_BC1_SRGB:
+        case DDS_FORMAT_BC2_SRGB:
+        case DDS_FORMAT_BC3_SRGB:
+        case DDS_FORMAT_BC7_SRGB:
+            metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            break;
+        default:
+            metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            break;
+        }
+
         metadata.dimension = TEX_DIMENSION_TEXTURE2D;
         if (info->cubeMap)
         {
@@ -223,7 +236,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         ddsImage.swap(interleavedImage);
     }
 
-    const DXGI_FORMAT targetFormat = DXGI_FORMAT_R8G8B8A8_UNORM;
+    const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
     std::unique_ptr<ScratchImage> targetImage(new(std::nothrow) ScratchImage);
 
     if (targetImage == nullptr)
