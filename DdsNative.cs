@@ -343,6 +343,7 @@ namespace DdsFileTypePlus
         private sealed class StreamIOCallbacks
         {
             private readonly Stream stream;
+            private readonly byte[] streamBuffer;
 
             // 81920 is the largest multiple of 4096 that is below the large object heap threshold.
             private const int MaxBufferSize = 81920;
@@ -350,6 +351,7 @@ namespace DdsFileTypePlus
             public StreamIOCallbacks(Stream stream)
             {
                 this.stream = stream;
+                this.streamBuffer = new byte[MaxBufferSize];
                 this.CallbackExceptionInfo = null;
             }
 
@@ -371,24 +373,21 @@ namespace DdsFileTypePlus
                     return HResult.S_OK;
                 }
 
-                int bufferSize = (int)Math.Min(MaxBufferSize, count);
                 try
                 {
-                    byte[] bytes = new byte[bufferSize];
-
                     long totalBytesRead = 0;
                     long remaining = count;
 
                     do
                     {
-                        int streamBytesRead = this.stream.Read(bytes, 0, (int)Math.Min(MaxBufferSize, remaining));
+                        int streamBytesRead = this.stream.Read(this.streamBuffer, 0, (int)Math.Min(MaxBufferSize, remaining));
 
                         if (streamBytesRead == 0)
                         {
                             break;
                         }
 
-                        Marshal.Copy(bytes, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), streamBytesRead);
+                        Marshal.Copy(this.streamBuffer, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), streamBytesRead);
 
                         totalBytesRead += streamBytesRead;
                         remaining -= streamBytesRead;
@@ -422,9 +421,6 @@ namespace DdsFileTypePlus
 
                 try
                 {
-                    int bufferSize = (int)Math.Min(MaxBufferSize, count);
-                    byte[] bytes = new byte[bufferSize];
-
                     long offset = 0;
                     long remaining = count;
 
@@ -432,9 +428,9 @@ namespace DdsFileTypePlus
                     {
                         int copySize = (int)Math.Min(MaxBufferSize, remaining);
 
-                        Marshal.Copy(new IntPtr(buffer.ToInt64() + offset), bytes, 0, copySize);
+                        Marshal.Copy(new IntPtr(buffer.ToInt64() + offset), this.streamBuffer, 0, copySize);
 
-                        this.stream.Write(bytes, 0, copySize);
+                        this.stream.Write(this.streamBuffer, 0, copySize);
 
                         offset += copySize;
                         remaining -= copySize;
