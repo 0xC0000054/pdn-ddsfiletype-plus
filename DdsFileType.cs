@@ -26,9 +26,6 @@ namespace DdsFileTypePlus
         private readonly IServiceProvider services;
         private readonly IDdsFileTypePlusStrings strings;
 
-        private const DdsFileTypePlusStringName DdsFileFormat_B8G8R8 = (DdsFileTypePlusStringName)35;
-        private const DdsFileTypePlusStringName DdsFileFormat_R8G8B8X8 = (DdsFileTypePlusStringName)36;
-
         public DdsFileType(IServiceProvider services) :
             base(GetString(services.GetService<IDdsFileTypePlusStrings>(), DdsFileTypePlusStringName.FileType_Name),
                  new FileTypeOptions()
@@ -104,7 +101,7 @@ namespace DdsFileTypePlus
                 case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8:
                     return "R8G8B8A8 (Linear, A8B8G8R8)";
 
-                case DdsFileFormat_R8G8B8X8:
+                case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8X8:
                     return "R8G8B8X8 (Linear, X8B8G8R8)";
 
                 case DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1:
@@ -116,7 +113,7 @@ namespace DdsFileTypePlus
                 case DdsFileTypePlusStringName.DdsFileFormat_B5G6R5:
                     return "B5G6R5 (Linear, R5G6B5)";
 
-                case DdsFileFormat_B8G8R8:
+                case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8:
                     return "B8G8R8 (Linear, R8G8B8)";
 
                 case DdsFileTypePlusStringName.BC7CompressionMode_DisplayName:
@@ -238,11 +235,11 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8));
             formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8));
             formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8));
-            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8X8, GetString(DdsFileFormat_R8G8B8X8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8X8));
             formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1));
             formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, GetString(DdsFileTypePlusStringName.DdsFileFormat_B4G4R4A4));
             formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G6R5));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8, GetString(DdsFileFormat_B8G8R8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8));
 
             PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode);
             compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.BC7CompressionMode_DisplayName);
