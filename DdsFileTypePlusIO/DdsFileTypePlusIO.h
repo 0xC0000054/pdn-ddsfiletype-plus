@@ -55,8 +55,11 @@ extern "C" {
         // BC7 sRGB (DX 11+)
         DDS_FORMAT_BC7_SRGB,
         DDS_FORMAT_B8G8R8A8,
+        DDS_FORMAT_B8G8R8A8_SRGB,
         DDS_FORMAT_B8G8R8X8,
+        DDS_FORMAT_B8G8R8X8_SRGB,
         DDS_FORMAT_R8G8B8A8,
+        DDS_FORMAT_R8G8B8A8_SRGB,
         DDS_FORMAT_R8G8B8X8, // Not supported by DirectX 10+, but included for documentation.
         DDS_FORMAT_B5G5R5A1,
         DDS_FORMAT_B4G4R4A4,

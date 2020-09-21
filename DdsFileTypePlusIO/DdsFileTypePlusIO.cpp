@@ -52,12 +52,18 @@ namespace
             return DXGI_FORMAT_B8G8R8A8_UNORM;
         case DDS_FORMAT_B8G8R8X8:
             return DXGI_FORMAT_B8G8R8X8_UNORM;
+        case DDS_FORMAT_B8G8R8A8_SRGB:
+            return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+        case DDS_FORMAT_B8G8R8X8_SRGB:
+            return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
         case DDS_FORMAT_B5G5R5A1:
             return DXGI_FORMAT_B5G5R5A1_UNORM;
         case DDS_FORMAT_B4G4R4A4:
             return DXGI_FORMAT_B4G4R4A4_UNORM;
         case DDS_FORMAT_B5G6R5:
             return DXGI_FORMAT_B5G6R5_UNORM;
+        case DDS_FORMAT_R8G8B8A8_SRGB:
+            return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
         case DDS_FORMAT_R8G8B8A8:
         default:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -101,10 +107,13 @@ namespace
 
         switch (info->format)
         {
+        case DDS_FORMAT_B8G8R8A8_SRGB:
+        case DDS_FORMAT_B8G8R8X8_SRGB:
         case DDS_FORMAT_BC1_SRGB:
         case DDS_FORMAT_BC2_SRGB:
         case DDS_FORMAT_BC3_SRGB:
         case DDS_FORMAT_BC7_SRGB:
+        case DDS_FORMAT_R8G8B8A8_SRGB:
             metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
             break;
         default:

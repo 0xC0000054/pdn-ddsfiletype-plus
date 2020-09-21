@@ -23,6 +23,10 @@ namespace DdsFileTypePlus
     [PluginSupportInfo(typeof(PluginSupportInfo))]
     public sealed class DdsFileType : PropertyBasedFileType
     {
+        private const DdsFileTypePlusStringName DdsFileFormat_B8G8R8A8Srgb = (DdsFileTypePlusStringName)37;
+        private const DdsFileTypePlusStringName DdsFileFormat_B8G8R8X8Srgb = (DdsFileTypePlusStringName)38;
+        private const DdsFileTypePlusStringName DdsFileFormat_R8G8B8A8Srgb = (DdsFileTypePlusStringName)39;
+
         private readonly IServiceProvider services;
         private readonly IDdsFileTypePlusStrings strings;
 
@@ -95,11 +99,20 @@ namespace DdsFileTypePlus
                 case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8:
                     return "B8G8R8A8 (Linear, A8R8G8B8)";
 
+                case DdsFileFormat_B8G8R8A8Srgb:
+                    return "B8G8R8A8 (sRGB, DX 10+)";
+
                 case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8:
                     return "B8G8R8X8 (Linear, X8R8G8B8)";
 
+                case DdsFileFormat_B8G8R8X8Srgb:
+                    return "B8G8R8X8 (sRGB, DX 10+)";
+
                 case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8:
                     return "R8G8B8A8 (Linear, A8B8G8R8)";
+
+                case DdsFileFormat_R8G8B8A8Srgb:
+                    return "R8G8B8A8 (sRGB, DX 10+)";
 
                 case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8X8:
                     return "R8G8B8X8 (Linear, X8B8G8R8)";
@@ -199,8 +212,11 @@ namespace DdsFileTypePlus
                     new object[]
                     {
                         DdsFileFormat.B8G8R8A8,
+                        DdsFileFormat.B8G8R8A8Srgb,
                         DdsFileFormat.B8G8R8X8,
+                        DdsFileFormat.B8G8R8X8Srgb,
                         DdsFileFormat.R8G8B8A8,
+                        DdsFileFormat.R8G8B8A8Srgb,
                         DdsFileFormat.R8G8B8X8,
                         DdsFileFormat.B5G5R5A1,
                         DdsFileFormat.B4G4R4A4,
@@ -233,8 +249,11 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC7));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC7Srgb));
             formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8Srgb, GetString(DdsFileFormat_B8G8R8A8Srgb));
             formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8Srgb, GetString(DdsFileFormat_B8G8R8X8Srgb));
             formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8Srgb, GetString(DdsFileFormat_R8G8B8A8Srgb));
             formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8X8));
             formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1));
             formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, GetString(DdsFileTypePlusStringName.DdsFileFormat_B4G4R4A4));
