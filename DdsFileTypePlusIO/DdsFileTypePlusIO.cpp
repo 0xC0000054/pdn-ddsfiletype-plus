@@ -332,7 +332,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         {
             return E_OUTOFMEMORY;
         }
-        hr = flattenedCubeMap->Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width * 4, height * 3, 1, 1, DDS_FLAGS_NONE);
+        hr = flattenedCubeMap->Initialize2D(targetFormat, width * 4, height * 3, 1, 1, DDS_FLAGS_NONE);
         if (FAILED(hr))
         {
             return hr;
