@@ -90,19 +90,20 @@ namespace DdsFileTypePlus
                     PropertyNames.FileFormat,
                     new object[]
                     {
-                        DdsFileFormat.B8G8R8A8,
-                        DdsFileFormat.B8G8R8A8Srgb,
-                        DdsFileFormat.B8G8R8X8,
-                        DdsFileFormat.B8G8R8X8Srgb,
-                        DdsFileFormat.R8G8B8A8,
-                        DdsFileFormat.R8G8B8A8Srgb,
-                        DdsFileFormat.R8G8B8X8,
-                        DdsFileFormat.B5G5R5A1,
-                        DdsFileFormat.B4G4R4A4,
-                        DdsFileFormat.B5G6R5,
-                        DdsFileFormat.B8G8R8
+                        DdsFileFormat.BC1,
+                        DdsFileFormat.BC1Srgb,
+                        DdsFileFormat.BC2,
+                        DdsFileFormat.BC2Srgb,
+                        DdsFileFormat.BC3,
+                        DdsFileFormat.BC3Srgb,
+                        DdsFileFormat.BC4Unsigned,
+                        DdsFileFormat.BC5Signed,
+                        DdsFileFormat.BC5Unsigned,
+                        DdsFileFormat.BC6HUnsigned,
+                        DdsFileFormat.BC7,
+                        DdsFileFormat.BC7Srgb
                     },
-                    false),
+                    true),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true)
             };
 
