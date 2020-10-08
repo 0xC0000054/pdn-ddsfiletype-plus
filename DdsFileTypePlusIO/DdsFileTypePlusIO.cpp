@@ -64,6 +64,12 @@ namespace
             return DXGI_FORMAT_B5G6R5_UNORM;
         case DDS_FORMAT_R8G8B8A8_SRGB:
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+        case DDS_FORMAT_R8_UNORM:
+            return DXGI_FORMAT_R8_UNORM;
+        case DDS_FORMAT_R8G8_UNORM:
+            return DXGI_FORMAT_R8G8_UNORM;
+        case DDS_FORMAT_R8G8_SNORM:
+            return DXGI_FORMAT_R8G8_SNORM;
         case DDS_FORMAT_R8G8B8A8:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
         default:

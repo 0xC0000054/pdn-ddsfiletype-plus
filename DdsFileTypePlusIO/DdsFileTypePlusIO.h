@@ -64,7 +64,10 @@ extern "C" {
         DDS_FORMAT_B5G5R5A1,
         DDS_FORMAT_B4G4R4A4,
         DDS_FORMAT_B5G6R5,
-        DDS_FORMAT_B8G8R8 // Not supported by DirectX 10+, but included for documentation.
+        DDS_FORMAT_B8G8R8, // Not supported by DirectX 10+, but included for documentation.
+        DDS_FORMAT_R8_UNORM,
+        DDS_FORMAT_R8G8_UNORM,
+        DDS_FORMAT_R8G8_SNORM,
     };
 
     enum DdsErrorMetric

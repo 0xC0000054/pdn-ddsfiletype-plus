@@ -201,6 +201,15 @@
   <data name="DdsFileFormat_R8G8B8X8" xml:space="preserve">
     <value>R8G8B8X8 (Linear, X8B8G8R8)</value>
   </data>
+  <data name="DdsFileFormat_R8G8Signed" xml:space="preserve">
+    <value>R8G8 (Linear, Signed, V8U8)</value>
+  </data>
+  <data name="DdsFileFormat_R8G8Unsigned" xml:space="preserve">
+    <value>R8G8 (Linear, Unsigned, A8L8)</value>
+  </data>
+  <data name="DdsFileFormat_R8Unsigned" xml:space="preserve">
+    <value>R8 (Linear, Unsigned, L8)</value>
+  </data>
   <data name="ErrorMetric_DisplayName" xml:space="preserve">
     <value>Error Metric</value>
   </data>

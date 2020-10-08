@@ -313,6 +313,33 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to R8G8 (Linear, Signed, V8U8).
+        /// </summary>
+        internal static string DdsFileFormat_R8G8Signed {
+            get {
+                return ResourceManager.GetString("DdsFileFormat_R8G8Signed", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to R8G8 (Linear, Unsigned, A8L8).
+        /// </summary>
+        internal static string DdsFileFormat_R8G8Unsigned {
+            get {
+                return ResourceManager.GetString("DdsFileFormat_R8G8Unsigned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to R8 (Linear, Unsigned, L8).
+        /// </summary>
+        internal static string DdsFileFormat_R8Unsigned {
+            get {
+                return ResourceManager.GetString("DdsFileFormat_R8Unsigned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error Metric.
         /// </summary>
         internal static string ErrorMetric_DisplayName {

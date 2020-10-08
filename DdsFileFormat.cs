@@ -37,6 +37,9 @@ namespace DdsFileTypePlus
         B5G5R5A1,
         B4G4R4A4,
         B5G6R5,
-        B8G8R8
+        B8G8R8,
+        R8Unsigned,
+        R8G8Unsigned,
+        R8G8Signed
     }
 }
