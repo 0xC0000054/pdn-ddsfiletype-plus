@@ -23,15 +23,11 @@ namespace DdsFileTypePlus
     [PluginSupportInfo(typeof(PluginSupportInfo))]
     public sealed class DdsFileType : PropertyBasedFileType
     {
-        private const DdsFileTypePlusStringName DdsFileFormat_B8G8R8A8Srgb = (DdsFileTypePlusStringName)37;
-        private const DdsFileTypePlusStringName DdsFileFormat_B8G8R8X8Srgb = (DdsFileTypePlusStringName)38;
-        private const DdsFileTypePlusStringName DdsFileFormat_R8G8B8A8Srgb = (DdsFileTypePlusStringName)39;
-
         private readonly IServiceProvider services;
-        private readonly IDdsFileTypePlusStrings strings;
+        private readonly IDdsStringResourceManager strings;
 
         public DdsFileType(IServiceProvider services) :
-            base(GetString(services.GetService<IDdsFileTypePlusStrings>(), DdsFileTypePlusStringName.FileType_Name),
+            base(GetFileTypeName(services.GetService<IDdsFileTypePlusStrings>()),
                  new FileTypeOptions()
                  {
                      LoadExtensions = new string[] { ".dds" },
@@ -39,145 +35,28 @@ namespace DdsFileTypePlus
                  })
         {
             this.services = services;
-            this.strings = services.GetService<IDdsFileTypePlusStrings>();
+            IDdsFileTypePlusStrings ddsFileTypePlusStrings = services.GetService<IDdsFileTypePlusStrings>();
+
+            if (ddsFileTypePlusStrings != null)
+            {
+                this.strings = new PdnLocalizedStringResourceManager(ddsFileTypePlusStrings);
+            }
+            else
+            {
+                this.strings = new BuiltinStringResourceManager();
+            }
         }
 
-        private string GetString(DdsFileTypePlusStringName name)
+        private static string GetFileTypeName(IDdsFileTypePlusStrings strings)
         {
-            return GetString(this.strings, name);
-        }
+            string name = strings?.TryGetString(DdsFileTypePlusStringName.FileType_Name);
 
-        private static string GetString(IDdsFileTypePlusStrings strings, DdsFileTypePlusStringName name)
-        {
-            string value = strings?.TryGetString(name);
-            if (value != null)
+            if (name is null)
             {
-                return value;
+                name = Properties.Resources.FileType_Name;
             }
 
-            switch (name)
-            {
-                case DdsFileTypePlusStringName.FileType_Name:
-                    return "DirectDraw Surface (DDS)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC1:
-                    return "BC1 (Linear, DXT1)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC1Srgb:
-                    return "BC1 (sRGB, DX 10+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC2:
-                    return "BC2 (Linear, DXT3)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC2Srgb:
-                    return "BC2 (sRGB, DX 10+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC3:
-                    return "BC3 (Linear, DXT5)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC3Srgb:
-                    return "BC3 (sRGB, DX 10+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC4Unsigned:
-                    return "BC4 (Linear, Unsigned)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC5Unsigned:
-                    return "BC5 (Linear, Unsigned)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC5Signed:
-                    return "BC5 (Linear, Signed)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC6HUnsigned:
-                    return "BC6H (Linear, Unsigned, DX 11+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC7:
-                    return "BC7 (Linear, DX 11+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_BC7Srgb:
-                    return "BC7 (sRGB, DX 11+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8:
-                    return "B8G8R8A8 (Linear, A8R8G8B8)";
-
-                case DdsFileFormat_B8G8R8A8Srgb:
-                    return "B8G8R8A8 (sRGB, DX 10+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8:
-                    return "B8G8R8X8 (Linear, X8R8G8B8)";
-
-                case DdsFileFormat_B8G8R8X8Srgb:
-                    return "B8G8R8X8 (sRGB, DX 10+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8:
-                    return "R8G8B8A8 (Linear, A8B8G8R8)";
-
-                case DdsFileFormat_R8G8B8A8Srgb:
-                    return "R8G8B8A8 (sRGB, DX 10+)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_R8G8B8X8:
-                    return "R8G8B8X8 (Linear, X8B8G8R8)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1:
-                    return "B5G5R5A1 (Linear, A1R5G5B5)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_B4G4R4A4:
-                    return "B4G4R4A4 (Linear, A4R4G4B4)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_B5G6R5:
-                    return "B5G6R5 (Linear, R5G6B5)";
-
-                case DdsFileTypePlusStringName.DdsFileFormat_B8G8R8:
-                    return "B8G8R8 (Linear, R8G8B8)";
-
-                case DdsFileTypePlusStringName.BC7CompressionMode_DisplayName:
-                    return "BC6H / BC7 Compression Mode";
-
-                case DdsFileTypePlusStringName.BC7CompressionMode_Fast:
-                    return "Fast";
-
-                case DdsFileTypePlusStringName.BC7CompressionMode_Normal:
-                    return "Normal";
-
-                case DdsFileTypePlusStringName.BC7CompressionMode_Slow:
-                    return "Slow";
-
-                case DdsFileTypePlusStringName.ErrorMetric_DisplayName:
-                    return "Error Metric";
-
-                case DdsFileTypePlusStringName.ErrorMetric_Perceptual:
-                    return "Perceptual";
-
-                case DdsFileTypePlusStringName.ErrorMetric_Uniform:
-                    return "Uniform";
-
-                case DdsFileTypePlusStringName.CubeMap_Description:
-                    return "Cube Map from crossed image";
-
-                case DdsFileTypePlusStringName.GenerateMipMaps_Description:
-                    return "Generate Mip Maps";
-
-                case DdsFileTypePlusStringName.ResamplingAlgorithm_NearestNeighbor:
-                    return "Nearest Neighbor";
-
-                case DdsFileTypePlusStringName.ResamplingAlgorithm_Bicubic:
-                    return "Bicubic";
-
-                case DdsFileTypePlusStringName.ResamplingAlgorithm_Bilinear:
-                    return "Bilinear";
-
-                case DdsFileTypePlusStringName.ResamplingAlgorithm_Fant:
-                    return "Fant";
-
-                case DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling:
-                    return "Super Sampling";
-                case DdsFileTypePlusStringName.ForumLink_DisplayName:
-                    return "More Info";
-                case DdsFileTypePlusStringName.ForumLink_Description:
-                    return "Forum Discussion";
-
-                default:
-                    throw ExceptionUtil.InvalidEnumArgumentException(name, nameof(name));
-            }
+            return name;
         }
 
         public override PropertyCollection OnCreateSavePropertyCollection()
@@ -236,61 +115,61 @@ namespace DdsFileTypePlus
 
             PropertyControlInfo formatPCI = configUI.FindControlForPropertyName(PropertyNames.FileFormat);
             formatPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC1, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC1));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC1Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC1Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC2, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC2));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC2Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC3, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC3));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC3Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC4Unsigned));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC5Unsigned));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC5Signed));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC6HUnsigned));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC7, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC7));
-            formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, GetString(DdsFileTypePlusStringName.DdsFileFormat_BC7Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8A8));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8Srgb, GetString(DdsFileFormat_B8G8R8A8Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8X8));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8Srgb, GetString(DdsFileFormat_B8G8R8X8Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8A8));
-            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8Srgb, GetString(DdsFileFormat_R8G8B8A8Srgb));
-            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8X8, GetString(DdsFileTypePlusStringName.DdsFileFormat_R8G8B8X8));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G5R5A1));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, GetString(DdsFileTypePlusStringName.DdsFileFormat_B4G4R4A4));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, GetString(DdsFileTypePlusStringName.DdsFileFormat_B5G6R5));
-            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8, GetString(DdsFileTypePlusStringName.DdsFileFormat_B8G8R8));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC1, this.strings.GetString("DdsFileFormat_BC1"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC1Srgb, this.strings.GetString("DdsFileFormat_BC1Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC2, this.strings.GetString("DdsFileFormat_BC2"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, this.strings.GetString("DdsFileFormat_BC2Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3, this.strings.GetString("DdsFileFormat_BC3"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, this.strings.GetString("DdsFileFormat_BC3Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, this.strings.GetString("DdsFileFormat_BC4Unsigned"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, this.strings.GetString("DdsFileFormat_BC5Unsigned"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, this.strings.GetString("DdsFileFormat_BC5Signed"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, this.strings.GetString("DdsFileFormat_BC6HUnsigned"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC7, this.strings.GetString("DdsFileFormat_BC7"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC7Srgb, this.strings.GetString("DdsFileFormat_BC7Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8, this.strings.GetString("DdsFileFormat_B8G8R8A8"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8A8Srgb, this.strings.GetString("DdsFileFormat_B8G8R8A8Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8, this.strings.GetString("DdsFileFormat_B8G8R8X8"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8X8Srgb, this.strings.GetString("DdsFileFormat_B8G8R8X8Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8, this.strings.GetString("DdsFileFormat_R8G8B8A8"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8A8Srgb, this.strings.GetString("DdsFileFormat_R8G8B8A8Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R8G8B8X8, this.strings.GetString("DdsFileFormat_R8G8B8X8"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B5G5R5A1, this.strings.GetString("DdsFileFormat_B5G5R5A1"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B4G4R4A4, this.strings.GetString("DdsFileFormat_B4G4R4A4"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, this.strings.GetString("DdsFileFormat_B5G6R5"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8, this.strings.GetString("DdsFileFormat_B8G8R8"));
 
             PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode);
-            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.BC7CompressionMode_DisplayName);
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Fast, GetString(DdsFileTypePlusStringName.BC7CompressionMode_Fast));
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Normal, GetString(DdsFileTypePlusStringName.BC7CompressionMode_Normal));
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Slow, GetString(DdsFileTypePlusStringName.BC7CompressionMode_Slow));
+            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionMode_DisplayName");
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Fast, this.strings.GetString("BC7CompressionMode_Fast"));
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Normal, this.strings.GetString("BC7CompressionMode_Normal"));
+            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Slow, this.strings.GetString("BC7CompressionMode_Slow"));
 
             PropertyControlInfo errorMetricPCI = configUI.FindControlForPropertyName(PropertyNames.ErrorMetric);
-            errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.ErrorMetric_DisplayName);
+            errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ErrorMetric_DisplayName");
             errorMetricPCI.ControlType.Value = PropertyControlType.RadioButton;
-            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Perceptual, GetString(DdsFileTypePlusStringName.ErrorMetric_Perceptual));
-            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Uniform, GetString(DdsFileTypePlusStringName.ErrorMetric_Uniform));
+            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Perceptual, this.strings.GetString("ErrorMetric_Perceptual"));
+            errorMetricPCI.SetValueDisplayName(DdsErrorMetric.Uniform, this.strings.GetString("ErrorMetric_Uniform"));
 
             PropertyControlInfo cubemapPCI = configUI.FindControlForPropertyName(PropertyNames.CubeMap);
             cubemapPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            cubemapPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(DdsFileTypePlusStringName.CubeMap_Description);
+            cubemapPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("CubeMap_Description");
 
             PropertyControlInfo generateMipPCI = configUI.FindControlForPropertyName(PropertyNames.GenerateMipMaps);
             generateMipPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            generateMipPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(DdsFileTypePlusStringName.GenerateMipMaps_Description);
+            generateMipPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("GenerateMipMaps_Description");
 
             PropertyControlInfo mipResamplingPCI = configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm);
             mipResamplingPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_NearestNeighbor));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bicubic, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Bicubic));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bilinear, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Bilinear));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_Fant));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, GetString(DdsFileTypePlusStringName.ResamplingAlgorithm_SuperSampling));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, this.strings.GetString("ResamplingAlgorithm_NearestNeighbor"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bicubic, this.strings.GetString("ResamplingAlgorithm_Bicubic"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bilinear, this.strings.GetString("ResamplingAlgorithm_Bilinear"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, this.strings.GetString("ResamplingAlgorithm_Fant"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, this.strings.GetString("ResamplingAlgorithm_SuperSampling"));
 
             PropertyControlInfo forumLinkPCI = configUI.FindControlForPropertyName(PropertyNames.ForumLink);
-            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = GetString(DdsFileTypePlusStringName.ForumLink_DisplayName);
-            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = GetString(DdsFileTypePlusStringName.ForumLink_Description);
+            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ForumLink_DisplayName");
+            forumLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("ForumLink_Description");
 
             PropertyControlInfo githubLinkPCI = configUI.FindControlForPropertyName(PropertyNames.GitHubLink);
             githubLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
