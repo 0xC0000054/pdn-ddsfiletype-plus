@@ -65,8 +65,9 @@ namespace
         case DDS_FORMAT_R8G8B8A8_SRGB:
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
         case DDS_FORMAT_R8G8B8A8:
-        default:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
+        default:
+            return DXGI_FORMAT_UNKNOWN;
         }
     }
 
@@ -189,6 +190,10 @@ namespace
         size_t x;
         size_t y;
     };
+
+    // This value sets the HRESULT customer bit to ensure that it cannot overlap with any Microsoft-defined
+    // HRESULT values.
+    constexpr HRESULT UnknownDdsSaveFormat = 0xA0000000 | (FACILITY_WIN32 << 16) | ERROR_INVALID_PIXEL_FORMAT;
 }
 
 HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
@@ -420,6 +425,11 @@ HRESULT __stdcall Save(
     }
 
     const DXGI_FORMAT dxgiFormat = GetDXGIFormat(input->format);
+
+    if (dxgiFormat == DXGI_FORMAT_UNKNOWN)
+    {
+        return UnknownDdsSaveFormat;
+    }
 
     if (IsCompressed(dxgiFormat))
     {
