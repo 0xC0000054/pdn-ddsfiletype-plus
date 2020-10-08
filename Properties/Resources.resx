@@ -117,16 +117,16 @@
   <resheader name="writer">
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
-  <data name="BC7CompressionMode_DisplayName" xml:space="preserve">
-    <value>BC6H / BC7 Compression Mode</value>
+  <data name="BC7CompressionSpeed_DisplayName" xml:space="preserve">
+    <value>BC6H / BC7 Compression Speed</value>
   </data>
-  <data name="BC7CompressionMode_Fast" xml:space="preserve">
+  <data name="BC7CompressionSpeed_Fast" xml:space="preserve">
     <value>Fast</value>
   </data>
-  <data name="BC7CompressionMode_Normal" xml:space="preserve">
+  <data name="BC7CompressionSpeed_Normal" xml:space="preserve">
     <value>Normal</value>
   </data>
-  <data name="BC7CompressionMode_Slow" xml:space="preserve">
+  <data name="BC7CompressionSpeed_Slow" xml:space="preserve">
     <value>Slow</value>
   </data>
   <data name="CubeMap_Description" xml:space="preserve">

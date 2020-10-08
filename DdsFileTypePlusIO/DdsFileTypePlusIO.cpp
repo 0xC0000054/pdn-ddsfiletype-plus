@@ -453,15 +453,15 @@ HRESULT __stdcall Save(
         if (dxgiFormat == DXGI_FORMAT_BC7_UNORM || dxgiFormat == DXGI_FORMAT_BC7_UNORM_SRGB || dxgiFormat == DXGI_FORMAT_BC7_TYPELESS ||
             dxgiFormat == DXGI_FORMAT_BC6H_UF16 || dxgiFormat == DXGI_FORMAT_BC6H_SF16 || dxgiFormat == DXGI_FORMAT_BC6H_TYPELESS)
         {
-            switch (input->compressionMode)
+            switch (input->compressionSpeed)
             {
-            case BC7_COMPRESSION_MODE_FAST:
+            case BC7_COMPRESSION_SPEED_FAST:
                 compressFlags |= TEX_COMPRESS_BC7_QUICK;
                 break;
-            case BC7_COMPRESSION_MODE_SLOW:
+            case BC7_COMPRESSION_SPEED_SLOW:
                 compressFlags |= TEX_COMPRESS_BC7_USE_3SUBSETS;
                 break;
-            case BC7_COMPRESSION_MODE_NORMAL:
+            case BC7_COMPRESSION_SPEED_NORMAL:
             default:
                 break;
             }

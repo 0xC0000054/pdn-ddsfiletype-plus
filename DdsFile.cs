@@ -61,7 +61,7 @@ namespace DdsFileTypePlus
             Stream output,
             DdsFileFormat format,
             DdsErrorMetric errorMetric,
-            BC7CompressionMode compressionMode,
+            BC7CompressionSpeed compressionSpeed,
             bool cubeMap,
             bool generateMipmaps,
             ResamplingAlgorithm sampling,
@@ -131,7 +131,7 @@ namespace DdsFileTypePlus
                         mipLevels = mipLevels,
                         format = format,
                         errorMetric = errorMetric,
-                        compressionMode = compressionMode,
+                        compressionSpeed = compressionSpeed,
                         cubeMap = cubeMapFaceSize.HasValue,
                         enableHardwareAcceleration = enableHardwareAcceleration
                     };

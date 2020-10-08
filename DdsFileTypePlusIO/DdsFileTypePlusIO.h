@@ -73,11 +73,11 @@ extern "C" {
         DDS_ERROR_METRIC_UNIFORM
     };
 
-    enum BC7CompressionMode
+    enum BC7CompressionSpeed
     {
-        BC7_COMPRESSION_MODE_FAST,
-        BC7_COMPRESSION_MODE_NORMAL,
-        BC7_COMPRESSION_MODE_SLOW
+        BC7_COMPRESSION_SPEED_FAST,
+        BC7_COMPRESSION_SPEED_NORMAL,
+        BC7_COMPRESSION_SPEED_SLOW
     };
 
     struct DDSSaveInfo
@@ -88,7 +88,7 @@ extern "C" {
         int32_t mipLevels;
         DdsFileFormat format;
         DdsErrorMetric errorMetric;
-        BC7CompressionMode compressionMode;
+        BC7CompressionSpeed compressionSpeed;
         bool cubeMap;
         bool enableHardwareAcceleration;
     };

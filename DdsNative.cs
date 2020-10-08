@@ -85,7 +85,7 @@ namespace DdsFileTypePlus
             public int mipLevels;
             public DdsFileFormat format;
             public DdsErrorMetric errorMetric;
-            public BC7CompressionMode compressionMode;
+            public BC7CompressionSpeed compressionSpeed;
             [MarshalAs(UnmanagedType.U1)]
             public bool cubeMap;
             [MarshalAs(UnmanagedType.U1)]

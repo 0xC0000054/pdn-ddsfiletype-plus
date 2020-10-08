@@ -48,7 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BC7CompressionMode.cs" />
+    <Compile Include="BC7CompressionSpeed.cs" />
     <Compile Include="DdsErrorMetric.cs" />
     <Compile Include="DdsFile.cs" />
     <Compile Include="DdsFileFormat.cs" />

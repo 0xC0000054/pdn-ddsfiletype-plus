@@ -61,38 +61,38 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to BC6H / BC7 Compression Mode.
+        ///   Looks up a localized string similar to BC6H / BC7 Compression Speed.
         /// </summary>
-        internal static string BC7CompressionMode_DisplayName {
+        internal static string BC7CompressionSpeed_DisplayName {
             get {
-                return ResourceManager.GetString("BC7CompressionMode_DisplayName", resourceCulture);
+                return ResourceManager.GetString("BC7CompressionSpeed_DisplayName", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Fast.
         /// </summary>
-        internal static string BC7CompressionMode_Fast {
+        internal static string BC7CompressionSpeed_Fast {
             get {
-                return ResourceManager.GetString("BC7CompressionMode_Fast", resourceCulture);
+                return ResourceManager.GetString("BC7CompressionSpeed_Fast", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Normal.
         /// </summary>
-        internal static string BC7CompressionMode_Normal {
+        internal static string BC7CompressionSpeed_Normal {
             get {
-                return ResourceManager.GetString("BC7CompressionMode_Normal", resourceCulture);
+                return ResourceManager.GetString("BC7CompressionSpeed_Normal", resourceCulture);
             }
         }
         
         /// <summary>
         ///   Looks up a localized string similar to Slow.
         /// </summary>
-        internal static string BC7CompressionMode_Slow {
+        internal static string BC7CompressionSpeed_Slow {
             get {
-                return ResourceManager.GetString("BC7CompressionMode_Slow", resourceCulture);
+                return ResourceManager.GetString("BC7CompressionSpeed_Slow", resourceCulture);
             }
         }
         

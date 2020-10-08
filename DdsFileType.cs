@@ -64,7 +64,7 @@ namespace DdsFileTypePlus
             List<Property> props = new List<Property>
             {
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.FileFormat, DdsFileFormat.BC1, false),
-                StaticListChoiceProperty.CreateForEnum(PropertyNames.BC7CompressionMode, BC7CompressionMode.Normal, false),
+                StaticListChoiceProperty.CreateForEnum(PropertyNames.BC7CompressionSpeed, BC7CompressionSpeed.Normal, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
                 new BooleanProperty(PropertyNames.CubeMap, false),
                 new BooleanProperty(PropertyNames.GenerateMipMaps, false),
@@ -76,7 +76,7 @@ namespace DdsFileTypePlus
             List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
             {
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
-                    PropertyNames.BC7CompressionMode,
+                    PropertyNames.BC7CompressionSpeed,
                     PropertyNames.FileFormat,
                     new object[]
                     {
@@ -140,11 +140,11 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.B5G6R5, this.strings.GetString("DdsFileFormat_B5G6R5"));
             formatPCI.SetValueDisplayName(DdsFileFormat.B8G8R8, this.strings.GetString("DdsFileFormat_B8G8R8"));
 
-            PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionMode);
-            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionMode_DisplayName");
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Fast, this.strings.GetString("BC7CompressionMode_Fast"));
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Normal, this.strings.GetString("BC7CompressionMode_Normal"));
-            compresionModePCI.SetValueDisplayName(BC7CompressionMode.Slow, this.strings.GetString("BC7CompressionMode_Slow"));
+            PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionSpeed);
+            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionSpeed_DisplayName");
+            compresionModePCI.SetValueDisplayName(BC7CompressionSpeed.Fast, this.strings.GetString("BC7CompressionSpeed_Fast"));
+            compresionModePCI.SetValueDisplayName(BC7CompressionSpeed.Normal, this.strings.GetString("BC7CompressionSpeed_Normal"));
+            compresionModePCI.SetValueDisplayName(BC7CompressionSpeed.Slow, this.strings.GetString("BC7CompressionSpeed_Slow"));
 
             PropertyControlInfo errorMetricPCI = configUI.FindControlForPropertyName(PropertyNames.ErrorMetric);
             errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ErrorMetric_DisplayName");
@@ -187,13 +187,13 @@ namespace DdsFileTypePlus
         protected override void OnSaveT(Document input, Stream output, PropertyBasedSaveConfigToken token, Surface scratchSurface, ProgressEventHandler progressCallback)
         {
             DdsFileFormat fileFormat = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
-            BC7CompressionMode compressionMode = (BC7CompressionMode)token.GetProperty(PropertyNames.BC7CompressionMode).Value;
+            BC7CompressionSpeed compressionSpeed = (BC7CompressionSpeed)token.GetProperty(PropertyNames.BC7CompressionSpeed).Value;
             DdsErrorMetric errorMetric = (DdsErrorMetric)token.GetProperty(PropertyNames.ErrorMetric).Value;
             bool cubeMap = token.GetProperty<BooleanProperty>(PropertyNames.CubeMap).Value;
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
             ResamplingAlgorithm mipSampling = (ResamplingAlgorithm)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
 
-            DdsFile.Save(this.services, input, output, fileFormat, errorMetric, compressionMode, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
+            DdsFile.Save(this.services, input, output, fileFormat, errorMetric, compressionSpeed, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
         }
 
         protected override bool IsReflexive(PropertyBasedSaveConfigToken token)
@@ -211,7 +211,7 @@ namespace DdsFileTypePlus
         public enum PropertyNames
         {
             FileFormat,
-            BC7CompressionMode,
+            BC7CompressionSpeed,
             ErrorMetric,
             CubeMap,
             GenerateMipMaps,
