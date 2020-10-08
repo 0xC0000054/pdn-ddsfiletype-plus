@@ -79,11 +79,11 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Normal.
+        ///   Looks up a localized string similar to Medium.
         /// </summary>
-        internal static string BC7CompressionSpeed_Normal {
+        internal static string BC7CompressionSpeed_Medium {
             get {
-                return ResourceManager.GetString("BC7CompressionSpeed_Normal", resourceCulture);
+                return ResourceManager.GetString("BC7CompressionSpeed_Medium", resourceCulture);
             }
         }
         

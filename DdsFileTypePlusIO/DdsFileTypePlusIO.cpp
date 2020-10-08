@@ -461,7 +461,7 @@ HRESULT __stdcall Save(
             case BC7_COMPRESSION_SPEED_SLOW:
                 compressFlags |= TEX_COMPRESS_BC7_USE_3SUBSETS;
                 break;
-            case BC7_COMPRESSION_SPEED_NORMAL:
+            case BC7_COMPRESSION_SPEED_MEDIUM:
             default:
                 break;
             }

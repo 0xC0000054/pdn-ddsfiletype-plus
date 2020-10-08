@@ -76,7 +76,7 @@ extern "C" {
     enum BC7CompressionSpeed
     {
         BC7_COMPRESSION_SPEED_FAST,
-        BC7_COMPRESSION_SPEED_NORMAL,
+        BC7_COMPRESSION_SPEED_MEDIUM,
         BC7_COMPRESSION_SPEED_SLOW
     };
 

@@ -123,8 +123,8 @@
   <data name="BC7CompressionSpeed_Fast" xml:space="preserve">
     <value>Fast</value>
   </data>
-  <data name="BC7CompressionSpeed_Normal" xml:space="preserve">
-    <value>Normal</value>
+  <data name="BC7CompressionSpeed_Medium" xml:space="preserve">
+    <value>Medium</value>
   </data>
   <data name="BC7CompressionSpeed_Slow" xml:space="preserve">
     <value>Slow</value>
