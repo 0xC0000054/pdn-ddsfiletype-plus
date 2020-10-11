@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
 using System;
@@ -24,7 +25,7 @@ namespace DdsFileTypePlus
         {
             Document doc = null;
 
-            using (DdsNative.DdsImage image = DdsNative.Load(input))
+            using (DdsImage image = DdsNative.Load(input))
             {
                 doc = new Document(image.Width, image.Height);
 
@@ -105,7 +106,7 @@ namespace DdsFileTypePlus
                 }
                 else
                 {
-                    DdsNative.DdsProgressCallback ddsProgress = null;
+                    DdsProgressCallback ddsProgress = null;
                     if (progressCallback != null)
                     {
                         ddsProgress = (UIntPtr done, UIntPtr total) =>
@@ -123,7 +124,7 @@ namespace DdsFileTypePlus
                         };
                     }
 
-                    DdsNative.DDSSaveInfo info = new DdsNative.DDSSaveInfo
+                    DDSSaveInfo info = new DDSSaveInfo
                     {
                         width = width,
                         height = height,

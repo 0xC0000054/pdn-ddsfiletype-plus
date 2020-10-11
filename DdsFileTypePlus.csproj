@@ -49,13 +49,22 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BC7CompressionSpeed.cs" />
+    <Compile Include="Interop\HResult.cs" />
+    <Compile Include="Interop\DDSBitmapData.cs" />
     <Compile Include="DdsErrorMetric.cs" />
     <Compile Include="DdsFile.cs" />
     <Compile Include="DdsFileFormat.cs" />
     <Compile Include="DdsFileType.cs" />
     <Compile Include="DdsFileTypeFactory.cs" />
+    <Compile Include="Interop\DdsIO_x64.cs" />
+    <Compile Include="Interop\DdsIO_x86.cs" />
+    <Compile Include="Interop\DdsImage.cs" />
+    <Compile Include="Interop\DDSLoadInfo.cs" />
     <Compile Include="DdsNative.cs" />
     <Compile Include="DX9DdsWriter.cs" />
+    <Compile Include="Interop\DdsProgressCallback.cs" />
+    <Compile Include="Interop\DdsSaveInfo.cs" />
+    <Compile Include="Interop\IOCallbacks.cs" />
     <Compile Include="Localization\BuiltinStringResourceManager.cs" />
     <Compile Include="Localization\IDdsStringResourceManager.cs" />
     <Compile Include="Localization\PdnLocalizedStringResourceManager.cs" />
@@ -66,6 +75,7 @@
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
+    <Compile Include="Interop\StreamIOCallbacks.cs" />
     <Compile Include="Texture.cs" />
     <Compile Include="TextureCollection.cs" />
   </ItemGroup>
