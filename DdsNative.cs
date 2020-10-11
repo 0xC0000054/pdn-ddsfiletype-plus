@@ -22,7 +22,7 @@ namespace DdsFileTypePlus
     {
         static DdsNative()
         {
-            DdsImage.Initalize();
+            DdsImage.Initialize();
         }
 
         // Use a factory delegate to hide the DdsImage constructor from external code.
@@ -43,7 +43,7 @@ namespace DdsFileTypePlus
                 this.info = info;
             }
 
-            internal static void Initalize()
+            internal static void Initialize()
             {
                 DdsImageFactory = CreateImage;
             }
