@@ -49,6 +49,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BC7CompressionSpeed.cs" />
+    <Compile Include="Interop\ColorRgba.cs" />
     <Compile Include="Interop\HResult.cs" />
     <Compile Include="Interop\DDSBitmapData.cs" />
     <Compile Include="DdsErrorMetric.cs" />

@@ -45,9 +45,9 @@ namespace DdsFileTypePlus.Interop
             }
         }
 
-        public unsafe byte* GetRowAddressUnchecked(int y)
+        public unsafe ColorRgba* GetRowAddressUnchecked(int y)
         {
-            return (byte*)this.info.scan0 + (y * this.info.stride);
+            return (ColorRgba*)((byte*)this.info.scan0 + (y * this.info.stride));
         }
     }
 }

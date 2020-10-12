@@ -35,17 +35,17 @@ namespace DdsFileTypePlus
 
                 for (int y = 0; y < surface.Height; ++y)
                 {
-                    byte* src = image.GetRowAddressUnchecked(y);
+                    ColorRgba* src = image.GetRowAddressUnchecked(y);
                     ColorBgra* dst = surface.GetRowAddressUnchecked(y);
 
                     for (int x = 0; x < surface.Width; ++x)
                     {
-                        dst->R = src[0];
-                        dst->G = src[1];
-                        dst->B = src[2];
-                        dst->A = src[3];
+                        dst->R = src->R;
+                        dst->G = src->G;
+                        dst->B = src->B;
+                        dst->A = src->A;
 
-                        src += 4;
+                        ++src;
                         ++dst;
                     }
                 }
