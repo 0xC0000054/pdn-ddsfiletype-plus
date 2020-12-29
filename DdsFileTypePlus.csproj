@@ -1,36 +1,27 @@
-﻿<?xml version="1.0" encoding="utf-8"?>
-<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{EC549B85-B295-4639-8610-24B7A8F6BDB0}</ProjectGuid>
+    <TargetFrameworks>net47;net50</TargetFrameworks>
     <OutputType>Library</OutputType>
-    <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>DdsFileTypePlus</RootNamespace>
-    <AssemblyName>DdsFileTypePlus</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
-    <FileAlignment>512</FileAlignment>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <DebugSymbols>true</DebugSymbols>
-    <DebugType>full</DebugType>
-    <Optimize>false</Optimize>
-    <OutputPath>bin\Debug\</OutputPath>
-    <DefineConstants>DEBUG;TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <DebugType>pdbonly</DebugType>
-    <Optimize>true</Optimize>
-    <OutputPath>bin\Release\</OutputPath>
-    <DefineConstants>TRACE</DefineConstants>
-    <ErrorReport>prompt</ErrorReport>
-    <WarningLevel>4</WarningLevel>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="3rdParty\**" />
+    <Compile Remove="DdsFileTypePlusIO\**" />
+    <Compile Remove="Debug\**" />
+    <Compile Remove="Release\**" />
+    <Compile Remove="x64\**" />
+    <EmbeddedResource Remove="3rdParty\**" />
+    <EmbeddedResource Remove="DdsFileTypePlusIO\**" />
+    <EmbeddedResource Remove="Debug\**" />
+    <EmbeddedResource Remove="Release\**" />
+    <EmbeddedResource Remove="x64\**" />
+    <None Remove="3rdParty\**" />
+    <None Remove="DdsFileTypePlusIO\**" />
+    <None Remove="Debug\**" />
+    <None Remove="Release\**" />
+    <None Remove="x64\**" />
+  </ItemGroup>
   <ItemGroup>
     <Reference Include="PaintDotNet.Base">
       <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Base.dll</HintPath>
@@ -41,53 +32,21 @@
     <Reference Include="PaintDotNet.Data">
       <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Data.dll</HintPath>
     </Reference>
-    <Reference Include="System" />
-    <Reference Include="System.Core" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Drawing" />
-    <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BC7CompressionSpeed.cs" />
-    <Compile Include="Interop\ColorRgba.cs" />
-    <Compile Include="Interop\HResult.cs" />
-    <Compile Include="Interop\DDSBitmapData.cs" />
-    <Compile Include="DdsErrorMetric.cs" />
-    <Compile Include="DdsFile.cs" />
-    <Compile Include="DdsFileFormat.cs" />
-    <Compile Include="DdsFileType.cs" />
-    <Compile Include="DdsFileTypeFactory.cs" />
-    <Compile Include="Interop\DdsIO_x64.cs" />
-    <Compile Include="Interop\DdsIO_x86.cs" />
-    <Compile Include="Interop\DdsImage.cs" />
-    <Compile Include="Interop\DDSLoadInfo.cs" />
-    <Compile Include="DdsNative.cs" />
-    <Compile Include="DX9DdsWriter.cs" />
-    <Compile Include="Interop\DdsProgressCallback.cs" />
-    <Compile Include="Interop\DdsSaveInfo.cs" />
-    <Compile Include="Interop\IOCallbacks.cs" />
-    <Compile Include="Localization\BuiltinStringResourceManager.cs" />
-    <Compile Include="Localization\IDdsStringResourceManager.cs" />
-    <Compile Include="Localization\PdnLocalizedStringResourceManager.cs" />
-    <Compile Include="PluginSupportInfo.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Properties\Resources.Designer.cs">
+    <Compile Update="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
       <DependentUpon>Resources.resx</DependentUpon>
     </Compile>
-    <Compile Include="Interop\StreamIOCallbacks.cs" />
-    <Compile Include="Texture.cs" />
-    <Compile Include="TextureCollection.cs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Properties\Resources.resx">
+    <EmbeddedResource Update="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
       <LastGenOutput>Resources.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
-  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-  <PropertyGroup>
-    <PostBuildEvent>copy "$(TargetPath)" "D:\Program Files\paint.net\FileTypes" /y</PostBuildEvent>
-  </PropertyGroup>
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(TargetFramework)'=='net47'">
+    <Exec Command="copy &quot;$(TargetPath)&quot; &quot;D:\Program Files\paint.net\FileTypes&quot; /y" />
+  </Target>
 </Project>
