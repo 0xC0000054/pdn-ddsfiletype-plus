@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------------------------
 // DirectXTexD3D12.cpp
-//  
+//
 // DirectX Texture Library - Direct3D 12 helpers
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
@@ -16,11 +16,18 @@
 #pragma clang diagnostic ignored "-Wsign-conversion"
 #endif
 
-#if defined(_XBOX_ONE) && defined(_TITLE)
+#ifdef WIN32
+#ifdef _GAMING_XBOX_SCARLETT
+#include <d3dx12_xs.h>
+#elif (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
 #include "d3dx12_x.h"
 #else
 #define D3DX12_NO_STATE_OBJECT_HELPERS
 #include "d3dx12.h"
+#endif
+#else
+#include "directx/d3dx12.h"
+#include "dxguids/dxguids.h"
 #endif
 
 #ifdef __clang__
@@ -131,14 +138,8 @@ namespace
         if ((numberOfPlanes > 1) && IsDepthStencil(desc.Format))
         {
             // DirectX 12 uses planes for stencil, DirectX 11 does not
-            return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+            return HRESULT_E_NOT_SUPPORTED;
         }
-
-        D3D12_HEAP_PROPERTIES sourceHeapProperties;
-        D3D12_HEAP_FLAGS sourceHeapFlags;
-        HRESULT hr = pSource->GetHeapProperties(&sourceHeapProperties, &sourceHeapFlags);
-        if (FAILED(hr))
-            return hr;
 
         numberOfResources = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
                             ? 1u : desc.DepthOrArraySize;
@@ -164,7 +165,9 @@ namespace
         device->GetCopyableFootprints(&desc, 0, numberOfResources, 0,
             pLayout, pNumRows, pRowSizesInBytes, &totalResourceSize);
 
-        if (sourceHeapProperties.Type == D3D12_HEAP_TYPE_READBACK)
+        D3D12_HEAP_PROPERTIES sourceHeapProperties;
+        HRESULT hr = pSource->GetHeapProperties(&sourceHeapProperties, nullptr);
+        if (SUCCEEDED(hr) && sourceHeapProperties.Type == D3D12_HEAP_TYPE_READBACK)
         {
             // Handle case where the source is already a staging texture we can use directly
             pStaging = pSource;
@@ -194,7 +197,6 @@ namespace
 
         // Readback resources must be buffers
         D3D12_RESOURCE_DESC bufferDesc = {};
-        bufferDesc.Alignment = desc.Alignment;
         bufferDesc.DepthOrArraySize = 1;
         bufferDesc.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
         bufferDesc.Flags = D3D12_RESOURCE_FLAG_NONE;
@@ -204,7 +206,6 @@ namespace
         bufferDesc.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
         bufferDesc.MipLevels = 1;
         bufferDesc.SampleDesc.Count = 1;
-        bufferDesc.SampleDesc.Quality = 0;
 
         ComPtr<ID3D12Resource> copySource(pSource);
         if (desc.SampleDesc.Count > 1)
@@ -213,6 +214,7 @@ namespace
             auto descCopy = desc;
             descCopy.SampleDesc.Count = 1;
             descCopy.SampleDesc.Quality = 0;
+            descCopy.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 
             ComPtr<ID3D12Resource> pTemp;
             hr = device->CreateCommittedResource(
@@ -299,7 +301,13 @@ namespace
 
         // Block until the copy is complete
         while (fence->GetCompletedValue() < 1)
+        {
+#ifdef WIN32
             SwitchToThread();
+#else
+            std::this_thread::yield();
+#endif
+        }
 
         return S_OK;
     }
@@ -489,7 +497,7 @@ HRESULT DirectX::CreateTextureEx(
 
 
 //-------------------------------------------------------------------------------------
-// Prepares a texture resource for upload 
+// Prepares a texture resource for upload
 //-------------------------------------------------------------------------------------
 
 _Use_decl_annotations_
@@ -510,7 +518,7 @@ HRESULT DirectX::PrepareUpload(
     if ((numberOfPlanes > 1) && IsDepthStencil(metadata.format))
     {
         // DirectX 12 uses planes for stencil, DirectX 11 does not
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+        return HRESULT_E_NOT_SUPPORTED;
     }
 
     size_t numberOfResources = (metadata.dimension == TEX_DIMENSION_TEXTURE3D)
@@ -536,7 +544,7 @@ HRESULT DirectX::PrepareUpload(
 
         if (metadata.arraySize > 1)
             // Direct3D 12 doesn't support arrays of 3D textures
-            return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+            return HRESULT_E_NOT_SUPPORTED;
 
         for (size_t plane = 0; plane < numberOfPlanes; ++plane)
         {

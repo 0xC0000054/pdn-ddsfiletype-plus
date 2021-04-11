@@ -1,9 +1,9 @@
 //-------------------------------------------------------------------------------------
 // DirectXTexCompressGPU.cpp
-//  
+//
 // DirectX Texture Library - DirectCompute-based texture compression
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
@@ -17,12 +17,13 @@ using namespace DirectX;
 
 namespace
 {
-    inline DWORD GetSRGBFlags(_In_ DWORD compress) noexcept
+    inline TEX_FILTER_FLAGS GetSRGBFlags(_In_ TEX_COMPRESS_FLAGS compress) noexcept
     {
+        static_assert(TEX_FILTER_SRGB_IN == 0x1000000, "TEX_FILTER_SRGB flag values don't match TEX_FILTER_SRGB_MASK");
         static_assert(static_cast<int>(TEX_COMPRESS_SRGB_IN) == static_cast<int>(TEX_FILTER_SRGB_IN), "TEX_COMPRESS_SRGB* should match TEX_FILTER_SRGB*");
         static_assert(static_cast<int>(TEX_COMPRESS_SRGB_OUT) == static_cast<int>(TEX_FILTER_SRGB_OUT), "TEX_COMPRESS_SRGB* should match TEX_FILTER_SRGB*");
         static_assert(static_cast<int>(TEX_COMPRESS_SRGB) == static_cast<int>(TEX_FILTER_SRGB), "TEX_COMPRESS_SRGB* should match TEX_FILTER_SRGB*");
-        return (compress & TEX_COMPRESS_SRGB);
+        return static_cast<TEX_FILTER_FLAGS>(compress & TEX_FILTER_SRGB_MASK);
     }
 
 
@@ -33,7 +34,7 @@ namespace
         const Image& srcImage,
         ScratchImage& image,
         bool srgb,
-        DWORD filter)
+        TEX_FILTER_FLAGS filter) noexcept
     {
         if (!srcImage.pixels)
             return E_POINTER;
@@ -58,7 +59,7 @@ namespace
             return E_POINTER;
         }
 
-        ScopedAlignedArrayXMVECTOR scanline(static_cast<XMVECTOR*>(_aligned_malloc((sizeof(XMVECTOR) * srcImage.width), 16)));
+        auto scanline = make_AlignedArrayXMVECTOR(srcImage.width);
         if (!scanline)
         {
             image.Release();
@@ -96,7 +97,7 @@ namespace
     HRESULT ConvertToRGBAF32(
         const Image& srcImage,
         ScratchImage& image,
-        DWORD filter)
+        TEX_FILTER_FLAGS filter) noexcept
     {
         if (!srcImage.pixels)
             return E_POINTER;
@@ -145,7 +146,7 @@ namespace
         _In_ GPUCompressBC* gpubc,
         const Image& srcImage,
         const Image& destImage,
-        DWORD compress,
+        TEX_COMPRESS_FLAGS compress,
 		ProgressProc progressProc)
     {
         if (!gpubc)
@@ -166,7 +167,7 @@ namespace
             ScratchImage image;
             HRESULT hr = E_UNEXPECTED;
 
-            DWORD srgb = GetSRGBFlags(compress);
+            auto srgb = GetSRGBFlags(compress);
 
             switch (format)
             {
@@ -210,17 +211,17 @@ HRESULT DirectX::Compress(
     ID3D11Device* pDevice,
     const Image& srcImage,
     DXGI_FORMAT format,
-    DWORD compress,
+    TEX_COMPRESS_FLAGS compress,
     float alphaWeight,
     ScratchImage& image,
-	ProgressProc progressProc)
+	ProgressProc progressProc) noexcept
 {
     if (!pDevice || IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
 
     if (IsTypeless(format)
         || IsTypeless(srcImage.format) || IsPlanar(srcImage.format) || IsPalettized(srcImage.format))
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+        return HRESULT_E_NOT_SUPPORTED;
 
     // Setup GPU compressor
     std::unique_ptr<GPUCompressBC> gpubc(new (std::nothrow) GPUCompressBC);
@@ -261,10 +262,10 @@ HRESULT DirectX::Compress(
     size_t nimages,
     const TexMetadata& metadata,
     DXGI_FORMAT format,
-    DWORD compress,
+    TEX_COMPRESS_FLAGS compress,
     float alphaWeight,
     ScratchImage& cImages,
-	ProgressProc progressProc)
+	ProgressProc progressProc) noexcept
 {
     if (!pDevice || !srcImages || !nimages)
         return E_INVALIDARG;
@@ -274,7 +275,7 @@ HRESULT DirectX::Compress(
 
     if (IsTypeless(format)
         || IsTypeless(metadata.format) || IsPlanar(metadata.format) || IsPalettized(metadata.format))
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+        return HRESULT_E_NOT_SUPPORTED;
 
     cImages.Release();
 
@@ -416,7 +417,7 @@ HRESULT DirectX::Compress(
     break;
 
     default:
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+        return HRESULT_E_NOT_SUPPORTED;
     }
 
     return S_OK;

@@ -1,5 +1,5 @@
 //--------------------------------------------------------------------------------------
-// File: ScreenGrab.h
+// File: ScreenGrab11.h
 //
 // Function for capturing a 2D texture and saving it to a file (aka a 'screenshot'
 // when used on a Direct3D 11 Render Target).
@@ -8,7 +8,7 @@
 // full-featured texture capture, DDS writer, and texture processing pipeline,
 // see the 'Texconv' sample and the 'DirectXTex' library.
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
@@ -28,7 +28,7 @@ namespace DirectX
     HRESULT __cdecl SaveDDSTextureToFile(
         _In_ ID3D11DeviceContext* pContext,
         _In_ ID3D11Resource* pSource,
-        _In_z_ const wchar_t* fileName);
+        _In_z_ const wchar_t* fileName) noexcept;
 
     HRESULT __cdecl SaveWICTextureToFile(
         _In_ ID3D11DeviceContext* pContext,

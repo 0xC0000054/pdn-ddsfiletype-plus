@@ -1,7 +1,7 @@
 //--------------------------------------------------------------------------------------
 // File: WICTextureLoader12.cpp
 //
-// Function for loading a WIC image and creating a Direct3D 12 runtime texture for it
+// Function for loading a WIC image and creating a Direct3D runtime texture for it
 // (auto-generating mipmaps if possible)
 //
 // Note: Assumes application has already called CoInitializeEx
@@ -11,7 +11,7 @@
 // For a full-featured DDS file reader, writer, and texture processing pipeline see
 // the 'Texconv' sample and the 'DirectXTex' library.
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
@@ -23,8 +23,10 @@
 
 #include "WICTextureLoader12.h"
 
-#include <assert.h>
 #include <algorithm>
+#include <cassert>
+#include <cstring>
+#include <new>
 
 #include <wincodec.h>
 
@@ -36,6 +38,13 @@
 #pragma clang diagnostic ignored "-Wswitch"
 #pragma clang diagnostic ignored "-Wswitch-enum"
 #endif
+
+// Off by default warnings
+#pragma warning(disable : 4619 4616 4623 4626 5027)
+// C4619/4616 #pragma warning warnings
+// C4623 default constructor was implicitly defined as deleted
+// C4626 assignment operator was implicitly defined as deleted
+// C5027 move assignment operator was implicitly defined as deleted
 
 #define D3DX12_NO_STATE_OBJECT_HELPERS
 #include "d3dx12.h"
@@ -50,11 +59,11 @@ namespace
     //-------------------------------------------------------------------------------------
     struct WICTranslate
     {
-        GUID                wic;
+        const GUID&         wic;
         DXGI_FORMAT         format;
     };
 
-    const WICTranslate g_WICFormats[] =
+    constexpr WICTranslate g_WICFormats[] =
     {
         { GUID_WICPixelFormat128bppRGBAFloat,       DXGI_FORMAT_R32G32B32A32_FLOAT },
 
@@ -87,11 +96,11 @@ namespace
 
     struct WICConvert
     {
-        GUID        source;
-        GUID        target;
+        const GUID&        source;
+        const GUID&        target;
     };
 
-    const WICConvert g_WICConvert[] =
+    constexpr WICConvert g_WICConvert[] =
     {
         // Note target GUID in this conversion table must be one of those directly supported formats (above).
 
@@ -161,12 +170,13 @@ namespace
             ifactory)) ? TRUE : FALSE;
     }
 
-    IWICImagingFactory2* _GetWIC()
+    IWICImagingFactory2* _GetWIC() noexcept
     {
         static INIT_ONCE s_initOnce = INIT_ONCE_STATIC_INIT;
 
         IWICImagingFactory2* factory = nullptr;
-        if (!InitOnceExecuteOnce(&s_initOnce,
+        if (!InitOnceExecuteOnce(
+            &s_initOnce,
             InitializeWICFactory,
             nullptr,
             reinterpret_cast<LPVOID*>(&factory)))
@@ -179,7 +189,7 @@ namespace
 
     //---------------------------------------------------------------------------------
     template<UINT TNameLength>
-    inline void SetDebugObjectName(_In_ ID3D12DeviceChild* resource, _In_z_ const wchar_t(&name)[TNameLength])
+    inline void SetDebugObjectName(_In_ ID3D12DeviceChild* resource, _In_z_ const wchar_t(&name)[TNameLength]) noexcept
     {
         #if !defined(NO_D3D12_DEBUG_NAME) && ( defined(_DEBUG) || defined(PROFILE) )
             resource->SetName(name);
@@ -189,7 +199,7 @@ namespace
         #endif
     }
 
-    inline uint32_t CountMips(uint32_t width, uint32_t height)
+    inline uint32_t CountMips(uint32_t width, uint32_t height) noexcept
     {
         if (width == 0 || height == 0)
             return 0;
@@ -205,7 +215,7 @@ namespace
     }
 
     //--------------------------------------------------------------------------------------
-    DXGI_FORMAT MakeSRGB(_In_ DXGI_FORMAT format)
+    DXGI_FORMAT MakeSRGB(_In_ DXGI_FORMAT format) noexcept
     {
         switch (format)
         {
@@ -236,9 +246,9 @@ namespace
     }
 
     //---------------------------------------------------------------------------------
-    DXGI_FORMAT _WICToDXGI(const GUID& guid)
+    DXGI_FORMAT _WICToDXGI(const GUID& guid) noexcept
     {
-        for (size_t i = 0; i < _countof(g_WICFormats); ++i)
+        for (size_t i = 0; i < std::size(g_WICFormats); ++i)
         {
             if (memcmp(&g_WICFormats[i].wic, &guid, sizeof(GUID)) == 0)
                 return g_WICFormats[i].format;
@@ -248,7 +258,7 @@ namespace
     }
 
     //---------------------------------------------------------------------------------
-    size_t _WICBitsPerPixel(REFGUID targetGuid)
+    size_t _WICBitsPerPixel(REFGUID targetGuid) noexcept
     {
         auto pWIC = _GetWIC();
         if (!pWIC)
@@ -277,6 +287,47 @@ namespace
     }
 
     //---------------------------------------------------------------------------------
+    void FitPowerOf2(UINT origx, UINT origy, UINT& targetx, UINT& targety, size_t maxsize)
+    {
+        float origAR = float(origx) / float(origy);
+
+        if (origx > origy)
+        {
+            size_t x;
+            for (x = maxsize; x > 1; x >>= 1) { if (x <= targetx) break; }
+            targetx = UINT(x);
+
+            float bestScore = FLT_MAX;
+            for (size_t y = maxsize; y > 0; y >>= 1)
+            {
+                float score = fabsf((float(x) / float(y)) - origAR);
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    targety = UINT(y);
+                }
+            }
+        }
+        else
+        {
+            size_t y;
+            for (y = maxsize; y > 1; y >>= 1) { if (y <= targety) break; }
+            targety = UINT(y);
+
+            float bestScore = FLT_MAX;
+            for (size_t x = maxsize; x > 0; x >>= 1)
+            {
+                float score = fabsf((float(x) / float(y)) - origAR);
+                if (score < bestScore)
+                {
+                    bestScore = score;
+                    targetx = UINT(x);
+                }
+            }
+        }
+    }
+
+    //---------------------------------------------------------------------------------
     HRESULT CreateTextureFromWIC(_In_ ID3D12Device* d3dDevice,
         _In_ IWICBitmapFrameDecode *frame,
         size_t maxsize,
@@ -284,7 +335,7 @@ namespace
         unsigned int loadFlags,
         _Outptr_ ID3D12Resource** texture,
         std::unique_ptr<uint8_t[]>& decodedData,
-        D3D12_SUBRESOURCE_DATA& subresource)
+        D3D12_SUBRESOURCE_DATA& subresource) noexcept
     {
         UINT width, height;
         HRESULT hr = frame->GetSize(&width, &height);
@@ -298,11 +349,16 @@ namespace
 
         if (!maxsize)
         {
-            maxsize = D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION;
+            maxsize = size_t(D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION);
         }
 
-        UINT twidth, theight;
-        if (width > maxsize || height > maxsize)
+        UINT twidth = width;
+        UINT theight = height;
+        if (loadFlags & WIC_LOADER_FIT_POW2)
+        {
+            FitPowerOf2(width, height, twidth, theight, maxsize);
+        }
+        else if (width > maxsize || height > maxsize)
         {
             float ar = static_cast<float>(height) / static_cast<float>(width);
             if (width > height)
@@ -317,10 +373,11 @@ namespace
             }
             assert(twidth <= maxsize && theight <= maxsize);
         }
-        else
+
+        if (loadFlags & WIC_LOADER_MAKE_SQUARE)
         {
-            twidth = width;
-            theight = height;
+            twidth = std::max<UINT>(twidth, theight);
+            theight = twidth;
         }
 
         // Determine format
@@ -337,7 +394,7 @@ namespace
         DXGI_FORMAT format = _WICToDXGI(pixelFormat);
         if (format == DXGI_FORMAT_UNKNOWN)
         {
-            for (size_t i = 0; i < _countof(g_WICConvert); ++i)
+            for (size_t i = 0; i < std::size(g_WICConvert); ++i)
             {
                 if (memcmp(&g_WICConvert[i].source, &pixelFormat, sizeof(WICPixelFormatGUID)) == 0)
                 {
@@ -358,6 +415,13 @@ namespace
             bpp = _WICBitsPerPixel(pixelFormat);
         }
 
+        if (loadFlags & WIC_LOADER_FORCE_RGBA32)
+        {
+            memcpy_s(&convertGUID, sizeof(WICPixelFormatGUID), &GUID_WICPixelFormat32bppRGBA, sizeof(GUID));
+            format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            bpp = 32;
+        }
+
         if (!bpp)
             return E_FAIL;
 
@@ -374,23 +438,34 @@ namespace
                 GUID containerFormat;
                 if (SUCCEEDED(metareader->GetContainerFormat(&containerFormat)))
                 {
-                    // Check for sRGB colorspace metadata
                     bool sRGB = false;
 
                     PROPVARIANT value;
                     PropVariantInit(&value);
 
+                    // Check for colorspace chunks
                     if (memcmp(&containerFormat, &GUID_ContainerFormatPng, sizeof(GUID)) == 0)
                     {
-                        // Check for sRGB chunk
                         if (SUCCEEDED(metareader->GetMetadataByName(L"/sRGB/RenderingIntent", &value)) && value.vt == VT_UI1)
                         {
                             sRGB = true;
                         }
+                        else if (SUCCEEDED(metareader->GetMetadataByName(L"/gAMA/ImageGamma", &value)) && value.vt == VT_UI4)
+                        {
+                            sRGB = (value.uintVal == 45455);
+                        }
+                        else
+                        {
+                            sRGB = (loadFlags & WIC_LOADER_SRGB_DEFAULT) != 0;
+                        }
                     }
-                    else if (SUCCEEDED(metareader->GetMetadataByName(L"System.Image.ColorSpace", &value)) && value.vt == VT_UI2 && value.uiVal == 1)
+                    else if (SUCCEEDED(metareader->GetMetadataByName(L"System.Image.ColorSpace", &value)) && value.vt == VT_UI2)
                     {
-                        sRGB = true;
+                        sRGB = (value.uiVal == 1);
+                    }
+                    else
+                    {
+                        sRGB = (loadFlags & WIC_LOADER_SRGB_DEFAULT) != 0;
                     }
 
                     (void)PropVariantClear(&value);
@@ -403,7 +478,7 @@ namespace
 
         // Allocate memory for decoded image
         uint64_t rowBytes = (uint64_t(twidth) * uint64_t(bpp) + 7u) / 8u;
-        uint64_t numBytes = rowBytes * uint64_t(height);
+        uint64_t numBytes = rowBytes * uint64_t(theight);
 
         if (rowBytes > UINT32_MAX || numBytes > UINT32_MAX)
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
@@ -505,7 +580,8 @@ namespace
         }
 
         // Count the number of mips
-        uint32_t mipCount = (loadFlags & (WIC_LOADER_MIP_AUTOGEN|WIC_LOADER_MIP_RESERVE)) ? CountMips(twidth, theight) : 1;
+        uint32_t mipCount = (loadFlags & (WIC_LOADER_MIP_AUTOGEN | WIC_LOADER_MIP_RESERVE))
+            ? CountMips(twidth, theight) : 1u;
 
         // Create texture
         D3D12_RESOURCE_DESC desc = {};
@@ -549,10 +625,10 @@ namespace
     //--------------------------------------------------------------------------------------
     void SetDebugTextureInfo(
         _In_z_ const wchar_t* fileName,
-        _In_ ID3D12Resource** texture)
+        _In_ ID3D12Resource** texture) noexcept
     {
 #if !defined(NO_D3D12_DEBUG_NAME) && ( defined(_DEBUG) || defined(PROFILE) )
-        if (texture)
+        if (texture && *texture)
         {
             const wchar_t* pstrName = wcsrchr(fileName, '\\');
             if (!pstrName)
@@ -564,10 +640,7 @@ namespace
                 pstrName++;
             }
 
-            if (texture && *texture)
-            {
-                (*texture)->SetName(pstrName);
-            }
+            (*texture)->SetName(pstrName);
         }
 #else
         UNREFERENCED_PARAMETER(fileName);
@@ -586,7 +659,7 @@ HRESULT DirectX::LoadWICTextureFromMemory(
     ID3D12Resource** texture,
     std::unique_ptr<uint8_t[]>& decodedData,
     D3D12_SUBRESOURCE_DATA& subresource,
-    size_t maxsize)
+    size_t maxsize) noexcept
 {
     return LoadWICTextureFromMemoryEx(
         d3dDevice,
@@ -612,7 +685,7 @@ HRESULT DirectX::LoadWICTextureFromMemoryEx(
     unsigned int loadFlags,
     ID3D12Resource** texture,
     std::unique_ptr<uint8_t[]>& decodedData,
-    D3D12_SUBRESOURCE_DATA& subresource)
+    D3D12_SUBRESOURCE_DATA& subresource) noexcept
 {
     if (texture)
     {
@@ -675,7 +748,7 @@ HRESULT DirectX::LoadWICTextureFromFile(
     ID3D12Resource** texture,
     std::unique_ptr<uint8_t[]>& wicData,
     D3D12_SUBRESOURCE_DATA& subresource,
-    size_t maxsize)
+    size_t maxsize) noexcept
 {
     return LoadWICTextureFromFileEx(
         d3dDevice,
@@ -699,7 +772,7 @@ HRESULT DirectX::LoadWICTextureFromFileEx(
     unsigned int loadFlags,
     ID3D12Resource** texture,
     std::unique_ptr<uint8_t[]>& decodedData,
-    D3D12_SUBRESOURCE_DATA& subresource)
+    D3D12_SUBRESOURCE_DATA& subresource) noexcept
 {
     if (texture)
     {
@@ -715,7 +788,11 @@ HRESULT DirectX::LoadWICTextureFromFileEx(
 
     // Initialize WIC
     ComPtr<IWICBitmapDecoder> decoder;
-    HRESULT hr = pWIC->CreateDecoderFromFilename(fileName, nullptr, GENERIC_READ, WICDecodeMetadataCacheOnDemand, decoder.GetAddressOf());
+    HRESULT hr = pWIC->CreateDecoderFromFilename(fileName,
+        nullptr,
+        GENERIC_READ,
+        WICDecodeMetadataCacheOnDemand,
+        decoder.GetAddressOf());
     if (FAILED(hr))
         return hr;
 

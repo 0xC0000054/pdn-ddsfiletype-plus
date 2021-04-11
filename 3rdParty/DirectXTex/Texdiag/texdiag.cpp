@@ -3,7 +3,7 @@
 //
 // DirectX Texture diagnostic tool
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
@@ -20,13 +20,17 @@
 #define NOHELP
 #pragma warning(pop)
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <assert.h>
-
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <cwchar>
 #include <fstream>
-#include <memory>
+#include <iterator>
 #include <list>
+#include <memory>
+#include <new>
 #include <vector>
 
 #include <dxgiformat.h>
@@ -64,6 +68,7 @@ enum OPTIONS
     OPT_DDS_DWORD_ALIGN,
     OPT_DDS_BAD_DXTN_TAILS,
     OPT_OUTPUTFILE,
+    OPT_TOLOWER,
     OPT_OVERWRITE,
     OPT_FILETYPE,
     OPT_NOLOGO,
@@ -113,6 +118,7 @@ const SValue g_pOptions[] =
     { L"badtails",  OPT_DDS_BAD_DXTN_TAILS },
     { L"nologo",    OPT_NOLOGO },
     { L"o",         OPT_OUTPUTFILE },
+    { L"l",         OPT_TOLOWER },
     { L"y",         OPT_OVERWRITE },
     { L"ft",        OPT_FILETYPE },
     { L"tu",        OPT_TYPELESS_UNORM },
@@ -124,7 +130,7 @@ const SValue g_pOptions[] =
     { nullptr,      0 }
 };
 
-#define DEFFMT(fmt) { L#fmt, DXGI_FORMAT_ ## fmt }
+#define DEFFMT(fmt) { L## #fmt, DXGI_FORMAT_ ## fmt }
 
 const SValue g_pFormats[] =
 {
@@ -359,9 +365,9 @@ const SValue g_pExtFileTypes[] =
 
 namespace
 {
-    inline HANDLE safe_handle(HANDLE h) { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
+    inline HANDLE safe_handle(HANDLE h) noexcept { return (h == INVALID_HANDLE_VALUE) ? nullptr : h; }
 
-    struct find_closer { void operator()(HANDLE h) { assert(h != INVALID_HANDLE_VALUE); if (h) FindClose(h); } };
+    struct find_closer { void operator()(HANDLE h) noexcept { assert(h != INVALID_HANDLE_VALUE); if (h) FindClose(h); } };
 
     using ScopedFindHandle = std::unique_ptr<void, find_closer>;
 
@@ -382,7 +388,6 @@ namespace
         return 0;
     }
 
-
     const wchar_t* LookupByValue(DWORD pValue, const SValue *pArray)
     {
         while (pArray->pName)
@@ -395,7 +400,6 @@ namespace
 
         return L"";
     }
-
 
     void SearchForFiles(const wchar_t* path, std::list<SConversion>& files, bool recursive)
     {
@@ -415,7 +419,7 @@ namespace
                     wchar_t dir[_MAX_DIR] = {};
                     _wsplitpath_s(path, drive, _MAX_DRIVE, dir, _MAX_DIR, nullptr, 0, nullptr, 0);
 
-                    SConversion conv;
+                    SConversion conv = {};
                     _wmakepath_s(conv.szSrc, drive, dir, findData.cFileName, nullptr);
                     files.push_back(conv);
                 }
@@ -471,7 +475,6 @@ namespace
         }
     }
 
-
     void PrintFormat(DXGI_FORMAT Format)
     {
         for (const SValue *pFormat = g_pFormats; pFormat->pName; pFormat++)
@@ -495,7 +498,6 @@ namespace
         wprintf(L"*UNKNOWN*");
     }
 
-
     void PrintList(size_t cch, const SValue *pValue)
     {
         while (pValue->pName)
@@ -516,17 +518,41 @@ namespace
         wprintf(L"\n");
     }
 
-
     void PrintLogo()
     {
-        wprintf(L"Microsoft (R) DirectX Texture Diagnostic Tool\n");
-        wprintf(L"Copyright (C) Microsoft Corp. All rights reserved.\n");
+        wchar_t version[32] = {};
+
+        wchar_t appName[_MAX_PATH] = {};
+        if (GetModuleFileNameW(nullptr, appName, static_cast<DWORD>(std::size(appName))))
+        {
+            DWORD size = GetFileVersionInfoSizeW(appName, nullptr);
+            if (size > 0)
+            {
+                auto verInfo = std::make_unique<uint8_t[]>(size);
+                if (GetFileVersionInfoW(appName, 0, size, verInfo.get()))
+                {
+                    LPVOID lpstr = nullptr;
+                    UINT strLen = 0;
+                    if (VerQueryValueW(verInfo.get(), L"\\StringFileInfo\\040904B0\\ProductVersion", &lpstr, &strLen))
+                    {
+                        wcsncpy_s(version, reinterpret_cast<const wchar_t*>(lpstr), strLen);
+                    }
+                }
+            }
+        }
+
+        if (!*version || wcscmp(version, L"1.0.0.0") == 0)
+        {
+            swprintf_s(version, L"%03d (library)", DIRECTX_TEX_VERSION);
+        }
+
+        wprintf(L"Microsoft (R) DirectX Texture Diagnostic Tool [DirectXTex] Version %ls\n", version);
+        wprintf(L"Copyright (C) Microsoft Corp.\n");
 #ifdef _DEBUG
         wprintf(L"*** Debug build ***\n");
 #endif
         wprintf(L"\n");
     }
-
 
     void PrintUsage()
     {
@@ -549,6 +575,7 @@ namespace
         wprintf(L"\n                       (diff only)\n");
         wprintf(L"   -f <format>         format\n");
         wprintf(L"   -o <filename>       output filename\n");
+        wprintf(L"   -l                  force output filename to lower case\n");
         wprintf(L"   -y                  overwrite existing output file (if any)\n");
         wprintf(L"\n                       (dumpbc only)\n");
         wprintf(L"   -targetx <num>      dump pixels at location x (defaults to all)\n");
@@ -570,7 +597,42 @@ namespace
         PrintList(15, g_pDumpFileTypes);
     }
 
-    HRESULT LoadImage(const wchar_t *fileName, DWORD dwOptions, DWORD dwFilter, TexMetadata& info, std::unique_ptr<ScratchImage>& image)
+    const wchar_t* GetErrorDesc(HRESULT hr)
+    {
+        static wchar_t desc[1024] = {};
+
+        LPWSTR errorText = nullptr;
+
+        DWORD result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, nullptr,
+            static_cast<DWORD>(hr),
+            MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorText), 0, nullptr);
+
+        *desc = 0;
+
+        if (result > 0 && errorText)
+        {
+            swprintf_s(desc, L": %ls", errorText);
+
+            size_t len = wcslen(desc);
+            if (len >= 2)
+            {
+                desc[len - 2] = 0;
+                desc[len - 1] = 0;
+            }
+
+            if (errorText)
+                LocalFree(errorText);
+        }
+
+        return desc;
+    }
+
+    HRESULT LoadImage(
+        const wchar_t *fileName,
+        DWORD dwOptions,
+        TEX_FILTER_FLAGS dwFilter,
+        TexMetadata& info,
+        std::unique_ptr<ScratchImage>& image)
     {
         if (!fileName)
             return E_INVALIDARG;
@@ -579,12 +641,12 @@ namespace
         if (!image)
             return E_OUTOFMEMORY;
 
-        wchar_t ext[_MAX_EXT];
+        wchar_t ext[_MAX_EXT] = {};
         _wsplitpath_s(fileName, nullptr, 0, nullptr, 0, nullptr, 0, ext, _MAX_EXT);
 
         if (_wcsicmp(ext, L".dds") == 0)
         {
-            DWORD ddsFlags = DDS_FLAGS_NONE;
+            DDS_FLAGS ddsFlags = DDS_FLAGS_ALLOW_LARGE_FILES;
             if (dwOptions & (1 << OPT_DDS_DWORD_ALIGN))
                 ddsFlags |= DDS_FLAGS_LEGACY_DWORD;
             if (dwOptions & (1 << OPT_EXPAND_LUMINANCE))
@@ -617,7 +679,7 @@ namespace
         }
         else if (_wcsicmp(ext, L".tga") == 0)
         {
-            return LoadFromTGAFile(fileName, &info, *image);
+            return LoadFromTGAFile(fileName, TGA_FLAGS_NONE, &info, *image);
         }
         else if (_wcsicmp(ext, L".hdr") == 0)
         {
@@ -651,7 +713,7 @@ namespace
             return SaveToDDSFile(*image, DDS_FLAGS_NONE, fileName);
 
         case CODEC_TGA:
-            return SaveToTGAFile(*image, fileName);
+            return SaveToTGAFile(*image, TGA_FLAGS_NONE, fileName);
 
         case CODEC_HDR:
             return SaveToHDRFile(*image, fileName);
@@ -787,7 +849,6 @@ namespace
 
         return S_OK;
     }
-
 
     //--------------------------------------------------------------------------------------
     struct AnalyzeBCData
@@ -1228,9 +1289,13 @@ namespace
         return S_OK;
     }
 
-
     //--------------------------------------------------------------------------------------
-    HRESULT Difference(const Image& image1, const Image& image2, DWORD dwFilter, DXGI_FORMAT format, ScratchImage& result)
+    HRESULT Difference(
+        const Image& image1,
+        const Image& image2,
+        TEX_FILTER_FLAGS dwFilter,
+        DXGI_FORMAT format,
+        ScratchImage& result)
     {
         if (!image1.pixels || !image2.pixels)
             return E_POINTER;
@@ -1302,7 +1367,6 @@ namespace
         return Convert(diffImage.GetImages(), diffImage.GetImageCount(), diffImage.GetMetadata(), format, dwFilter, TEX_THRESHOLD_DEFAULT, result);
     }
 
-
     //--------------------------------------------------------------------------------------
     // Partition, Shape, Fixup
     const uint8_t g_aFixUp[3][64][3] =
@@ -1367,7 +1431,10 @@ namespace
         }
     };
 
-    inline static bool IsFixUpOffset(_In_range_(0, 2) size_t uPartitions, _In_range_(0, 63) uint64_t uShape, _In_range_(0, 15) size_t uOffset)
+    inline static bool IsFixUpOffset(
+        _In_range_(0, 2) size_t uPartitions,
+        _In_range_(0, 63) uint64_t uShape,
+        _In_range_(0, 15) size_t uOffset)
     {
         for (size_t p = 0; p <= uPartitions; p++)
         {
@@ -1608,7 +1675,7 @@ namespace
 
                     wprintf(L"\tAlpha - E0: %0.3f  E1: %0.3f (%u)\n\t     Index: ",
                         (float(block->alpha[0]) / 255.f),
-                        (float(block->alpha[1]) / 255.f), (block->alpha[0] > block->alpha[1]) ? 8 : 6);
+                        (float(block->alpha[1]) / 255.f), (block->alpha[0] > block->alpha[1]) ? 8u : 6u);
 
                     PrintIndex3bpp(block->bitmap);
 
@@ -1622,7 +1689,7 @@ namespace
 
                     wprintf(L"\t   E0: %0.3f  E1: %0.3f (%u)\n\tIndex: ",
                         (float(block->red_0) / 255.f),
-                        (float(block->red_1) / 255.f), (block->red_0 > block->red_1) ? 8 : 6);
+                        (float(block->red_1) / 255.f), (block->red_0 > block->red_1) ? 8u : 6u);
 
                     PrintIndex3bpp(block->indices);
 
@@ -1636,7 +1703,7 @@ namespace
 
                     wprintf(L"\t   E0: %0.3f  E1: %0.3f (%u)\n\tIndex: ",
                         (float(block->red_0) / 127.f),
-                        (float(block->red_1) / 127.f), (block->red_0 > block->red_1) ? 8 : 6);
+                        (float(block->red_1) / 127.f), (block->red_0 > block->red_1) ? 8u : 6u);
 
                     PrintIndex3bpp(block->indices);
 
@@ -1650,7 +1717,7 @@ namespace
 
                     wprintf(L"\tU -   E0: %0.3f  E1: %0.3f (%u)\n\t   Index: ",
                         (float(block->u.red_0) / 255.f),
-                        (float(block->u.red_1) / 255.f), (block->u.red_0 > block->u.red_1) ? 8 : 6);
+                        (float(block->u.red_1) / 255.f), (block->u.red_0 > block->u.red_1) ? 8u : 6u);
 
                     PrintIndex3bpp(block->u.indices);
 
@@ -1658,7 +1725,7 @@ namespace
 
                     wprintf(L"\tV -   E0: %0.3f  E1: %0.3f (%u)\n\t   Index: ",
                         (float(block->v.red_0) / 255.f),
-                        (float(block->v.red_1) / 255.f), (block->v.red_0 > block->v.red_1) ? 8 : 6);
+                        (float(block->v.red_1) / 255.f), (block->v.red_0 > block->v.red_1) ? 8u : 6u);
 
                     PrintIndex3bpp(block->v.indices);
 
@@ -1672,7 +1739,7 @@ namespace
 
                     wprintf(L"\tU -   E0: %0.3f  E1: %0.3f (%u)\n\t   Index: ",
                         (float(block->u.red_0) / 127.f),
-                        (float(block->u.red_1) / 127.f), (block->u.red_0 > block->u.red_1) ? 8 : 6);
+                        (float(block->u.red_1) / 127.f), (block->u.red_0 > block->u.red_1) ? 8u : 6u);
 
                     PrintIndex3bpp(block->u.indices);
 
@@ -1680,7 +1747,7 @@ namespace
 
                     wprintf(L"\tV -   E0: %0.3f  E1: %0.3f (%u)\n\t   Index: ",
                         (float(block->v.red_0) / 127.f),
-                        (float(block->v.red_1) / 127.f), (block->v.red_0 > block->v.red_1) ? 8 : 6);
+                        (float(block->v.red_1) / 127.f), (block->v.red_0 > block->v.red_1) ? 8u : 6u);
 
                     PrintIndex3bpp(block->v.indices);
 
@@ -3030,7 +3097,7 @@ namespace
 int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 {
     // Parameters and defaults
-    DWORD dwFilter = TEX_FILTER_DEFAULT;
+    TEX_FILTER_FLAGS dwFilter = TEX_FILTER_DEFAULT;
     int pixelx = -1;
     int pixely = -1;
     DXGI_FORMAT diffFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
@@ -3041,7 +3108,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
     HRESULT hr = hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
     if (FAILED(hr))
     {
-        wprintf(L"Failed to initialize COM (%08X)\n", static_cast<unsigned int>(hr));
+        wprintf(L"Failed to initialize COM (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
         return 1;
     }
 
@@ -3146,7 +3213,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 break;
 
             case OPT_FILTER:
-                dwFilter = LookupByName(pValue, g_pFilters);
+                dwFilter = static_cast<TEX_FILTER_FLAGS>(LookupByName(pValue, g_pFilters));
                 if (!dwFilter)
                 {
                     wprintf(L"Invalid value specified with -if (%ls)\n", pValue);
@@ -3164,7 +3231,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 {
                     wcscpy_s(szOutputFile, MAX_PATH, pValue);
 
-                    wchar_t ext[_MAX_EXT];
+                    wchar_t ext[_MAX_EXT] = {};
                     _wsplitpath_s(szOutputFile, nullptr, 0, nullptr, 0, nullptr, 0, ext, _MAX_EXT);
 
                     fileType = LookupByName(ext, g_pExtFileTypes);
@@ -3247,7 +3314,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     }
                     else
                     {
-                        SConversion conv;
+                        SConversion conv = {};
                         wcscpy_s(conv.szSrc, MAX_PATH, fname);
                         conversion.push_back(conv);
                     }
@@ -3274,7 +3341,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
         }
         else
         {
-            SConversion conv;
+            SConversion conv = {};
             wcscpy_s(conv.szSrc, MAX_PATH, pArg);
 
             conversion.push_back(conv);
@@ -3312,7 +3379,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             hr = LoadImage(pImage1->szSrc, dwOptions, dwFilter, info1, image1);
             if (FAILED(hr))
             {
-                wprintf(L" FAILED (%x)\n", static_cast<unsigned int>(hr));
+                wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                 return 1;
             }
 
@@ -3327,7 +3394,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             hr = LoadImage(pImage2->szSrc, dwOptions, dwFilter, info2, image2);
             if (FAILED(hr))
             {
-                wprintf(L" FAILED (%x)\n", static_cast<unsigned int>(hr));
+                wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                 return 1;
             }
 
@@ -3345,8 +3412,8 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             {
                 if (!*szOutputFile)
                 {
-                    wchar_t ext[_MAX_EXT];
-                    wchar_t fname[_MAX_FNAME];
+                    wchar_t ext[_MAX_EXT] = {};
+                    wchar_t fname[_MAX_FNAME] = {};
                     _wsplitpath_s(pImage1->szSrc, nullptr, 0, nullptr, 0, fname, _MAX_FNAME, ext, _MAX_EXT);
                     if (_wcsicmp(ext, L".bmp") == 0)
                     {
@@ -3364,8 +3431,13 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 hr = Difference(*image1->GetImage(0, 0, 0), *image2->GetImage(0, 0, 0), dwFilter, diffFormat, diffImage);
                 if (FAILED(hr))
                 {
-                    wprintf(L"Failed diffing images (%08X)\n", static_cast<unsigned int>(hr));
+                    wprintf(L"Failed diffing images (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                     return 1;
+                }
+
+                if (dwOptions & (1 << OPT_TOLOWER))
+                {
+                    (void)_wcslwr_s(szOutputFile);
                 }
 
                 if (~dwOptions & (1 << OPT_OVERWRITE))
@@ -3380,7 +3452,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 hr = SaveImage(diffImage.GetImage(0, 0, 0), szOutputFile, fileType);
                 if (FAILED(hr))
                 {
-                    wprintf(L" FAILED (%x)\n", static_cast<unsigned int>(hr));
+                    wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                     return 1;
                 }
 
@@ -3402,7 +3474,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 hr = ComputeMSE(*image1->GetImage(0, 0, 0), *image2->GetImage(0, 0, 0), mse, mseV);
                 if (FAILED(hr))
                 {
-                    wprintf(L"Failed comparing images (%08X)\n", static_cast<unsigned int>(hr));
+                    wprintf(L"Failed comparing images (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                     return 1;
                 }
 
@@ -3449,7 +3521,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = ComputeMSE(*img1, *img2, mse, mseV);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"Failed comparing images at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"Failed comparing images at slice %3zu, mip %3zu (%08X%ls)\n", slice, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
 
@@ -3500,7 +3572,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = ComputeMSE(*img1, *img2, mse, mseV);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"Failed comparing images at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"Failed comparing images at item %3zu, mip %3zu (%08X%ls)\n", item, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
 
@@ -3560,7 +3632,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             hr = LoadImage(pConv->szSrc, dwOptions, dwFilter, info, image);
             if (FAILED(hr))
             {
-                wprintf(L" FAILED (%x)\n", static_cast<unsigned int>(hr));
+                wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                 return 1;
             }
 
@@ -3635,8 +3707,8 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     return 1;
                 }
 
-                wchar_t ext[_MAX_EXT];
-                wchar_t fname[_MAX_FNAME];
+                wchar_t ext[_MAX_EXT] = {};
+                wchar_t fname[_MAX_FNAME] = {};
                 _wsplitpath_s(pConv->szSrc, nullptr, 0, nullptr, 0, fname, _MAX_FNAME, nullptr, 0);
 
                 wcscpy_s(ext, LookupByValue(fileType, g_pDumpFileTypes));
@@ -3659,7 +3731,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                             }
                             else
                             {
-                                wchar_t subFname[_MAX_FNAME];
+                                wchar_t subFname[_MAX_FNAME] = {};
                                 if (info.mipLevels > 1)
                                 {
                                     swprintf_s(subFname, L"%ls_slice%03zu_mip%03zu", fname, slice, mip);
@@ -3674,7 +3746,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = SaveImage(img, szOutputFile, fileType);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L" FAILED (%x)\n", static_cast<unsigned int>(hr));
+                                    wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
                             }
@@ -3717,7 +3789,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = SaveImage(img, szOutputFile, fileType);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L" FAILED (%x)\n", static_cast<unsigned int>(hr));
+                                    wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
                             }
@@ -3770,7 +3842,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = DumpBCImage(*img, pixelx, pixely);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed dumping image at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed dumping image at slice %3zu, mip %3zu (%08X%ls)\n", slice, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
                             }
@@ -3813,7 +3885,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = DumpBCImage(*img, tpixelx, tpixely);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed dumping image at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed dumping image at item %3zu, mip %3zu (%08X%ls)\n", item, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
                             }
@@ -3846,8 +3918,8 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     hr = ConvertToSinglePlane(img, nimg, info, *timage);
                     if (FAILED(hr))
                     {
-                        wprintf(L" FAILED [converttosingleplane] (%x)\n", static_cast<unsigned int>(hr));
-                        continue;
+                        wprintf(L" FAILED [converttosingleplane] (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
+                        return 1;
                     }
 
                     auto& tinfo = timage->GetMetadata();
@@ -3887,7 +3959,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = Analyze(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing image at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing image at slice %3zu, mip %3zu (%08X%ls)\n", slice, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
 
@@ -3901,7 +3973,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = AnalyzeBC(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing BC image at slice %3zu, mip %3zu (%08X)\n", slice, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing BC image at slice %3zu, mip %3zu (%08X%ls)\n", slice, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
 
@@ -3935,7 +4007,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = Analyze(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing image at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing image at item %3zu, mip %3zu (%08X%ls)\n", item, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
 
@@ -3952,7 +4024,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                                 hr = AnalyzeBC(*img, data);
                                 if (FAILED(hr))
                                 {
-                                    wprintf(L"ERROR: Failed analyzing BC image at item %3zu, mip %3zu (%08X)\n", item, mip, static_cast<unsigned int>(hr));
+                                    wprintf(L"ERROR: Failed analyzing BC image at item %3zu, mip %3zu (%08X%ls)\n", item, mip, static_cast<unsigned int>(hr), GetErrorDesc(hr));
                                     return 1;
                                 }
 

@@ -343,7 +343,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         {
             return E_OUTOFMEMORY;
         }
-        hr = flattenedCubeMap->Initialize2D(targetFormat, width * 4, height * 3, 1, 1, DDS_FLAGS_NONE);
+        hr = flattenedCubeMap->Initialize2D(targetFormat, width * 4, height * 3, 1, 1, CP_FLAGS_NONE);
         if (FAILED(hr))
         {
             return hr;
@@ -446,7 +446,7 @@ HRESULT __stdcall Save(
             return E_OUTOFMEMORY;
         }
 
-        DWORD compressFlags = TEX_COMPRESS_DEFAULT | TEX_COMPRESS_PARALLEL;
+        TEX_COMPRESS_FLAGS compressFlags = TEX_COMPRESS_DEFAULT | TEX_COMPRESS_PARALLEL;
 
         if (input->errorMetric == DDS_ERROR_METRIC_UNIFORM)
         {
@@ -508,7 +508,7 @@ HRESULT __stdcall Save(
             return E_OUTOFMEMORY;
         }
 
-        DWORD filter = TEX_FILTER_DEFAULT | TEX_FILTER_SEPARATE_ALPHA;
+        TEX_FILTER_FLAGS filter = TEX_FILTER_DEFAULT | TEX_FILTER_SEPARATE_ALPHA;
 
         hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, filter,
             TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);

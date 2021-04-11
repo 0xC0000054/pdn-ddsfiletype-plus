@@ -3,7 +3,7 @@
 //
 // DirectX Texture Library - Microsoft DirectDraw Surface (DDS) file format reader/writer
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //
 // http://go.microsoft.com/fwlink/?LinkId=248926
@@ -24,7 +24,7 @@ namespace
     //-------------------------------------------------------------------------------------
     // Legacy format mapping table (used for DDS files without 'DX10' extended header)
     //-------------------------------------------------------------------------------------
-    enum CONVERSION_FLAGS
+    enum CONVERSION_FLAGS : uint32_t
     {
         CONV_FLAGS_NONE = 0x0,
         CONV_FLAGS_EXPAND = 0x1,      // Conversion requires expanded pixel size
@@ -49,7 +49,7 @@ namespace
     struct LegacyDDS
     {
         DXGI_FORMAT     format;
-        DWORD           convFlags;
+        uint32_t        convFlags;
         DDS_PIXELFORMAT ddpf;
     };
 
@@ -83,8 +83,8 @@ namespace
         { DXGI_FORMAT_R8G8B8A8_UNORM,     CONV_FLAGS_NOALPHA,     DDSPF_X8B8G8R8 }, // D3DFMT_X8B8G8R8
         { DXGI_FORMAT_R16G16_UNORM,       CONV_FLAGS_NONE,        DDSPF_G16R16   }, // D3DFMT_G16R16
 
-        { DXGI_FORMAT_R10G10B10A2_UNORM,  CONV_FLAGS_SWIZZLE,     { sizeof(DDS_PIXELFORMAT), DDS_RGBA,      0, 32, 0x000003ff, 0x000ffc00, 0x3ff00000, 0xc0000000 } }, // D3DFMT_A2R10G10B10 (D3DX reversal issue workaround)
-        { DXGI_FORMAT_R10G10B10A2_UNORM,  CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_RGBA,      0, 32, 0x3ff00000, 0x000ffc00, 0x000003ff, 0xc0000000 } }, // D3DFMT_A2B10G10R10 (D3DX reversal issue workaround)
+        { DXGI_FORMAT_R10G10B10A2_UNORM,  CONV_FLAGS_SWIZZLE,     DDSPF_A2R10G10B10 }, // D3DFMT_A2R10G10B10 (D3DX reversal issue)
+        { DXGI_FORMAT_R10G10B10A2_UNORM,  CONV_FLAGS_NONE,        DDSPF_A2B10G10R10 }, // D3DFMT_A2B10G10R10 (D3DX reversal issue)
 
         { DXGI_FORMAT_R8G8B8A8_UNORM,     CONV_FLAGS_EXPAND
                                           | CONV_FLAGS_NOALPHA
@@ -93,45 +93,50 @@ namespace
         { DXGI_FORMAT_B5G6R5_UNORM,       CONV_FLAGS_565,         DDSPF_R5G6B5 }, // D3DFMT_R5G6B5
         { DXGI_FORMAT_B5G5R5A1_UNORM,     CONV_FLAGS_5551,        DDSPF_A1R5G5B5 }, // D3DFMT_A1R5G5B5
         { DXGI_FORMAT_B5G5R5A1_UNORM,     CONV_FLAGS_5551
-                                          | CONV_FLAGS_NOALPHA,   { sizeof(DDS_PIXELFORMAT), DDS_RGB,       0, 16, 0x7c00,     0x03e0,     0x001f,     0x0000     } }, // D3DFMT_X1R5G5B5
+                                          | CONV_FLAGS_NOALPHA,   DDSPF_X1R5G5B5 }, // D3DFMT_X1R5G5B5
 
         { DXGI_FORMAT_R8G8B8A8_UNORM,     CONV_FLAGS_EXPAND
-                                          | CONV_FLAGS_8332,      { sizeof(DDS_PIXELFORMAT), DDS_RGBA,      0, 16, 0x00e0,     0x001c,     0x0003,     0xff00     } }, // D3DFMT_A8R3G3B2
+                                          | CONV_FLAGS_8332,      DDSPF_A8R3G3B2 }, // D3DFMT_A8R3G3B2
         { DXGI_FORMAT_B5G6R5_UNORM,       CONV_FLAGS_EXPAND
-                                          | CONV_FLAGS_332,       { sizeof(DDS_PIXELFORMAT), DDS_RGB,       0,  8, 0xe0,       0x1c,       0x03,       0x00       } }, // D3DFMT_R3G3B2
+                                          | CONV_FLAGS_332,       DDSPF_R3G3B2 }, // D3DFMT_R3G3B2
 
-        { DXGI_FORMAT_R8_UNORM,           CONV_FLAGS_NONE,        DDSPF_L8   }, // D3DFMT_L8
-        { DXGI_FORMAT_R16_UNORM,          CONV_FLAGS_NONE,        DDSPF_L16  }, // D3DFMT_L16
+        { DXGI_FORMAT_R8_UNORM,           CONV_FLAGS_NONE,        DDSPF_L8 }, // D3DFMT_L8
+        { DXGI_FORMAT_R16_UNORM,          CONV_FLAGS_NONE,        DDSPF_L16 }, // D3DFMT_L16
         { DXGI_FORMAT_R8G8_UNORM,         CONV_FLAGS_NONE,        DDSPF_A8L8 }, // D3DFMT_A8L8
         { DXGI_FORMAT_R8G8_UNORM,         CONV_FLAGS_NONE,        DDSPF_A8L8_ALT }, // D3DFMT_A8L8 (alternative bitcount)
 
+        // NVTT v1 wrote these with RGB instead of LUMINANCE
+        { DXGI_FORMAT_R8_UNORM,           CONV_FLAGS_NONE,        DDSPF_L8_NVTT1 }, // D3DFMT_L8
+        { DXGI_FORMAT_R16_UNORM,          CONV_FLAGS_NONE,        DDSPF_L16_NVTT1  }, // D3DFMT_L16
+        { DXGI_FORMAT_R8G8_UNORM,         CONV_FLAGS_NONE,        DDSPF_A8L8_NVTT1 }, // D3DFMT_A8L8
+
         { DXGI_FORMAT_A8_UNORM,           CONV_FLAGS_NONE,        DDSPF_A8   }, // D3DFMT_A8
 
-        { DXGI_FORMAT_R16G16B16A16_UNORM, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,   36,  0, 0,          0,          0,          0          } }, // D3DFMT_A16B16G16R16
-        { DXGI_FORMAT_R16G16B16A16_SNORM, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  110,  0, 0,          0,          0,          0          } }, // D3DFMT_Q16W16V16U16
-        { DXGI_FORMAT_R16_FLOAT,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  111,  0, 0,          0,          0,          0          } }, // D3DFMT_R16F
-        { DXGI_FORMAT_R16G16_FLOAT,       CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  112,  0, 0,          0,          0,          0          } }, // D3DFMT_G16R16F
-        { DXGI_FORMAT_R16G16B16A16_FLOAT, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  113,  0, 0,          0,          0,          0          } }, // D3DFMT_A16B16G16R16F
-        { DXGI_FORMAT_R32_FLOAT,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  114,  0, 0,          0,          0,          0          } }, // D3DFMT_R32F
-        { DXGI_FORMAT_R32G32_FLOAT,       CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  115,  0, 0,          0,          0,          0          } }, // D3DFMT_G32R32F
-        { DXGI_FORMAT_R32G32B32A32_FLOAT, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  116,  0, 0,          0,          0,          0          } }, // D3DFMT_A32B32G32R32F
+        { DXGI_FORMAT_R16G16B16A16_UNORM, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,   36,  0, 0, 0, 0, 0 } }, // D3DFMT_A16B16G16R16
+        { DXGI_FORMAT_R16G16B16A16_SNORM, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  110,  0, 0, 0, 0, 0 } }, // D3DFMT_Q16W16V16U16
+        { DXGI_FORMAT_R16_FLOAT,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  111,  0, 0, 0, 0, 0 } }, // D3DFMT_R16F
+        { DXGI_FORMAT_R16G16_FLOAT,       CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  112,  0, 0, 0, 0, 0 } }, // D3DFMT_G16R16F
+        { DXGI_FORMAT_R16G16B16A16_FLOAT, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  113,  0, 0, 0, 0, 0 } }, // D3DFMT_A16B16G16R16F
+        { DXGI_FORMAT_R32_FLOAT,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  114,  0, 0, 0, 0, 0 } }, // D3DFMT_R32F
+        { DXGI_FORMAT_R32G32_FLOAT,       CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  115,  0, 0, 0, 0, 0 } }, // D3DFMT_G32R32F
+        { DXGI_FORMAT_R32G32B32A32_FLOAT, CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,  116,  0, 0, 0, 0, 0 } }, // D3DFMT_A32B32G32R32F
 
-        { DXGI_FORMAT_R32_FLOAT,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_RGB,       0, 32, 0xffffffff, 0x00000000, 0x00000000, 0x00000000 } }, // D3DFMT_R32F (D3DX uses FourCC 114 instead)
+        { DXGI_FORMAT_R32_FLOAT,          CONV_FLAGS_NONE,        { sizeof(DDS_PIXELFORMAT), DDS_RGB,       0, 32, 0xffffffff, 0, 0, 0 } }, // D3DFMT_R32F (D3DX uses FourCC 114 instead)
 
         { DXGI_FORMAT_R8G8B8A8_UNORM,     CONV_FLAGS_EXPAND
                                           | CONV_FLAGS_PAL8
-                                          | CONV_FLAGS_A8P8,      { sizeof(DDS_PIXELFORMAT), DDS_PAL8A,     0, 16, 0,          0,          0,          0         } }, // D3DFMT_A8P8
+                                          | CONV_FLAGS_A8P8,      { sizeof(DDS_PIXELFORMAT), DDS_PAL8A,     0, 16, 0, 0, 0, 0 } }, // D3DFMT_A8P8
         { DXGI_FORMAT_R8G8B8A8_UNORM,     CONV_FLAGS_EXPAND
-                                          | CONV_FLAGS_PAL8,      { sizeof(DDS_PIXELFORMAT), DDS_PAL8,      0,  8, 0,          0,          0,          0         } }, // D3DFMT_P8
+                                          | CONV_FLAGS_PAL8,      { sizeof(DDS_PIXELFORMAT), DDS_PAL8,      0,  8, 0, 0, 0, 0 } }, // D3DFMT_P8
 
         { DXGI_FORMAT_B4G4R4A4_UNORM,     CONV_FLAGS_4444,        DDSPF_A4R4G4B4 }, // D3DFMT_A4R4G4B4 (uses DXGI 1.2 format)
         { DXGI_FORMAT_B4G4R4A4_UNORM,     CONV_FLAGS_NOALPHA
-                                          | CONV_FLAGS_4444,      { sizeof(DDS_PIXELFORMAT), DDS_RGB,       0, 16, 0x0f00,     0x00f0,     0x000f,     0x0000     } }, // D3DFMT_X4R4G4B4 (uses DXGI 1.2 format)
+                                          | CONV_FLAGS_4444,      DDSPF_X4R4G4B4 }, // D3DFMT_X4R4G4B4 (uses DXGI 1.2 format)
         { DXGI_FORMAT_B4G4R4A4_UNORM,     CONV_FLAGS_EXPAND
-                                          | CONV_FLAGS_44,        { sizeof(DDS_PIXELFORMAT), DDS_LUMINANCEA,0,  8, 0x0f,       0x00,       0x00,       0xf0       } }, // D3DFMT_A4L4 (uses DXGI 1.2 format)
+                                          | CONV_FLAGS_44,        DDSPF_A4L4 }, // D3DFMT_A4L4 (uses DXGI 1.2 format)
 
         { DXGI_FORMAT_YUY2,               CONV_FLAGS_NONE,        DDSPF_YUY2 }, // D3DFMT_YUY2 (uses DXGI 1.2 format)
-        { DXGI_FORMAT_YUY2,               CONV_FLAGS_SWIZZLE,     { sizeof(DDS_PIXELFORMAT), DDS_FOURCC,    MAKEFOURCC('U','Y','V','Y'), 0, 0, 0, 0, 0            } }, // D3DFMT_UYVY (uses DXGI 1.2 format)
+        { DXGI_FORMAT_YUY2,               CONV_FLAGS_SWIZZLE,     DDSPF_UYVY }, // D3DFMT_UYVY (uses DXGI 1.2 format)
 
         { DXGI_FORMAT_R8G8_SNORM,         CONV_FLAGS_NONE,        DDSPF_V8U8 },     // D3DFMT_V8U8
         { DXGI_FORMAT_R8G8B8A8_SNORM,     CONV_FLAGS_NONE,        DDSPF_Q8W8V8U8 }, // D3DFMT_Q8W8V8U8
@@ -155,7 +160,9 @@ namespace
     //      FourCC CTX1 (Xbox 360 only)
     //      FourCC EAR, EARG, ET2, ET2A (Ericsson Texture Compression)
 
-    DXGI_FORMAT GetDXGIFormat(const DDS_HEADER& hdr, const DDS_PIXELFORMAT& ddpf, DWORD flags, _Inout_ DWORD& convFlags) noexcept
+    DXGI_FORMAT GetDXGIFormat(const DDS_HEADER& hdr, const DDS_PIXELFORMAT& ddpf,
+        DDS_FLAGS flags,
+        _Inout_ uint32_t& convFlags) noexcept
     {
         uint32_t ddpfFlags = ddpf.flags;
         if (hdr.reserved1[9] == MAKEFOURCC('N', 'V', 'T', 'T'))
@@ -261,7 +268,7 @@ namespace
         if (index >= MAP_SIZE)
             return DXGI_FORMAT_UNKNOWN;
 
-        DWORD cflags = g_LegacyDDSMap[index].convFlags;
+        uint32_t cflags = g_LegacyDDSMap[index].convFlags;
         DXGI_FORMAT format = g_LegacyDDSMap[index].format;
 
         if ((cflags & CONV_FLAGS_EXPAND) && (flags & DDS_FLAGS_NO_LEGACY_EXPANSION))
@@ -316,9 +323,9 @@ namespace
     HRESULT DecodeDDSHeader(
         _In_reads_bytes_(size) const void* pSource,
         size_t size,
-        DWORD flags,
+        DDS_FLAGS flags,
         _Out_ TexMetadata& metadata,
-        _Inout_ DWORD& convFlags) noexcept
+        _Inout_ uint32_t& convFlags) noexcept
     {
         if (!pSource)
             return E_INVALIDARG;
@@ -327,7 +334,7 @@ namespace
 
         if (size < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
         {
-            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+            return HRESULT_E_INVALID_DATA;
         }
 
         // DDS files always start with the same magic number ("DDS ")
@@ -366,13 +373,13 @@ namespace
             metadata.arraySize = d3d10ext->arraySize;
             if (metadata.arraySize == 0)
             {
-                return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+                return HRESULT_E_INVALID_DATA;
             }
 
             metadata.format = d3d10ext->dxgiFormat;
             if (!IsValid(metadata.format) || IsPalettized(metadata.format))
             {
-                return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+                return HRESULT_E_NOT_SUPPORTED;
             }
 
             static_assert(static_cast<int>(TEX_MISC_TEXTURECUBE) == static_cast<int>(DDS_RESOURCE_MISC_TEXTURECUBE), "DDS header mismatch");
@@ -386,7 +393,7 @@ namespace
                 // D3DX writes 1D textures with a fixed Height of 1
                 if ((pHeader->flags & DDS_HEIGHT) && pHeader->height != 1)
                 {
-                    return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+                    return HRESULT_E_INVALID_DATA;
                 }
 
                 metadata.width = pHeader->width;
@@ -411,11 +418,11 @@ namespace
             case DDS_DIMENSION_TEXTURE3D:
                 if (!(pHeader->flags & DDS_HEADER_FLAGS_VOLUME))
                 {
-                    return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+                    return HRESULT_E_INVALID_DATA;
                 }
 
                 if (metadata.arraySize > 1)
-                    return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+                    return HRESULT_E_NOT_SUPPORTED;
 
                 metadata.width = pHeader->width;
                 metadata.height = pHeader->height;
@@ -424,7 +431,7 @@ namespace
                 break;
 
             default:
-                return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+                return HRESULT_E_INVALID_DATA;
             }
 
             static_assert(static_cast<int>(TEX_MISC2_ALPHA_MODE_MASK) == static_cast<int>(DDS_MISC_FLAGS2_ALPHA_MODE_MASK), "DDS header mismatch");
@@ -454,7 +461,7 @@ namespace
                 {
                     // We require all six faces to be defined
                     if ((pHeader->caps2 & DDS_CUBEMAP_ALLFACES) != DDS_CUBEMAP_ALLFACES)
-                        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+                        return HRESULT_E_NOT_SUPPORTED;
 
                     metadata.arraySize = 6;
                     metadata.miscFlags |= TEX_MISC_TEXTURECUBE;
@@ -471,7 +478,7 @@ namespace
             metadata.format = GetDXGIFormat(*pHeader, pHeader->ddspf, flags, convFlags);
 
             if (metadata.format == DXGI_FORMAT_UNKNOWN)
-                return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+                return HRESULT_E_NOT_SUPPORTED;
 
             // Special flag for handling LUMINANCE legacy formats
             if (flags & DDS_FLAGS_EXPAND_LUMINANCE)
@@ -568,6 +575,25 @@ namespace
             metadata.SetAlphaMode(TEX_ALPHA_MODE_PREMULTIPLIED);
         }
 
+        // Check for .dds files that exceed known hardware support
+        if (!(flags & DDS_FLAGS_ALLOW_LARGE_FILES))
+        {
+            // 16k is the maximum required resource size supported by Direct3D
+            if (metadata.width > 16384u /* D3D12_REQ_TEXTURE1D_U_DIMENSION, D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION */
+                || metadata.height > 16384u /* D3D12_REQ_TEXTURE2D_U_OR_V_DIMENSION */
+                || metadata.mipLevels > 15u /* D3D12_REQ_MIP_LEVELS */)
+            {
+                return HRESULT_E_NOT_SUPPORTED;
+            }
+
+            // 2048 is the maximum required depth/array size supported by Direct3D
+            if (metadata.arraySize > 2048u /* D3D12_REQ_TEXTURE1D_ARRAY_AXIS_DIMENSION, D3D12_REQ_TEXTURE2D_ARRAY_AXIS_DIMENSION */
+                || metadata.depth > 2048u /* D3D12_REQ_TEXTURE3D_U_V_OR_W_DIMENSION */)
+            {
+                return HRESULT_E_NOT_SUPPORTED;
+            }
+        }
+
         return S_OK;
     }
 }
@@ -579,7 +605,7 @@ namespace
 _Use_decl_annotations_
 HRESULT DirectX::_EncodeDDSHeader(
     const TexMetadata& metadata,
-    DWORD flags,
+    DDS_FLAGS flags,
     void* pDestination,
     size_t maxsize,
     size_t& required) noexcept
@@ -588,13 +614,16 @@ HRESULT DirectX::_EncodeDDSHeader(
         return E_INVALIDARG;
 
     if (IsPalettized(metadata.format))
-        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+        return HRESULT_E_NOT_SUPPORTED;
 
     if (metadata.arraySize > 1)
     {
         if ((metadata.arraySize != 6) || (metadata.dimension != TEX_DIMENSION_TEXTURE2D) || !(metadata.IsCubemap()))
         {
             // Texture1D arrays, Texture2D arrays, and Cubemap arrays must be stored using 'DX10' extended header
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+                return HRESULT_E_CANNOT_MAKE;
+
             flags |= DDS_FLAGS_FORCE_DX10_EXT;
         }
     }
@@ -609,30 +638,28 @@ HRESULT DirectX::_EncodeDDSHeader(
     {
         switch (metadata.format)
         {
-        case DXGI_FORMAT_R8G8B8A8_UNORM:        memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_A8B8G8R8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R16G16_UNORM:          memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_G16R16, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R8G8_UNORM:            memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_A8L8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R16_UNORM:             memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_L16, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R8_UNORM:              memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_L8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_A8_UNORM:              memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_A8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R8G8_B8G8_UNORM:       memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_R8G8_B8G8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_G8R8_G8B8_UNORM:       memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_G8R8_G8B8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC1_UNORM:             memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_DXT1, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC2_UNORM:             memcpy_s(&ddpf, sizeof(ddpf), metadata.IsPMAlpha() ? (&DDSPF_DXT2) : (&DDSPF_DXT3), sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC3_UNORM:             memcpy_s(&ddpf, sizeof(ddpf), metadata.IsPMAlpha() ? (&DDSPF_DXT4) : (&DDSPF_DXT5), sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC4_UNORM:             memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_BC4_UNORM, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC4_SNORM:             memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_BC4_SNORM, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC5_UNORM:             memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_BC5_UNORM, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_BC5_SNORM:             memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_BC5_SNORM, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_B5G6R5_UNORM:          memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_R5G6B5, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_B5G5R5A1_UNORM:        memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_A1R5G5B5, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R8G8_SNORM:            memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_V8U8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R8G8B8A8_SNORM:        memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_Q8W8V8U8, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_R16G16_SNORM:          memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_V16U16, sizeof(DDS_PIXELFORMAT)); break;
-        case DXGI_FORMAT_B8G8R8A8_UNORM:        memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_A8R8G8B8, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.1
-        case DXGI_FORMAT_B8G8R8X8_UNORM:        memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_X8R8G8B8, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.1
-        case DXGI_FORMAT_B4G4R4A4_UNORM:        memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_A4R4G4B4, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.2
-        case DXGI_FORMAT_YUY2:                  memcpy_s(&ddpf, sizeof(ddpf), &DDSPF_YUY2, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.2
+        case DXGI_FORMAT_R8G8B8A8_UNORM:        memcpy(&ddpf, &DDSPF_A8B8G8R8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R16G16_UNORM:          memcpy(&ddpf, &DDSPF_G16R16, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R8G8_UNORM:            memcpy(&ddpf, &DDSPF_A8L8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R16_UNORM:             memcpy(&ddpf, &DDSPF_L16, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R8_UNORM:              memcpy(&ddpf, &DDSPF_L8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_A8_UNORM:              memcpy(&ddpf, &DDSPF_A8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R8G8_B8G8_UNORM:       memcpy(&ddpf, &DDSPF_R8G8_B8G8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_G8R8_G8B8_UNORM:       memcpy(&ddpf, &DDSPF_G8R8_G8B8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_BC1_UNORM:             memcpy(&ddpf, &DDSPF_DXT1, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_BC2_UNORM:             memcpy(&ddpf, metadata.IsPMAlpha() ? (&DDSPF_DXT2) : (&DDSPF_DXT3), sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_BC3_UNORM:             memcpy(&ddpf, metadata.IsPMAlpha() ? (&DDSPF_DXT4) : (&DDSPF_DXT5), sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_BC4_SNORM:             memcpy(&ddpf, &DDSPF_BC4_SNORM, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_BC5_SNORM:             memcpy(&ddpf, &DDSPF_BC5_SNORM, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_B5G6R5_UNORM:          memcpy(&ddpf, &DDSPF_R5G6B5, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_B5G5R5A1_UNORM:        memcpy(&ddpf, &DDSPF_A1R5G5B5, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R8G8_SNORM:            memcpy(&ddpf, &DDSPF_V8U8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R8G8B8A8_SNORM:        memcpy(&ddpf, &DDSPF_Q8W8V8U8, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_R16G16_SNORM:          memcpy(&ddpf, &DDSPF_V16U16, sizeof(DDS_PIXELFORMAT)); break;
+        case DXGI_FORMAT_B8G8R8A8_UNORM:        memcpy(&ddpf, &DDSPF_A8R8G8B8, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.1
+        case DXGI_FORMAT_B8G8R8X8_UNORM:        memcpy(&ddpf, &DDSPF_X8R8G8B8, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.1
+        case DXGI_FORMAT_B4G4R4A4_UNORM:        memcpy(&ddpf, &DDSPF_A4R4G4B4, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.2
+        case DXGI_FORMAT_YUY2:                  memcpy(&ddpf, &DDSPF_YUY2, sizeof(DDS_PIXELFORMAT)); break; // DXGI 1.2
 
         // Legacy D3DX formats using D3DFMT enum value as FourCC
         case DXGI_FORMAT_R32G32B32A32_FLOAT:
@@ -660,6 +687,73 @@ HRESULT DirectX::_EncodeDDSHeader(
             ddpf.size = sizeof(DDS_PIXELFORMAT); ddpf.flags = DDS_FOURCC; ddpf.fourCC = 111;  // D3DFMT_R16F
             break;
 
+        // DX9 legacy pixel formats
+        case DXGI_FORMAT_R10G10B10A2_UNORM:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                // Write using the 'incorrect' mask version to match D3DX bug
+                memcpy(&ddpf, &DDSPF_A2B10G10R10, sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
+        case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                memcpy(&ddpf, &DDSPF_A8B8G8R8, sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
+        case DXGI_FORMAT_BC1_UNORM_SRGB:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                memcpy(&ddpf, &DDSPF_DXT1, sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
+        case DXGI_FORMAT_BC2_UNORM_SRGB:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                memcpy(&ddpf, metadata.IsPMAlpha() ? (&DDSPF_DXT2) : (&DDSPF_DXT3), sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
+        case DXGI_FORMAT_BC3_UNORM_SRGB:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                memcpy(&ddpf, metadata.IsPMAlpha() ? (&DDSPF_DXT4) : (&DDSPF_DXT5), sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
+        case DXGI_FORMAT_BC4_UNORM:
+            memcpy(&ddpf, &DDSPF_BC4_UNORM, sizeof(DDS_PIXELFORMAT));
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                ddpf.fourCC = MAKEFOURCC('A', 'T', 'I', '1');
+            }
+            break;
+
+        case DXGI_FORMAT_BC5_UNORM:
+            memcpy(&ddpf, &DDSPF_BC5_UNORM, sizeof(DDS_PIXELFORMAT));
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                ddpf.fourCC = MAKEFOURCC('A', 'T', 'I', '2');
+            }
+            break;
+
+        case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                memcpy(&ddpf, &DDSPF_A8R8G8B8, sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
+        case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+            if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            {
+                memcpy(&ddpf, &DDSPF_X8R8G8B8, sizeof(DDS_PIXELFORMAT));
+            }
+            break;
+
         default:
             break;
         }
@@ -668,7 +762,12 @@ HRESULT DirectX::_EncodeDDSHeader(
     required = sizeof(uint32_t) + sizeof(DDS_HEADER);
 
     if (ddpf.size == 0)
+    {
+        if (flags & DDS_FLAGS_FORCE_DX9_LEGACY)
+            return HRESULT_E_CANNOT_MAKE;
+
         required += sizeof(DDS_HEADER_DXT10);
+    }
 
     if (!pDestination)
         return S_OK;
@@ -764,7 +863,7 @@ HRESULT DirectX::_EncodeDDSHeader(
 
     if (ddpf.size == 0)
     {
-        memcpy_s(&header->ddspf, sizeof(header->ddspf), &DDSPF_DX10, sizeof(DDS_PIXELFORMAT));
+        memcpy(&header->ddspf, &DDSPF_DX10, sizeof(DDS_PIXELFORMAT));
 
         auto ext = reinterpret_cast<DDS_HEADER_DXT10*>(reinterpret_cast<uint8_t*>(header) + sizeof(DDS_HEADER));
         assert(ext);
@@ -807,7 +906,7 @@ HRESULT DirectX::_EncodeDDSHeader(
     }
     else
     {
-        memcpy_s(&header->ddspf, sizeof(header->ddspf), &ddpf, sizeof(ddpf));
+        memcpy(&header->ddspf, &ddpf, sizeof(ddpf));
     }
 
     return S_OK;
@@ -835,7 +934,7 @@ namespace
         TEXP_LEGACY_A8L8
     };
 
-    inline TEXP_LEGACY_FORMAT _FindLegacyFormat(DWORD flags) noexcept
+    inline TEXP_LEGACY_FORMAT _FindLegacyFormat(uint32_t flags) noexcept
     {
         TEXP_LEGACY_FORMAT lformat = TEXP_LEGACY_UNKNOWN;
 
@@ -872,7 +971,7 @@ namespace
             size_t inSize,
             _In_ TEXP_LEGACY_FORMAT inFormat,
             _In_reads_opt_(256) const uint32_t* pal8,
-            _In_ DWORD flags) noexcept
+            _In_ uint32_t tflags) noexcept
     {
         assert(pDestination && outSize > 0);
         assert(pSource && inSize > 0);
@@ -970,7 +1069,7 @@ namespace
                     uint32_t t1 = uint32_t((t & 0x00e0) | ((t & 0x00e0) >> 3) | ((t & 0x00c0) >> 6));
                     uint32_t t2 = uint32_t(((t & 0x001c) << 11) | ((t & 0x001c) << 8) | ((t & 0x0018) << 5));
                     uint32_t t3 = uint32_t(((t & 0x0003) << 22) | ((t & 0x0003) << 20) | ((t & 0x0003) << 18) | ((t & 0x0003) << 16));
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
+                    uint32_t ta = (tflags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
 
                     *(dPtr++) = t1 | t2 | t3 | ta;
                 }
@@ -1013,7 +1112,7 @@ namespace
                     uint16_t t = *(sPtr++);
 
                     uint32_t t1 = pal8[t & 0xff];
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
+                    uint32_t ta = (tflags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
 
                     *(dPtr++) = t1 | ta;
                 }
@@ -1036,7 +1135,7 @@ namespace
                         unsigned t = *(sPtr++);
 
                         unsigned t1 = (t & 0x0fu);
-                        unsigned ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xf000u : ((t & 0xf0u) << 8);
+                        unsigned ta = (tflags & TEXP_SCANLINE_SETALPHA) ? 0xf000u : ((t & 0xf0u) << 8);
 
                         *(dPtr++) = static_cast<uint16_t>(t1 | (t1 << 4) | (t1 << 8) | ta);
                     }
@@ -1056,7 +1155,7 @@ namespace
                         uint8_t t = *(sPtr++);
 
                         uint32_t t1 = uint32_t(((t & 0x0f) << 4) | (t & 0x0f));
-                        uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t(((t & 0xf0) << 24) | ((t & 0xf0) << 20));
+                        uint32_t ta = (tflags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t(((t & 0xf0) << 24) | ((t & 0xf0) << 20));
 
                         *(dPtr++) = t1 | (t1 << 8) | (t1 << 16) | ta;
                     }
@@ -1085,7 +1184,7 @@ namespace
                     uint32_t t1 = uint32_t((t & 0x0f00) >> 4) | ((t & 0x0f00) >> 8);
                     uint32_t t2 = uint32_t((t & 0x00f0) << 8) | ((t & 0x00f0) << 4);
                     uint32_t t3 = uint32_t((t & 0x000f) << 20) | ((t & 0x000f) << 16);
-                    uint32_t ta = uint32_t((flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : (((t & 0xf000) << 16) | ((t & 0xf000) << 12)));
+                    uint32_t ta = uint32_t((tflags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : (((t & 0xf000) << 16) | ((t & 0xf000) << 12)));
 
                     *(dPtr++) = t1 | t2 | t3 | ta;
                 }
@@ -1156,7 +1255,7 @@ namespace
                     uint32_t t1 = uint32_t(t & 0xff);
                     uint32_t t2 = uint32_t(t1 << 8);
                     uint32_t t3 = uint32_t(t1 << 16);
-                    uint32_t ta = (flags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
+                    uint32_t ta = (tflags & TEXP_SCANLINE_SETALPHA) ? 0xff000000 : uint32_t((t & 0xff00) << 16);
 
                     *(dPtr++) = t1 | t2 | t3 | ta;
                 }
@@ -1177,8 +1276,8 @@ namespace
         _In_reads_bytes_(size) const void* pPixels,
         _In_ size_t size,
         _In_ const TexMetadata& metadata,
-        _In_ DWORD cpFlags,
-        _In_ DWORD convFlags,
+        _In_ CP_FLAGS cpFlags,
+        _In_ uint32_t convFlags,
         _In_reads_opt_(256) const uint32_t *pal8,
         _In_ const ScratchImage& image) noexcept
     {
@@ -1200,7 +1299,7 @@ namespace
 
         size_t pixelSize, nimages;
         if (!_DetermineImageArray(metadata, cpFlags, nimages, pixelSize))
-            return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+            return HRESULT_E_ARITHMETIC_OVERFLOW;
 
         if ((nimages == 0) || (nimages != image.GetImageCount()))
         {
@@ -1209,7 +1308,7 @@ namespace
 
         if (pixelSize > size)
         {
-            return HRESULT_FROM_WIN32(ERROR_HANDLE_EOF);
+            return HRESULT_E_HANDLE_EOF;
         }
 
         std::unique_ptr<Image[]> timages(new (std::nothrow) Image[nimages]);
@@ -1240,7 +1339,7 @@ namespace
             return E_FAIL;
         }
 
-        DWORD tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0u;
+        uint32_t tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0u;
         if (convFlags & CONV_FLAGS_SWIZZLE)
             tflags |= TEXP_SCANLINE_LEGACY;
 
@@ -1275,14 +1374,14 @@ namespace
                     if (IsCompressed(metadata.format))
                     {
                         size_t csize = std::min<size_t>(images[index].slicePitch, timages[index].slicePitch);
-                        memcpy_s(pDest, images[index].slicePitch, pSrc, csize);
+                        memcpy(pDest, pSrc, csize);
 
                         if (cpFlags & CP_FLAGS_BAD_DXTN_TAILS)
                         {
                             if (images[index].width < 4 || images[index].height < 4)
                             {
                                 csize = std::min<size_t>(images[index].slicePitch, timages[lastgood].slicePitch);
-                                memcpy_s(pDest, images[index].slicePitch, timages[lastgood].pixels, csize);
+                                memcpy(pDest, timages[lastgood].pixels, csize);
                             }
                             else
                             {
@@ -1299,7 +1398,7 @@ namespace
                         size_t csize = std::min<size_t>(dpitch, spitch);
                         for (size_t h = 0; h < count; ++h)
                         {
-                            memcpy_s(pDest, dpitch, pSrc, csize);
+                            memcpy(pDest, pSrc, csize);
                             pSrc += spitch;
                             pDest += dpitch;
                         }
@@ -1377,14 +1476,14 @@ namespace
                     if (IsCompressed(metadata.format))
                     {
                         size_t csize = std::min<size_t>(images[index].slicePitch, timages[index].slicePitch);
-                        memcpy_s(pDest, images[index].slicePitch, pSrc, csize);
+                        memcpy(pDest, pSrc, csize);
 
                         if (cpFlags & CP_FLAGS_BAD_DXTN_TAILS)
                         {
                             if (images[index].width < 4 || images[index].height < 4)
                             {
                                 csize = std::min<size_t>(images[index].slicePitch, timages[lastgood + slice].slicePitch);
-                                memcpy_s(pDest, images[index].slicePitch, timages[lastgood + slice].pixels, csize);
+                                memcpy(pDest, timages[lastgood + slice].pixels, csize);
                             }
                             else if (!slice)
                             {
@@ -1395,7 +1494,7 @@ namespace
                     else if (IsPlanar(metadata.format))
                     {
                         // Direct3D does not support any planar formats for Texture3D
-                        return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+                        return HRESULT_E_NOT_SUPPORTED;
                     }
                     else
                     {
@@ -1448,7 +1547,7 @@ namespace
         return S_OK;
     }
 
-    HRESULT CopyImageInPlace(DWORD convFlags, _In_ const ScratchImage& image) noexcept
+    HRESULT CopyImageInPlace(uint32_t convFlags, _In_ const ScratchImage& image) noexcept
     {
         if (!image.GetPixels())
             return E_FAIL;
@@ -1460,9 +1559,9 @@ namespace
         const TexMetadata& metadata = image.GetMetadata();
 
         if (IsPlanar(metadata.format))
-            return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
+            return HRESULT_E_NOT_SUPPORTED;
 
-        DWORD tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0u;
+        uint32_t tflags = (convFlags & CONV_FLAGS_NOALPHA) ? TEXP_SCANLINE_SETALPHA : 0u;
         if (convFlags & CONV_FLAGS_SWIZZLE)
             tflags |= TEXP_SCANLINE_LEGACY;
 
@@ -1507,25 +1606,26 @@ _Use_decl_annotations_
 HRESULT DirectX::GetMetadataFromDDSMemory(
     const void* pSource,
     size_t size,
-    DWORD flags,
+    DDS_FLAGS flags,
     TexMetadata& metadata) noexcept
 {
     if (!pSource || size == 0)
         return E_INVALIDARG;
 
-    DWORD convFlags = 0;
+    uint32_t convFlags = 0;
     return DecodeDDSHeader(pSource, size, flags, metadata, convFlags);
 }
 
 _Use_decl_annotations_
 HRESULT DirectX::GetMetadataFromDDSFile(
     const wchar_t* szFile,
-    DWORD flags,
+    DDS_FLAGS flags,
     TexMetadata& metadata) noexcept
 {
     if (!szFile)
         return E_INVALIDARG;
 
+#ifdef WIN32
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
     ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
 #else
@@ -1547,11 +1647,31 @@ HRESULT DirectX::GetMetadataFromDDSFile(
     // File is too big for 32-bit allocation, so reject read (4 GB should be plenty large enough for a valid DDS file)
     if (fileInfo.EndOfFile.HighPart > 0)
     {
-        return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
+        return HRESULT_E_FILE_TOO_LARGE;
     }
 
+    size_t len = fileInfo.EndOfFile.LowPart;
+#else // !WIN32
+    std::ifstream inFile(std::filesystem::path(szFile), std::ios::in | std::ios::binary | std::ios::ate);
+    if (!inFile)
+        return E_FAIL;
+
+    std::streampos fileLen = inFile.tellg();
+    if (!inFile)
+        return E_FAIL;
+
+    if (fileLen > UINT32_MAX)
+        return HRESULT_E_FILE_TOO_LARGE;
+
+    inFile.seekg(0, std::ios::beg);
+    if (!inFile)
+        return E_FAIL;
+
+    size_t len = fileLen;
+#endif
+
     // Need at least enough data to fill the standard header and magic number to be a valid DDS
-    if (fileInfo.EndOfFile.LowPart < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
+    if (len < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
     {
         return E_FAIL;
     }
@@ -1560,14 +1680,24 @@ HRESULT DirectX::GetMetadataFromDDSFile(
     const size_t MAX_HEADER_SIZE = sizeof(uint32_t) + sizeof(DDS_HEADER) + sizeof(DDS_HEADER_DXT10);
     uint8_t header[MAX_HEADER_SIZE] = {};
 
+#ifdef WIN32
     DWORD bytesRead = 0;
     if (!ReadFile(hFile.get(), header, MAX_HEADER_SIZE, &bytesRead, nullptr))
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    DWORD convFlags = 0;
-    return DecodeDDSHeader(header, bytesRead, flags, metadata, convFlags);
+    auto headerLen = static_cast<size_t>(bytesRead);
+#else
+    auto headerLen = std::min<size_t>(len, MAX_HEADER_SIZE);
+
+    inFile.read(reinterpret_cast<char*>(header), headerLen);
+    if (!inFile)
+        return E_FAIL;
+#endif
+
+    uint32_t convFlags = 0;
+    return DecodeDDSHeader(header, headerLen, flags, metadata, convFlags);
 }
 
 
@@ -1578,7 +1708,7 @@ _Use_decl_annotations_
 HRESULT DirectX::LoadFromDDSMemory(
     const void* pSource,
     size_t size,
-    DWORD flags,
+    DDS_FLAGS flags,
     TexMetadata* metadata,
     ScratchImage& image) noexcept
 {
@@ -1587,7 +1717,7 @@ HRESULT DirectX::LoadFromDDSMemory(
 
     image.Release();
 
-    DWORD convFlags = 0;
+    uint32_t convFlags = 0;
     TexMetadata mdata;
     HRESULT hr = DecodeDDSHeader(pSource, size, flags, mdata, convFlags);
     if (FAILED(hr))
@@ -1613,7 +1743,7 @@ HRESULT DirectX::LoadFromDDSMemory(
     if (FAILED(hr))
         return hr;
 
-    DWORD cflags = CP_FLAGS_NONE;
+    CP_FLAGS cflags = CP_FLAGS_NONE;
     if (flags & DDS_FLAGS_LEGACY_DWORD)
     {
         cflags |= CP_FLAGS_LEGACY_DWORD;
@@ -1650,7 +1780,7 @@ HRESULT DirectX::LoadFromDDSMemory(
 _Use_decl_annotations_
 HRESULT DirectX::LoadFromDDSFile(
     const wchar_t* szFile,
-    DWORD flags,
+    DDS_FLAGS flags,
     TexMetadata* metadata,
     ScratchImage& image) noexcept
 {
@@ -1659,13 +1789,13 @@ HRESULT DirectX::LoadFromDDSFile(
 
     image.Release();
 
+#ifdef WIN32
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
     ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
 #else
     ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
         FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
 #endif
-
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -1680,12 +1810,30 @@ HRESULT DirectX::LoadFromDDSFile(
 
     // File is too big for 32-bit allocation, so reject read (4 GB should be plenty large enough for a valid DDS file)
     if (fileInfo.EndOfFile.HighPart > 0)
-    {
-        return HRESULT_FROM_WIN32(ERROR_FILE_TOO_LARGE);
-    }
+        return HRESULT_E_FILE_TOO_LARGE;
+
+    size_t len = fileInfo.EndOfFile.LowPart;
+#else // !WIN32
+    std::ifstream inFile(std::filesystem::path(szFile), std::ios::in | std::ios::binary | std::ios::ate);
+    if (!inFile)
+        return E_FAIL;
+
+    std::streampos fileLen = inFile.tellg();
+    if (!inFile)
+        return E_FAIL;
+
+    if (fileLen > UINT32_MAX)
+        return HRESULT_E_FILE_TOO_LARGE;
+
+    inFile.seekg(0, std::ios::beg);
+    if (!inFile)
+        return E_FAIL;
+
+    size_t len = fileLen;
+#endif
 
     // Need at least enough data to fill the standard header and magic number to be a valid DDS
-    if (fileInfo.EndOfFile.LowPart < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
+    if (len < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
     {
         return E_FAIL;
     }
@@ -1694,28 +1842,44 @@ HRESULT DirectX::LoadFromDDSFile(
     const size_t MAX_HEADER_SIZE = sizeof(uint32_t) + sizeof(DDS_HEADER) + sizeof(DDS_HEADER_DXT10);
     uint8_t header[MAX_HEADER_SIZE] = {};
 
+#ifdef WIN32
     DWORD bytesRead = 0;
     if (!ReadFile(hFile.get(), header, MAX_HEADER_SIZE, &bytesRead, nullptr))
     {
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    DWORD convFlags = 0;
+    auto headerLen = static_cast<size_t>(bytesRead);
+#else
+    auto headerLen = std::min<size_t>(len, MAX_HEADER_SIZE);
+
+    inFile.read(reinterpret_cast<char*>(header), headerLen);
+    if (!inFile)
+        return E_FAIL;
+#endif
+
+    uint32_t convFlags = 0;
     TexMetadata mdata;
-    HRESULT hr = DecodeDDSHeader(header, bytesRead, flags, mdata, convFlags);
+    HRESULT hr = DecodeDDSHeader(header, headerLen, flags, mdata, convFlags);
     if (FAILED(hr))
         return hr;
 
-    DWORD offset = MAX_HEADER_SIZE;
+    size_t offset = MAX_HEADER_SIZE;
 
     if (!(convFlags & CONV_FLAGS_DX10))
     {
+#ifdef WIN32
         // Must reset file position since we read more than the standard header above
         LARGE_INTEGER filePos = { { sizeof(uint32_t) + sizeof(DDS_HEADER), 0 } };
         if (!SetFilePointerEx(hFile.get(), filePos, nullptr, FILE_BEGIN))
         {
             return HRESULT_FROM_WIN32(GetLastError());
         }
+#else
+        inFile.seekg(sizeof(uint32_t) + sizeof(DDS_HEADER), std::ios::beg);
+        if (!inFile)
+            return E_FAIL;
+#endif
 
         offset = sizeof(uint32_t) + sizeof(DDS_HEADER);
     }
@@ -1729,6 +1893,7 @@ HRESULT DirectX::LoadFromDDSFile(
             return E_OUTOFMEMORY;
         }
 
+#ifdef WIN32
         if (!ReadFile(hFile.get(), pal8.get(), 256 * sizeof(uint32_t), &bytesRead, nullptr))
         {
             return HRESULT_FROM_WIN32(GetLastError());
@@ -1738,11 +1903,16 @@ HRESULT DirectX::LoadFromDDSFile(
         {
             return E_FAIL;
         }
+#else
+        inFile.read(reinterpret_cast<char*>(pal8.get()), 256 * sizeof(uint32_t));
+        if (!inFile)
+            return E_FAIL;
+#endif
 
         offset += (256 * sizeof(uint32_t));
     }
 
-    DWORD remaining = fileInfo.EndOfFile.LowPart - offset;
+    size_t remaining = len - offset;
     if (remaining == 0)
         return E_FAIL;
 
@@ -1759,7 +1929,8 @@ HRESULT DirectX::LoadFromDDSFile(
             return E_OUTOFMEMORY;
         }
 
-        if (!ReadFile(hFile.get(), temp.get(), remaining, &bytesRead, nullptr))
+#ifdef WIN32
+        if (!ReadFile(hFile.get(), temp.get(), static_cast<DWORD>(remaining), &bytesRead, nullptr))
         {
             image.Release();
             return HRESULT_FROM_WIN32(GetLastError());
@@ -1770,8 +1941,16 @@ HRESULT DirectX::LoadFromDDSFile(
             image.Release();
             return E_FAIL;
         }
+#else
+        inFile.read(reinterpret_cast<char*>(temp.get()), remaining);
+        if (!inFile)
+        {
+            image.Release();
+            return E_FAIL;
+        }
+#endif
 
-        DWORD cflags = CP_FLAGS_NONE;
+        CP_FLAGS cflags = CP_FLAGS_NONE;
         if (flags & DDS_FLAGS_LEGACY_DWORD)
         {
             cflags |= CP_FLAGS_LEGACY_DWORD;
@@ -1799,20 +1978,29 @@ HRESULT DirectX::LoadFromDDSFile(
         if (remaining < image.GetPixelsSize())
         {
             image.Release();
-            return HRESULT_FROM_WIN32(ERROR_HANDLE_EOF);
+            return HRESULT_E_HANDLE_EOF;
         }
 
         if (image.GetPixelsSize() > UINT32_MAX)
         {
             image.Release();
-            return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+            return HRESULT_E_ARITHMETIC_OVERFLOW;
         }
 
+#ifdef WIN32
         if (!ReadFile(hFile.get(), image.GetPixels(), static_cast<DWORD>(image.GetPixelsSize()), &bytesRead, nullptr))
         {
             image.Release();
             return HRESULT_FROM_WIN32(GetLastError());
         }
+#else
+        inFile.read(reinterpret_cast<char*>(image.GetPixels()), image.GetPixelsSize());
+        if (!inFile)
+        {
+            image.Release();
+            return E_FAIL;
+        }
+#endif
 
         if (convFlags & (CONV_FLAGS_SWIZZLE | CONV_FLAGS_NOALPHA))
         {
@@ -1838,7 +2026,7 @@ HRESULT DirectX::LoadFromDDSFile(
 _Use_decl_annotations_
 HRESULT DirectX::LoadFromDDSIOCallbacks(
     const ImageIOCallbacks* pIOCallbacks,
-    DWORD flags,
+    DDS_FLAGS flags,
     TexMetadata* metadata,
     ScratchImage& image) noexcept
 {
@@ -1882,7 +2070,7 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
         return hr;
     }
 
-    DWORD convFlags = 0;
+    uint32_t convFlags = 0;
     TexMetadata mdata;
     hr = DecodeDDSHeader(header, bytesRead, flags, mdata, convFlags);
     if (FAILED(hr))
@@ -1958,7 +2146,7 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
             return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
 
-        DWORD cflags = CP_FLAGS_NONE;
+        CP_FLAGS cflags = CP_FLAGS_NONE;
         if (flags & DDS_FLAGS_LEGACY_DWORD)
         {
             cflags |= CP_FLAGS_LEGACY_DWORD;
@@ -2038,7 +2226,7 @@ HRESULT DirectX::SaveToDDSMemory(
     const Image* images,
     size_t nimages,
     const TexMetadata& metadata,
-    DWORD flags,
+    DDS_FLAGS flags,
     Blob& blob) noexcept
 {
     if (!images || (nimages == 0))
@@ -2122,11 +2310,7 @@ HRESULT DirectX::SaveToDDSMemory(
                 if (fastpath)
                 {
                     size_t pixsize = images[index].slicePitch;
-                    if (memcpy_s(pDestination, remaining, images[index].pixels, pixsize))
-                    {
-                        blob.Release();
-                        return E_FAIL;
-                    }
+                    memcpy(pDestination, images[index].pixels, pixsize);
 
                     pDestination += pixsize;
                     remaining -= pixsize;
@@ -2151,11 +2335,7 @@ HRESULT DirectX::SaveToDDSMemory(
                     size_t tremaining = remaining;
                     for (size_t j = 0; j < lines; ++j)
                     {
-                        if (memcpy_s(dPtr, tremaining, sPtr, csize))
-                        {
-                            blob.Release();
-                            return E_FAIL;
-                        }
+                        memcpy(dPtr, sPtr, csize);
 
                         sPtr += rowPitch;
                         dPtr += ddsRowPitch;
@@ -2196,11 +2376,7 @@ HRESULT DirectX::SaveToDDSMemory(
                 if (fastpath)
                 {
                     size_t pixsize = images[index].slicePitch;
-                    if (memcpy_s(pDestination, remaining, images[index].pixels, pixsize))
-                    {
-                        blob.Release();
-                        return E_FAIL;
-                    }
+                    memcpy(pDestination, images[index].pixels, pixsize);
 
                     pDestination += pixsize;
                     remaining -= pixsize;
@@ -2225,11 +2401,7 @@ HRESULT DirectX::SaveToDDSMemory(
                     size_t tremaining = remaining;
                     for (size_t j = 0; j < lines; ++j)
                     {
-                        if (memcpy_s(dPtr, tremaining, sPtr, csize))
-                        {
-                            blob.Release();
-                            return E_FAIL;
-                        }
+                        memcpy(dPtr, sPtr, csize);
 
                         sPtr += rowPitch;
                         dPtr += ddsRowPitch;
@@ -2266,7 +2438,7 @@ HRESULT DirectX::SaveToDDSFile(
     const Image* images,
     size_t nimages,
     const TexMetadata& metadata,
-    DWORD flags,
+    DDS_FLAGS flags,
     const wchar_t* szFile) noexcept
 {
     if (!szFile)
@@ -2281,10 +2453,13 @@ HRESULT DirectX::SaveToDDSFile(
         return hr;
 
     // Create file and write header
+#ifdef WIN32
 #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_WRITE | DELETE, 0, CREATE_ALWAYS, nullptr)));
+    ScopedHandle hFile(safe_handle(CreateFile2(szFile,
+        GENERIC_WRITE | DELETE, 0, CREATE_ALWAYS, nullptr)));
 #else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_WRITE | DELETE, 0, nullptr, CREATE_ALWAYS, 0, nullptr)));
+    ScopedHandle hFile(safe_handle(CreateFileW(szFile,
+        GENERIC_WRITE | DELETE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr)));
 #endif
     if (!hFile)
     {
@@ -2303,6 +2478,15 @@ HRESULT DirectX::SaveToDDSFile(
     {
         return E_FAIL;
     }
+#else // !WIN32
+    std::ofstream outFile(std::filesystem::path(szFile), std::ios::out | std::ios::binary | std::ios::trunc);
+    if (!outFile)
+        return E_FAIL;
+
+    outFile.write(reinterpret_cast<char*>(header), static_cast<std::streamsize>(required));
+    if (!outFile)
+        return E_FAIL;
+#endif
 
     // Write images
     switch (static_cast<DDS_RESOURCE_DIMENSION>(metadata.dimension))
@@ -2331,6 +2515,7 @@ HRESULT DirectX::SaveToDDSFile(
 
                 if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
                 {
+#ifdef WIN32
                     if (!WriteFile(hFile.get(), images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten, nullptr))
                     {
                         return HRESULT_FROM_WIN32(GetLastError());
@@ -2340,6 +2525,11 @@ HRESULT DirectX::SaveToDDSFile(
                     {
                         return E_FAIL;
                     }
+#else
+                    outFile.write(reinterpret_cast<char*>(images[index].pixels), static_cast<std::streamsize>(ddsSlicePitch));
+                    if (!outFile)
+                        return E_FAIL;
+#endif
                 }
                 else
                 {
@@ -2351,13 +2541,14 @@ HRESULT DirectX::SaveToDDSFile(
                     }
 
                     if (ddsRowPitch > UINT32_MAX)
-                        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+                        return HRESULT_E_ARITHMETIC_OVERFLOW;
 
                     const uint8_t * __restrict sPtr = images[index].pixels;
 
                     size_t lines = ComputeScanlines(metadata.format, images[index].height);
                     for (size_t j = 0; j < lines; ++j)
                     {
+#ifdef WIN32
                         if (!WriteFile(hFile.get(), sPtr, static_cast<DWORD>(ddsRowPitch), &bytesWritten, nullptr))
                         {
                             return HRESULT_FROM_WIN32(GetLastError());
@@ -2367,6 +2558,11 @@ HRESULT DirectX::SaveToDDSFile(
                         {
                             return E_FAIL;
                         }
+#else
+                        outFile.write(reinterpret_cast<const char*>(sPtr), static_cast<std::streamsize>(ddsRowPitch));
+                        if (!outFile)
+                            return E_FAIL;
+#endif
 
                         sPtr += rowPitch;
                     }
@@ -2404,6 +2600,7 @@ HRESULT DirectX::SaveToDDSFile(
 
                 if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
                 {
+#ifdef WIN32
                     if (!WriteFile(hFile.get(), images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten, nullptr))
                     {
                         return HRESULT_FROM_WIN32(GetLastError());
@@ -2413,6 +2610,11 @@ HRESULT DirectX::SaveToDDSFile(
                     {
                         return E_FAIL;
                     }
+#else
+                    outFile.write(reinterpret_cast<char*>(images[index].pixels), static_cast<std::streamsize>(ddsSlicePitch));
+                    if (!outFile)
+                        return E_FAIL;
+#endif
                 }
                 else
                 {
@@ -2424,13 +2626,14 @@ HRESULT DirectX::SaveToDDSFile(
                     }
 
                     if (ddsRowPitch > UINT32_MAX)
-                        return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
+                        return HRESULT_E_ARITHMETIC_OVERFLOW;
 
                     const uint8_t * __restrict sPtr = images[index].pixels;
 
                     size_t lines = ComputeScanlines(metadata.format, images[index].height);
                     for (size_t j = 0; j < lines; ++j)
                     {
+#ifdef WIN32
                         if (!WriteFile(hFile.get(), sPtr, static_cast<DWORD>(ddsRowPitch), &bytesWritten, nullptr))
                         {
                             return HRESULT_FROM_WIN32(GetLastError());
@@ -2440,7 +2643,11 @@ HRESULT DirectX::SaveToDDSFile(
                         {
                             return E_FAIL;
                         }
-
+#else
+                        outFile.write(reinterpret_cast<const char*>(sPtr), static_cast<std::streamsize>(ddsRowPitch));
+                        if (!outFile)
+                            return E_FAIL;
+#endif
                         sPtr += rowPitch;
                     }
                 }
@@ -2456,7 +2663,9 @@ HRESULT DirectX::SaveToDDSFile(
         return E_FAIL;
     }
 
+#ifdef WIN32
     delonfail.clear();
+#endif
 
     return S_OK;
 }
@@ -2469,7 +2678,7 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
     const Image* images,
     size_t nimages,
     const TexMetadata& metadata,
-    DWORD flags,
+    DDS_FLAGS flags,
     const ImageIOCallbacks* pIOCallbacks) noexcept
 {
     if (!pIOCallbacks)

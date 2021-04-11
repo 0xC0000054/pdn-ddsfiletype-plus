@@ -3,22 +3,23 @@
 //
 // DirectX 11 DDS File Viewer
 //
-// Copyright (c) Microsoft Corporation. All rights reserved.
+// Copyright (c) Microsoft Corporation.
 // Licensed under the MIT License.
 //--------------------------------------------------------------------------------------
 
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
-#include <windows.h>
-
-#include <assert.h>
-#include <stdio.h>
-#include <dxgiformat.h>
-#include <d3d11.h>
+#include <Windows.h>
 
 #include <algorithm>
+#include <cassert>
+#include <cstdio>
+#include <cwchar>
 
-#include <directxmath.h>
+#include <dxgiformat.h>
+#include <d3d11_1.h>
+
+#include <DirectXMath.h>
 
 #pragma warning(disable : 4619 4616 26812)
 
@@ -119,7 +120,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     if ( FAILED(hr) )
     {
         wchar_t buff[2048] = {};
-        swprintf_s( buff, L"Failed to open texture file\n\nFilename = %ls\nHRESULT %08X", lpCmdLine, hr );
+        swprintf_s( buff, L"Failed to open texture file\n\nFilename = %ls\nHRESULT %08X", lpCmdLine, static_cast<unsigned int>(hr) );
         MessageBoxW( nullptr, buff, L"DDSView", MB_OK | MB_ICONEXCLAMATION );
         return 0;
     }
@@ -176,7 +177,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
             if ( FAILED(hr) || !(flags & (D3D11_FORMAT_SUPPORT_TEXTURE1D|D3D11_FORMAT_SUPPORT_TEXTURE2D|D3D11_FORMAT_SUPPORT_TEXTURE3D)) )
             {
                 wchar_t buff[2048] = {};
-                swprintf_s( buff, L"Format not supported by DirectX hardware\n\nFilename = %ls\nDXGI Format %d\nFeature Level %d\nHRESULT = %08X", lpCmdLine, mdata.format, g_featureLevel, hr );
+                swprintf_s( buff, L"Format not supported by DirectX hardware\n\nFilename = %ls\nDXGI Format %d\nFeature Level %d\nHRESULT = %08X", lpCmdLine, mdata.format, g_featureLevel, static_cast<unsigned int>(hr) );
                 MessageBoxW( nullptr, buff, L"DDSView", MB_OK | MB_ICONEXCLAMATION );
                 return 0;
             }
@@ -189,7 +190,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     if ( FAILED(hr) )
     {
         wchar_t buff[2048] = {};
-        swprintf_s( buff, L"Failed to load texture file\n\nFilename = %ls\nHRESULT %08X", lpCmdLine, hr );
+        swprintf_s( buff, L"Failed to load texture file\n\nFilename = %ls\nHRESULT %08X", lpCmdLine, static_cast<unsigned int>(hr) );
         MessageBoxW( nullptr, buff, L"DDSView", MB_OK | MB_ICONEXCLAMATION );
         return 0;
     }
@@ -201,7 +202,7 @@ int WINAPI wWinMain( _In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance,
     if ( FAILED(hr) )
     {
         wchar_t buff[2048] = {};
-        swprintf_s( buff, L"Failed creating texture from file\n\nFilename = %ls\nHRESULT = %08X", lpCmdLine, hr );
+        swprintf_s( buff, L"Failed creating texture from file\n\nFilename = %ls\nHRESULT = %08X", lpCmdLine, static_cast<unsigned int>(hr) );
         MessageBoxW( nullptr, buff, L"DDSView", MB_OK | MB_ICONEXCLAMATION );
         return 0;
     }
@@ -347,7 +348,7 @@ HRESULT InitDevice( const TexMetadata& mdata )
         D3D_DRIVER_TYPE_WARP,
         D3D_DRIVER_TYPE_REFERENCE,
     };
-    UINT numDriverTypes = ARRAYSIZE( driverTypes );
+    constexpr UINT numDriverTypes = static_cast<UINT>(std::size(driverTypes));
 
     D3D_FEATURE_LEVEL featureLevels[] =
     {
@@ -355,7 +356,7 @@ HRESULT InitDevice( const TexMetadata& mdata )
         D3D_FEATURE_LEVEL_10_1,
         D3D_FEATURE_LEVEL_10_0,
     };
-	UINT numFeatureLevels = ARRAYSIZE( featureLevels );
+    constexpr UINT numFeatureLevels = static_cast<UINT>(std::size(featureLevels));
 
     DXGI_SWAP_CHAIN_DESC sd = {};
     sd.BufferCount = 1;
@@ -444,7 +445,7 @@ HRESULT InitDevice( const TexMetadata& mdata )
         { "POSITION", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },
         { "TEXCOORD", 0, DXGI_FORMAT_R32G32B32A32_FLOAT, 0, sizeof(XMFLOAT4), D3D11_INPUT_PER_VERTEX_DATA, 0 },
     };
-    UINT numElements = ARRAYSIZE( layout );
+    constexpr UINT numElements = static_cast<UINT>(std::size(layout));
 
     // Create the input layout
     hr = g_pd3dDevice->CreateInputLayout( layout, numElements, g_VS, sizeof(g_VS), &g_pVertexLayout );
@@ -574,17 +575,17 @@ HRESULT InitDevice( const TexMetadata& mdata )
 
     if ( isCubeMap )
     {
-        nverts = _countof(verticesCube);
+        nverts = static_cast<UINT>(std::size(verticesCube));
         InitData.pSysMem = verticesCube;
     }
     else if ( is1D )
     {
-        nverts = _countof(vertices1D);
+        nverts = static_cast<UINT>(std::size(vertices1D));
         InitData.pSysMem = vertices1D;
     }
     else
     {
-        nverts = _countof(vertices);
+        nverts = static_cast<UINT>(std::size(vertices));
         InitData.pSysMem = vertices;
     }
 
@@ -627,12 +628,12 @@ HRESULT InitDevice( const TexMetadata& mdata )
 
     if ( isCubeMap )
     {
-        g_iIndices = _countof(indicesCube);
+        g_iIndices = static_cast<UINT>(std::size(indicesCube));
         InitData.pSysMem = indicesCube;
     }
     else
     {
-        g_iIndices = _countof(indices);
+        g_iIndices = static_cast<UINT>(std::size(indices));
         InitData.pSysMem = indices;
     }
 
