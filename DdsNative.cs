@@ -33,13 +33,25 @@ namespace DdsFileTypePlus
             int hr;
             DDSLoadInfo info = new DDSLoadInfo();
 
+#if NET47
             if (IntPtr.Size == 8)
+#else
+            if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+#endif
             {
                 hr = DdsIO_x64.Load(callbacks, ref info);
             }
-            else
+#if NET47
+            else if (IntPtr.Size == 4)
+#else
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+#endif
             {
                 hr = DdsIO_x86.Load(callbacks, ref info);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
             }
 
             GC.KeepAlive(streamIO);
@@ -92,13 +104,25 @@ namespace DdsFileTypePlus
             {
                 fixed (DDSBitmapData* pBitmapData = bitmapData)
                 {
+#if NET47
                     if (IntPtr.Size == 8)
+#else
+                    if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
+#endif
                     {
                         hr = DdsIO_x64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
                     }
-                    else
+#if NET47
+                    else if (IntPtr.Size == 4)
+#else
+                    else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+#endif
                     {
                         hr = DdsIO_x86.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
+                    }
+                    else
+                    {
+                        throw new PlatformNotSupportedException();
                     }
                 }
             }
