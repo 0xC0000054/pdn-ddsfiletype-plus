@@ -49,6 +49,12 @@ namespace DdsFileTypePlus
             {
                 hr = DdsIO_x86.Load(callbacks, ref info);
             }
+#if !NET47
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                hr = DdsIO_ARM64.Load(callbacks, ref info);
+            }
+#endif
             else
             {
                 throw new PlatformNotSupportedException();
@@ -120,6 +126,12 @@ namespace DdsFileTypePlus
                     {
                         hr = DdsIO_x86.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
                     }
+#if !NET47
+                    else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+                    {
+                        hr = DdsIO_ARM64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
+                    }
+#endif
                     else
                     {
                         throw new PlatformNotSupportedException();
