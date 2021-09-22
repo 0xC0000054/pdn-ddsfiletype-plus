@@ -33,28 +33,18 @@ namespace DdsFileTypePlus
             int hr;
             DDSLoadInfo info = new DDSLoadInfo();
 
-#if NET47
-            if (IntPtr.Size == 8)
-#else
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-#endif
             {
                 hr = DdsIO_x64.Load(callbacks, ref info);
             }
-#if NET47
-            else if (IntPtr.Size == 4)
-#else
             else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-#endif
             {
                 hr = DdsIO_x86.Load(callbacks, ref info);
             }
-#if !NET47
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
                 hr = DdsIO_ARM64.Load(callbacks, ref info);
             }
-#endif
             else
             {
                 throw new PlatformNotSupportedException();
@@ -110,28 +100,18 @@ namespace DdsFileTypePlus
             {
                 fixed (DDSBitmapData* pBitmapData = bitmapData)
                 {
-#if NET47
-                    if (IntPtr.Size == 8)
-#else
                     if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-#endif
                     {
                         hr = DdsIO_x64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
                     }
-#if NET47
-                    else if (IntPtr.Size == 4)
-#else
                     else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-#endif
                     {
                         hr = DdsIO_x86.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
                     }
-#if !NET47
                     else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
                     {
                         hr = DdsIO_ARM64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
                     }
-#endif
                     else
                     {
                         throw new PlatformNotSupportedException();

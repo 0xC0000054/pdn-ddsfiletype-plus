@@ -35,28 +35,18 @@ namespace DdsFileTypePlus.Interop
             {
                 this.disposed = true;
 
-#if NET47
-                if (IntPtr.Size == 8)
-#else
                 if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-#endif
                 {
                     DdsIO_x64.FreeLoadInfo(ref this.info);
                 }
-#if NET47
-                else if (IntPtr.Size == 4)
-#else
                 else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-#endif
                 {
                     DdsIO_x86.FreeLoadInfo(ref this.info);
                 }
-#if !NET47
                 else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
                 {
                     DdsIO_ARM64.FreeLoadInfo(ref this.info);
                 }
-#endif
                 else
                 {
                     throw new PlatformNotSupportedException();
