@@ -7,16 +7,19 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Remove="3rdParty\**" />
+    <Compile Remove="ARM64\**" />
     <Compile Remove="DdsFileTypePlusIO\**" />
     <Compile Remove="Debug\**" />
     <Compile Remove="Release\**" />
     <Compile Remove="x64\**" />
     <EmbeddedResource Remove="3rdParty\**" />
+    <EmbeddedResource Remove="ARM64\**" />
     <EmbeddedResource Remove="DdsFileTypePlusIO\**" />
     <EmbeddedResource Remove="Debug\**" />
     <EmbeddedResource Remove="Release\**" />
     <EmbeddedResource Remove="x64\**" />
     <None Remove="3rdParty\**" />
+    <None Remove="ARM64\**" />
     <None Remove="DdsFileTypePlusIO\**" />
     <None Remove="Debug\**" />
     <None Remove="Release\**" />
