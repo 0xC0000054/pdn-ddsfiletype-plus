@@ -77,7 +77,7 @@ namespace DdsFileTypePlus
         {
             for (int y = 0; y < surface.Height; ++y)
             {
-                ColorBgra* ptr = surface.GetRowAddressUnchecked(y);
+                ColorBgra* ptr = surface.GetRowPointerUnchecked(y);
                 ColorBgra* ptrEnd = ptr + surface.Width;
 
                 while (ptr < ptrEnd)

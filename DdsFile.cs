@@ -13,6 +13,7 @@
 using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
+using PaintDotNet.Rendering;
 using System;
 using System.Drawing;
 using System.IO;
@@ -36,7 +37,7 @@ namespace DdsFileTypePlus
                 for (int y = 0; y < surface.Height; ++y)
                 {
                     ColorRgba* src = image.GetRowAddressUnchecked(y);
-                    ColorBgra* dst = surface.GetRowAddressUnchecked(y);
+                    ColorBgra* dst = surface.GetRowPointerUnchecked(y);
 
                     for (int x = 0; x < surface.Width; ++x)
                     {
@@ -69,10 +70,8 @@ namespace DdsFileTypePlus
             Surface scratchSurface,
             ProgressEventHandler progressCallback)
         {
-            using (RenderArgs args = new RenderArgs(scratchSurface))
-            {
-                input.Render(args, true);
-            }
+            scratchSurface.Clear();
+            input.CreateRenderer().Render(scratchSurface);
 
             int width = scratchSurface.Width;
             int height = scratchSurface.Height;
@@ -319,8 +318,8 @@ namespace DdsFileTypePlus
 
                         for (int y = 0; y < mipHeight; ++y)
                         {
-                            ColorBgra* colorPtr = color.GetRowAddressUnchecked(y);
-                            ColorBgra* destPtr = mipSurface.GetRowAddressUnchecked(y);
+                            ColorBgra* colorPtr = color.GetRowPointerUnchecked(y);
+                            ColorBgra* destPtr = mipSurface.GetRowPointerUnchecked(y);
 
                             for (int x = 0; x < mipWidth; ++x)
                             {
@@ -355,7 +354,7 @@ namespace DdsFileTypePlus
         {
             for (int y = 0; y < surface.Height; ++y)
             {
-                ColorBgra* ptr = surface.GetRowAddressUnchecked(y);
+                ColorBgra* ptr = surface.GetRowPointerUnchecked(y);
                 ColorBgra* ptrEnd = ptr + surface.Width;
 
                 while (ptr < ptrEnd)
