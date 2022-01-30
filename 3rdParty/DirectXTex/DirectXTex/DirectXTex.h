@@ -29,7 +29,7 @@
 #include <d3d11_1.h>
 #endif
 #endif
-#else
+#else // !WIN32
 #include <directx/dxgiformat.h>
 #include <wsl/winadapter.h>
 #endif
@@ -37,13 +37,17 @@
 #include <DirectXMath.h>
 
 #ifdef WIN32
+#ifdef NTDDI_WIN10_FE
+#include <ocidl.h>
+#else
 #include <OCIdl.h>
+#endif
 
 struct IWICImagingFactory;
 struct IWICMetadataQueryReader;
 #endif
 
-#define DIRECTX_TEX_VERSION 192
+#define DIRECTX_TEX_VERSION 195
 
 
 namespace DirectX
@@ -431,10 +435,9 @@ namespace DirectX
         _In_z_ const wchar_t* szFile,
         _In_ DDS_FLAGS flags,
         _Out_opt_ TexMetadata* metadata, _Out_ ScratchImage& image) noexcept;
-
     HRESULT __cdecl LoadFromDDSIOCallbacks(
         _In_ const ImageIOCallbacks* pIOCallbacks, _In_ DDS_FLAGS flags,
-        _Out_opt_ TexMetadata* metadata, _Out_ ScratchImage& image) noexcept;
+        _Out_opt_ TexMetadata* metadata, _Out_ ScratchImage& image);
 
     HRESULT __cdecl SaveToDDSMemory(
         _In_ const Image& image,
@@ -453,7 +456,7 @@ namespace DirectX
     HRESULT __cdecl SaveToDDSIOCallbacks(
         _In_reads_(nimages) const Image* images, _In_ size_t nimages, _In_ const TexMetadata& metadata,
         _In_ DDS_FLAGS flags,
-        _In_ const ImageIOCallbacks* pIOCallbacks) noexcept;
+        _In_ const ImageIOCallbacks* pIOCallbacks);
 
     // HDR operations
     HRESULT __cdecl LoadFromHDRMemory(
@@ -623,8 +626,7 @@ namespace DirectX
         _Out_ ScratchImage& image, _In_opt_ ProgressProc progressProc) noexcept;
     HRESULT __cdecl Convert(
         _In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-        _In_ DXGI_FORMAT format, _In_ TEX_FILTER_FLAGS filter, _In_ float threshold, _Out_ ScratchImage& result,
-        _In_opt_ ProgressProc progressProc) noexcept;
+        _In_ DXGI_FORMAT format, _In_ TEX_FILTER_FLAGS filter, _In_ float threshold, _Out_ ScratchImage& result, _In_opt_ ProgressProc progressProc) noexcept;
         // Convert the image to a new format
 
     HRESULT __cdecl ConvertToSinglePlane(_In_ const Image& srcImage, _Out_ ScratchImage& image) noexcept;
@@ -716,8 +718,7 @@ namespace DirectX
         _Out_ ScratchImage& cImage, _In_opt_ ProgressProc progressProc) noexcept;
     HRESULT __cdecl Compress(
         _In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-        _In_ DXGI_FORMAT format, _In_ TEX_COMPRESS_FLAGS compress, _In_ float threshold, _Out_ ScratchImage& cImages,
-        _In_opt_ ProgressProc progressProc) noexcept;
+        _In_ DXGI_FORMAT format, _In_ TEX_COMPRESS_FLAGS compress, _In_ float threshold, _Out_ ScratchImage& cImages, _In_opt_ ProgressProc progressProc) noexcept;
         // Note that threshold is only used by BC1. TEX_THRESHOLD_DEFAULT is a typical value to use
 
 #if defined(__d3d11_h__) || defined(__d3d11_x_h__)
@@ -726,8 +727,7 @@ namespace DirectX
         _In_ float alphaWeight, _Out_ ScratchImage& image, _In_opt_ ProgressProc progressProc) noexcept;
     HRESULT __cdecl Compress(
         _In_ ID3D11Device* pDevice, _In_ const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-        _In_ DXGI_FORMAT format, _In_ TEX_COMPRESS_FLAGS compress, _In_ float alphaWeight, _Out_ ScratchImage& cImages,
-        _In_opt_ ProgressProc progressProc) noexcept;
+        _In_ DXGI_FORMAT format, _In_ TEX_COMPRESS_FLAGS compress, _In_ float alphaWeight, _Out_ ScratchImage& cImages, _In_opt_ ProgressProc progressProc) noexcept;
         // DirectCompute-based compression (alphaWeight is only used by BC7. 1.0 is the typical value to use)
 #endif
 

@@ -147,7 +147,7 @@ namespace
         const Image& srcImage,
         const Image& destImage,
         TEX_COMPRESS_FLAGS compress,
-		ProgressProc progressProc)
+	    ProgressProc progressProc)
     {
         if (!gpubc)
             return E_POINTER;

@@ -22,6 +22,9 @@
 
 #include <d3d12.h>
 
+#pragma comment(lib,"dxguid.lib")
+#pragma comment(lib,"windowscodecs.lib")
+
 #include <cstddef>
 #include <cstdint>
 #include <memory>
@@ -43,6 +46,17 @@ namespace DirectX
         WIC_LOADER_MAKE_SQUARE  = 0x40,
         WIC_LOADER_FORCE_RGBA32 = 0x80,
     };
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
+#endif
+
+    DEFINE_ENUM_FLAG_OPERATORS(WIC_LOADER_FLAGS);
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #endif
 
     // Standard version
@@ -70,7 +84,7 @@ namespace DirectX
         size_t wicDataSize,
         size_t maxsize,
         D3D12_RESOURCE_FLAGS resFlags,
-        unsigned int loadFlags,
+        WIC_LOADER_FLAGS loadFlags,
         _Outptr_ ID3D12Resource** texture,
         std::unique_ptr<uint8_t[]>& decodedData,
         D3D12_SUBRESOURCE_DATA& subresource) noexcept;
@@ -80,7 +94,7 @@ namespace DirectX
         _In_z_ const wchar_t* szFileName,
         size_t maxsize,
         D3D12_RESOURCE_FLAGS resFlags,
-        unsigned int loadFlags,
+        WIC_LOADER_FLAGS loadFlags,
         _Outptr_ ID3D12Resource** texture,
         std::unique_ptr<uint8_t[]>& decodedData,
         D3D12_SUBRESOURCE_DATA& subresource) noexcept;

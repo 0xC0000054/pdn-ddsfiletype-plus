@@ -24,6 +24,8 @@
 #endif
 #include <d3d9.h>
 
+#pragma comment(lib,"windowscodecs.lib")
+
 #include <cstddef>
 #include <cstdint>
 
@@ -39,6 +41,17 @@ namespace DirectX
         WIC_LOADER_MAKE_SQUARE  = 0x40,
         WIC_LOADER_FORCE_RGBA32 = 0x80,
     };
+
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-dynamic-exception-spec"
+#endif
+
+    DEFINE_ENUM_FLAG_OPERATORS(WIC_LOADER_FLAGS);
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 #endif
 
     // Standard version
@@ -48,14 +61,14 @@ namespace DirectX
         _In_ size_t wicDataSize,
         _Outptr_ LPDIRECT3DTEXTURE9* texture,
         _In_ size_t maxsize = 0,
-        _In_ unsigned int loadFlags = 0) noexcept;
+        _In_ WIC_LOADER_FLAGS loadFlags = WIC_LOADER_DEFAULT) noexcept;
 
     HRESULT CreateWICTextureFromFile(
         _In_ LPDIRECT3DDEVICE9 d3dDevice,
         _In_z_ const wchar_t* fileName,
         _Outptr_ LPDIRECT3DTEXTURE9* texture,
         _In_ size_t maxsize = 0,
-        _In_ unsigned int loadFlags = 0) noexcept;
+        _In_ WIC_LOADER_FLAGS loadFlags = WIC_LOADER_DEFAULT) noexcept;
 
     // Extended version
     HRESULT CreateWICTextureFromMemoryEx(
@@ -65,7 +78,7 @@ namespace DirectX
         _In_ size_t maxsize,
         _In_ DWORD usage,
         _In_ D3DPOOL pool,
-        _In_ unsigned int loadFlags,
+        _In_ WIC_LOADER_FLAGS loadFlags,
         _Outptr_ LPDIRECT3DTEXTURE9* texture) noexcept;
 
     HRESULT CreateWICTextureFromFileEx(
@@ -74,6 +87,6 @@ namespace DirectX
         _In_ size_t maxsize,
         _In_ DWORD usage,
         _In_ D3DPOOL pool,
-        _In_ unsigned int loadFlags,
+        _In_ WIC_LOADER_FLAGS loadFlags,
         _Outptr_ LPDIRECT3DTEXTURE9* texture) noexcept;
 }

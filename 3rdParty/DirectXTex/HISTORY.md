@@ -6,6 +6,34 @@ Release available for download on [GitHub](https://github.com/microsoft/DirectXT
 
 ## Release History
 
+### November 8, 2021
+* VS 2022 support
+* Updated D3DX12 internal copy with latest change from GitHubf
+* Minor code and project review
+* VS 2017 projects updated to require the Windows 10 SDK (19401)
+* texassemble/texconv: Updated with 12.2 for ``-fl`` switch
+* texassemble/texconv/texdiag: Fixed potential locale issue with ``-flist``
+
+### September 28, 2021
+* Minor code and project cleanup
+
+### August 1, 2021
+* Fixed weighting bug in custom linear filtering for wrap/mirroring
+* Added VS 2022 Preview projects
+* texconv: Made default output extension to be lower-case like most Windows applications
+* texconv: updated colorspace rotation names for -rotatecolor switch
+* texassemble, texconv: Order of operations fix for -swizzle using 0, 1
+* Minor code review
+
+### June 9, 2021
+* Minor bug fix for metadata behavior when using ``DDS_FLAGS_NO_16BPP`` flag for B5G6R5 content
+* texdiag: added ``-c`` and ``-t`` switches for diff command
+* texconv: Fixed bug in ``-m`` switch handling when resizing changes the max mipmap count
+* texconv et al: improved ``-flist`` switch to support wildcards and file exclusions
+* texconv et al: Added 'BGR' alias to ``-f`` switch for the B8G8R8X8_UNORM format
+* WICTextureLoader / DDSTextureLoader12 updated to use typed enum bitmask flags for loadFlags parameter
+* Minor code review
+
 ### April 6, 2021
 * DDS reader updated to accept nVidia Texture Tool v1 single-channel and dual-channel files marked as RGB instead of LUMINANCE
 * Fixed TGA reader regression with files smaller than 26 bytes total

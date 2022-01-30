@@ -20,16 +20,22 @@
 #define NOHELP
 #pragma warning(pop)
 
+#include <algorithm>
 #include <cassert>
 #include <cstddef>
 #include <cstdio>
 #include <cstdlib>
 #include <cwchar>
+#include <cwctype>
 #include <fstream>
 #include <iterator>
+#include <list>
+#include <locale>
 #include <memory>
 #include <new>
-#include <list>
+#include <set>
+#include <string>
+#include <tuple>
 #include <utility>
 #include <vector>
 
@@ -57,7 +63,7 @@ using Microsoft::WRL::ComPtr;
 
 namespace
 {
-    enum COMMANDS
+    enum COMMANDS : uint32_t
     {
         CMD_CUBE = 1,
         CMD_VOLUME,
@@ -73,7 +79,7 @@ namespace
         CMD_MAX
     };
 
-    enum OPTIONS
+    enum OPTIONS : uint32_t
     {
         OPT_RECURSIVE = 1,
         OPT_FILELIST,
@@ -102,7 +108,7 @@ namespace
         OPT_MAX
     };
 
-    static_assert(OPT_MAX <= 32, "dwOptions is a DWORD bitfield");
+    static_assert(OPT_MAX <= 32, "dwOptions is a unsigned int bitfield");
 
     struct SConversion
     {
@@ -111,8 +117,8 @@ namespace
 
     struct SValue
     {
-        LPCWSTR pName;
-        DWORD dwValue;
+        const wchar_t*  name;
+        uint32_t        value;
     };
 
     //////////////////////////////////////////////////////////////////////////////
@@ -244,6 +250,7 @@ namespace
     {
         { L"RGBA", DXGI_FORMAT_R8G8B8A8_UNORM },
         { L"BGRA", DXGI_FORMAT_B8G8R8A8_UNORM },
+        { L"BGR",  DXGI_FORMAT_B8G8R8X8_UNORM },
 
         { L"FP16", DXGI_FORMAT_R16G16B16A16_FLOAT },
         { L"FP32", DXGI_FORMAT_R32G32B32A32_FLOAT },
@@ -313,6 +320,7 @@ namespace
         { L"11.1", 16384 },
         { L"12.0", 16384 },
         { L"12.1", 16384 },
+        { L"12.2", 16384 },
         { nullptr, 0 },
     };
 
@@ -327,6 +335,7 @@ namespace
         { L"11.1", 16384 },
         { L"12.0", 16384 },
         { L"12.1", 16384 },
+        { L"12.2", 16384 },
         { nullptr, 0 },
     };
 
@@ -341,6 +350,7 @@ namespace
         { L"11.1", 2048 },
         { L"12.0", 2048 },
         { L"12.1", 2048 },
+        { L"12.2", 2048 },
         { nullptr, 0 },
     };
 
@@ -355,6 +365,7 @@ namespace
         { L"11.1", 2048 },
         { L"12.0", 2048 },
         { L"12.1", 2048 },
+        { L"12.2", 2048 },
         { nullptr, 0 },
     };
 }
@@ -383,12 +394,12 @@ namespace
 #pragma prefast(disable : 26018, "Only used with static internal arrays")
 #endif
 
-    DWORD LookupByName(const wchar_t *pName, const SValue *pArray)
+    uint32_t LookupByName(const wchar_t *pName, const SValue *pArray)
     {
-        while (pArray->pName)
+        while (pArray->name)
         {
-            if (!_wcsicmp(pName, pArray->pName))
-                return pArray->dwValue;
+            if (!_wcsicmp(pName, pArray->name))
+                return pArray->value;
 
             pArray++;
         }
@@ -470,13 +481,97 @@ namespace
         }
     }
 
+    void ProcessFileList(std::wifstream& inFile, std::list<SConversion>& files)
+    {
+        std::list<SConversion> flist;
+        std::set<std::wstring> excludes;
+        wchar_t fname[1024] = {};
+        for (;;)
+        {
+            inFile >> fname;
+            if (!inFile)
+                break;
+
+            if (*fname == L'#')
+            {
+                // Comment
+            }
+            else if (*fname == L'-')
+            {
+                if (flist.empty())
+                {
+                    wprintf(L"WARNING: Ignoring the line '%ls' in -flist\n", fname);
+                }
+                else
+                {
+                    if (wcspbrk(fname, L"?*") != nullptr)
+                    {
+                        std::list<SConversion> removeFiles;
+                        SearchForFiles(&fname[1], removeFiles, false);
+
+                        for (auto it : removeFiles)
+                        {
+                            _wcslwr_s(it.szSrc);
+                            excludes.insert(it.szSrc);
+                        }
+                    }
+                    else
+                    {
+                        std::wstring name = (fname + 1);
+                        std::transform(name.begin(), name.end(), name.begin(), towlower);
+                        excludes.insert(name);
+                    }
+                }
+            }
+            else if (wcspbrk(fname, L"?*") != nullptr)
+            {
+                SearchForFiles(fname, flist, false);
+            }
+            else
+            {
+                SConversion conv = {};
+                wcscpy_s(conv.szSrc, MAX_PATH, fname);
+                flist.push_back(conv);
+            }
+
+            inFile.ignore(1000, '\n');
+        }
+
+        inFile.close();
+
+        if (!excludes.empty())
+        {
+            // Remove any excluded files
+            for (auto it = flist.begin(); it != flist.end();)
+            {
+                std::wstring name = it->szSrc;
+                std::transform(name.begin(), name.end(), name.begin(), towlower);
+                auto item = it;
+                ++it;
+                if (excludes.find(name) != excludes.end())
+                {
+                    flist.erase(item);
+                }
+            }
+        }
+
+        if (flist.empty())
+        {
+            wprintf(L"WARNING: No file names found in -flist\n");
+        }
+        else
+        {
+            files.splice(files.end(), flist);
+        }
+    }
+
     void PrintFormat(DXGI_FORMAT Format)
     {
-        for (const SValue *pFormat = g_pFormats; pFormat->pName; pFormat++)
+        for (auto pFormat = g_pFormats; pFormat->name; pFormat++)
         {
-            if (static_cast<DXGI_FORMAT>(pFormat->dwValue) == Format)
+            if (static_cast<DXGI_FORMAT>(pFormat->value) == Format)
             {
-                wprintf(L"%ls", pFormat->pName);
+                wprintf(L"%ls", pFormat->name);
                 break;
             }
         }
@@ -543,9 +638,9 @@ namespace
 
     void PrintList(size_t cch, const SValue *pValue)
     {
-        while (pValue->pName)
+        while (pValue->name)
         {
-            size_t cchName = wcslen(pValue->pName);
+            size_t cchName = wcslen(pValue->name);
 
             if (cch + cchName + 2 >= 80)
             {
@@ -553,7 +648,7 @@ namespace
                 cch = 6;
             }
 
-            wprintf(L"%ls ", pValue->pName);
+            wprintf(L"%ls ", pValue->name);
             cch += cchName + 2;
             pValue++;
         }
@@ -603,8 +698,8 @@ namespace
 
         LPWSTR errorText = nullptr;
 
-        DWORD result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, nullptr,
-            static_cast<DWORD>(hr),
+        DWORD result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            nullptr, static_cast<DWORD>(hr),
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorText), 0, nullptr);
 
         *desc = 0;
@@ -678,7 +773,7 @@ namespace
         PrintList(13, g_pFeatureLevels);
     }
 
-    HRESULT SaveImageFile(const Image& img, DWORD fileType, const wchar_t* szOutputFile)
+    HRESULT SaveImageFile(const Image& img, uint32_t fileType, const wchar_t* szOutputFile)
     {
         switch (fileType)
         {
@@ -844,11 +939,11 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
     TEX_FILTER_FLAGS dwFilter = TEX_FILTER_DEFAULT;
     TEX_FILTER_FLAGS dwSRGB = TEX_FILTER_DEFAULT;
     TEX_FILTER_FLAGS dwFilterOpts = TEX_FILTER_DEFAULT;
-    DWORD fileType = WIC_CODEC_BMP;
-    DWORD maxSize = 16384;
-    DWORD maxCube = 16384;
-    DWORD maxArray = 2048;
-    DWORD maxVolume = 2048;
+    uint32_t fileType = WIC_CODEC_BMP;
+    uint32_t maxSize = 16384;
+    uint32_t maxCube = 16384;
+    uint32_t maxArray = 2048;
+    uint32_t maxVolume = 2048;
 
     // DXTex's Open Alpha onto Surface always loaded alpha from the blue channel
     uint32_t permuteElements[4] = { 0, 1, 2, 6 };
@@ -856,6 +951,9 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
     uint32_t oneElements[4] = {};
 
     wchar_t szOutputFile[MAX_PATH] = {};
+
+    // Set locale for output since GetErrorDesc can get localized strings.
+    std::locale::global(std::locale(""));
 
     // Initialize COM (needed for WIC)
     HRESULT hr = hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -872,7 +970,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
         return 0;
     }
 
-    DWORD dwCommand = LookupByName(argv[1], g_pCommands);
+    uint32_t dwCommand = LookupByName(argv[1], g_pCommands);
     switch (dwCommand)
     {
     case CMD_CUBE:
@@ -893,7 +991,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
         return 1;
     }
 
-    DWORD dwOptions = 0;
+    uint32_t dwOptions = 0;
     std::list<SConversion> conversion;
 
     for (int iArg = 2; iArg < argc; iArg++)
@@ -910,7 +1008,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             if (*pValue)
                 *pValue++ = 0;
 
-            DWORD dwOption = LookupByName(pArg, g_pOptions);
+            uint32_t dwOption = LookupByName(pArg, g_pOptions);
 
             if (!dwOption || (dwOptions & (1 << dwOption)))
             {
@@ -1065,37 +1163,10 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     wprintf(L"Error opening -flist file %ls\n", pValue);
                     return 1;
                 }
-                wchar_t fname[1024] = {};
-                for (;;)
-                {
-                    inFile >> fname;
-                    if (!inFile)
-                        break;
 
-                    if (*fname == L'#')
-                    {
-                        // Comment
-                    }
-                    else if (*fname == L'-')
-                    {
-                        wprintf(L"Command-line arguments not supported in -flist file\n");
-                        return 1;
-                    }
-                    else if (wcspbrk(fname, L"?*") != nullptr)
-                    {
-                        wprintf(L"Wildcards not supported in -flist file\n");
-                        return 1;
-                    }
-                    else
-                    {
-                        SConversion conv = {};
-                        wcscpy_s(conv.szSrc, MAX_PATH, fname);
-                        conversion.push_back(conv);
-                    }
+                inFile.imbue(std::locale::classic());
 
-                    inFile.ignore(1000, '\n');
-                }
-                inFile.close();
+                ProcessFileList(inFile, conversion);
             }
             break;
 
@@ -1916,7 +1987,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
         if (dwOptions & (1 << OPT_TOLOWER))
         {
-            (void)_wcslwr_s(szOutputFile);
+            std::ignore = _wcslwr_s(szOutputFile);
         }
 
         if (~dwOptions & (1 << OPT_OVERWRITE))
@@ -1964,10 +2035,10 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 for (size_t j = 0; j < w; ++j)
                 {
-                    XMVECTOR pixel1 = XMVectorSelect(inPixels[j], g_XMZero, zc);
-                    pixel1 = XMVectorSelect(pixel1, g_XMOne, oc);
-                    outPixels[j] = XMVectorPermute(pixel1, inPixels2[j],
+                    XMVECTOR pixel = XMVectorPermute(inPixels[j], inPixels2[j],
                         permuteElements[0], permuteElements[1], permuteElements[2], permuteElements[3]);
+                    pixel = XMVectorSelect(pixel, g_XMZero, zc);
+                    outPixels[j] = XMVectorSelect(pixel, g_XMOne, oc);
                 }
             }, result);
         if (FAILED(hr))
@@ -1984,7 +2055,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
         if (dwOptions & (1 << OPT_TOLOWER))
         {
-            (void)_wcslwr_s(szOutputFile);
+            std::ignore = _wcslwr_s(szOutputFile);
         }
 
         if (~dwOptions & (1 << OPT_OVERWRITE))
@@ -2055,7 +2126,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
         if (dwOptions & (1 << OPT_TOLOWER))
         {
-            (void)_wcslwr_s(szOutputFile);
+            std::ignore = _wcslwr_s(szOutputFile);
         }
 
         if (~dwOptions & (1 << OPT_OVERWRITE))
@@ -2097,35 +2168,35 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
         case CMD_CUBE:
             if (imageArray[0].width > maxCube || imageArray[0].height > maxCube)
             {
-                wprintf(L"\nWARNING: Target size exceeds maximum cube dimensions for feature level (%lu)\n", maxCube);
+                wprintf(L"\nWARNING: Target size exceeds maximum cube dimensions for feature level (%u)\n", maxCube);
             }
             break;
 
         case CMD_VOLUME:
             if (imageArray[0].width > maxVolume || imageArray[0].height > maxVolume || imageArray.size() > maxVolume)
             {
-                wprintf(L"\nWARNING: Target size exceeds volume extent for feature level (%lu)\n", maxVolume);
+                wprintf(L"\nWARNING: Target size exceeds volume extent for feature level (%u)\n", maxVolume);
             }
             break;
 
         case CMD_ARRAY:
             if (imageArray[0].width > maxSize || imageArray[0].height > maxSize || imageArray.size() > maxArray)
             {
-                wprintf(L"\nWARNING: Target size exceeds maximum size for feature level (size %lu, array %lu)\n", maxSize, maxArray);
+                wprintf(L"\nWARNING: Target size exceeds maximum size for feature level (size %u, array %u)\n", maxSize, maxArray);
             }
             break;
 
         case CMD_CUBEARRAY:
             if (imageArray[0].width > maxCube || imageArray[0].height > maxCube || imageArray.size() > maxArray)
             {
-                wprintf(L"\nWARNING: Target size exceeds maximum cube dimensions for feature level (size %lu, array %lu)\n", maxCube, maxArray);
+                wprintf(L"\nWARNING: Target size exceeds maximum cube dimensions for feature level (size %u, array %u)\n", maxCube, maxArray);
             }
             break;
 
         default:
             if (imageArray[0].width > maxSize || imageArray[0].height > maxSize)
             {
-                wprintf(L"\nWARNING: Target size exceeds maximum size for feature level (%lu)\n", maxSize);
+                wprintf(L"\nWARNING: Target size exceeds maximum size for feature level (%u)\n", maxSize);
             }
             break;
         }
@@ -2165,7 +2236,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
         if (dwOptions & (1 << OPT_TOLOWER))
         {
-            (void)_wcslwr_s(szOutputFile);
+            std::ignore = _wcslwr_s(szOutputFile);
         }
 
         if (~dwOptions & (1 << OPT_OVERWRITE))

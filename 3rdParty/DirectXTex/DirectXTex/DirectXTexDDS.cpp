@@ -554,10 +554,10 @@ namespace
             case DXGI_FORMAT_B5G6R5_UNORM:
             case DXGI_FORMAT_B5G5R5A1_UNORM:
             case DXGI_FORMAT_B4G4R4A4_UNORM:
-                metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                convFlags |= CONV_FLAGS_EXPAND;
                 if (metadata.format == DXGI_FORMAT_B5G6R5_UNORM)
                     convFlags |= CONV_FLAGS_NOALPHA;
+                metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                convFlags |= CONV_FLAGS_EXPAND;
                 break;
 
             default:
@@ -962,7 +962,7 @@ namespace
         return lformat;
     }
 
-    _Success_(return != false)
+    _Success_(return)
         bool LegacyExpandScanline(
             _Out_writes_bytes_(outSize) void* pDestination,
             size_t outSize,
@@ -2026,9 +2026,9 @@ HRESULT DirectX::LoadFromDDSFile(
 _Use_decl_annotations_
 HRESULT DirectX::LoadFromDDSIOCallbacks(
     const ImageIOCallbacks* pIOCallbacks,
-    DDS_FLAGS flags,
+    DirectX::DDS_FLAGS flags,
     TexMetadata* metadata,
-    ScratchImage& image) noexcept
+    ScratchImage& image)
 {
     if (!pIOCallbacks)
         return E_INVALIDARG;
@@ -2679,7 +2679,7 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
     size_t nimages,
     const TexMetadata& metadata,
     DDS_FLAGS flags,
-    const ImageIOCallbacks* pIOCallbacks) noexcept
+    const ImageIOCallbacks* pIOCallbacks)
 {
     if (!pIOCallbacks)
         return E_INVALIDARG;

@@ -14,15 +14,17 @@
 #ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wsign-conversion"
+#pragma clang diagnostic ignored "-Wunused-macros"
 #endif
 
+#define D3DX12_NO_STATE_OBJECT_HELPERS
+#define D3DX12_NO_CHECK_FEATURE_SUPPORT_CLASS
 #ifdef WIN32
 #ifdef _GAMING_XBOX_SCARLETT
 #include <d3dx12_xs.h>
 #elif (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
 #include "d3dx12_x.h"
 #else
-#define D3DX12_NO_STATE_OBJECT_HELPERS
 #include "d3dx12.h"
 #endif
 #else
@@ -522,7 +524,7 @@ HRESULT DirectX::PrepareUpload(
     }
 
     size_t numberOfResources = (metadata.dimension == TEX_DIMENSION_TEXTURE3D)
-                               ? 1 : metadata.arraySize;
+                               ? 1u : metadata.arraySize;
     numberOfResources *= metadata.mipLevels;
     numberOfResources *= numberOfPlanes;
 
@@ -757,17 +759,9 @@ HRESULT DirectX::CaptureTexture(
         return E_FAIL;
     }
 
-    UINT arraySize, depth;
-    if (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
-    {
-        arraySize = 1;
-        depth = desc.DepthOrArraySize;
-    }
-    else
-    {
-        arraySize = desc.DepthOrArraySize;
-        depth = 1;
-    }
+    UINT arraySize = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+                     ? 1u
+                     : desc.DepthOrArraySize;
 
     for (UINT plane = 0; plane < numberOfPlanes; ++plane)
     {

@@ -26,11 +26,16 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cwchar>
+#include <cwctype>
 #include <fstream>
 #include <iterator>
 #include <list>
+#include <locale>
 #include <memory>
 #include <new>
+#include <set>
+#include <string>
+#include <tuple>
 #include <vector>
 
 #include <dxgiformat.h>
@@ -38,6 +43,8 @@
 #pragma warning(disable : 4619 4616 26812)
 
 #include "DirectXTex.h"
+
+#include <DirectXPackedVector.h>
 
 //Uncomment to add support for OpenEXR (.exr)
 //#define USE_OPENEXR
@@ -49,7 +56,7 @@
 
 using namespace DirectX;
 
-enum COMMANDS
+enum COMMANDS : uint32_t
 {
     CMD_INFO = 1,
     CMD_ANALYZE,
@@ -60,7 +67,7 @@ enum COMMANDS
     CMD_MAX
 };
 
-enum OPTIONS
+enum OPTIONS : uint32_t
 {
     OPT_RECURSIVE = 1,
     OPT_FORMAT,
@@ -77,11 +84,13 @@ enum OPTIONS
     OPT_EXPAND_LUMINANCE,
     OPT_TARGET_PIXELX,
     OPT_TARGET_PIXELY,
+    OPT_DIFF_COLOR,
+    OPT_THRESHOLD,
     OPT_FILELIST,
     OPT_MAX
 };
 
-static_assert(OPT_MAX <= 32, "dwOptions is a DWORD bitfield");
+static_assert(OPT_MAX <= 32, "dwOptions is a unsigned int bitfield");
 
 struct SConversion
 {
@@ -90,8 +99,8 @@ struct SConversion
 
 struct SValue
 {
-    LPCWSTR pName;
-    DWORD dwValue;
+    const wchar_t*  name;
+    uint32_t        value;
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -126,6 +135,8 @@ const SValue g_pOptions[] =
     { L"xlum",      OPT_EXPAND_LUMINANCE },
     { L"targetx",   OPT_TARGET_PIXELX },
     { L"targety",   OPT_TARGET_PIXELY },
+    { L"c",         OPT_DIFF_COLOR },
+    { L"t",         OPT_THRESHOLD },
     { L"flist",     OPT_FILELIST },
     { nullptr,      0 }
 };
@@ -208,6 +219,7 @@ const SValue g_pFormatAliases[] =
 {
     { L"RGBA", DXGI_FORMAT_R8G8B8A8_UNORM },
     { L"BGRA", DXGI_FORMAT_B8G8R8A8_UNORM },
+    { L"BGR",  DXGI_FORMAT_B8G8R8X8_UNORM },
 
     { L"FP16", DXGI_FORMAT_R16G16B16A16_FLOAT },
     { L"FP32", DXGI_FORMAT_R32G32B32A32_FLOAT },
@@ -324,37 +336,37 @@ const SValue g_pFilters[] =
 
 const SValue g_pDumpFileTypes[] =
 {
-    { L"BMP",   WIC_CODEC_BMP  },
-    { L"JPG",   WIC_CODEC_JPEG },
-    { L"JPEG",  WIC_CODEC_JPEG },
-    { L"PNG",   WIC_CODEC_PNG  },
-    { L"TGA",   CODEC_TGA      },
-    { L"HDR",   CODEC_HDR      },
-    { L"TIF",   WIC_CODEC_TIFF },
-    { L"TIFF",  WIC_CODEC_TIFF },
-    { L"JXR",   WIC_CODEC_WMP  },
+    { L"bmp",   WIC_CODEC_BMP  },
+    { L"jpg",   WIC_CODEC_JPEG },
+    { L"jpeg",  WIC_CODEC_JPEG },
+    { L"png",   WIC_CODEC_PNG  },
+    { L"tga",   CODEC_TGA      },
+    { L"hdr",   CODEC_HDR      },
+    { L"tif",   WIC_CODEC_TIFF },
+    { L"tiff",  WIC_CODEC_TIFF },
+    { L"jxr",   WIC_CODEC_WMP  },
 #ifdef USE_OPENEXR
-    { L"EXR",   CODEC_EXR      },
+    { L"exr",   CODEC_EXR      },
 #endif
     { nullptr,  CODEC_DDS      }
 };
 
 const SValue g_pExtFileTypes[] =
 {
-    { L".BMP",  WIC_CODEC_BMP },
-    { L".JPG",  WIC_CODEC_JPEG },
-    { L".JPEG", WIC_CODEC_JPEG },
-    { L".PNG",  WIC_CODEC_PNG },
-    { L".DDS",  CODEC_DDS },
-    { L".TGA",  CODEC_TGA },
-    { L".HDR",  CODEC_HDR },
-    { L".TIF",  WIC_CODEC_TIFF },
-    { L".TIFF", WIC_CODEC_TIFF },
-    { L".WDP",  WIC_CODEC_WMP },
-    { L".HDP",  WIC_CODEC_WMP },
-    { L".JXR",  WIC_CODEC_WMP },
+    { L".bmp",  WIC_CODEC_BMP },
+    { L".jpg",  WIC_CODEC_JPEG },
+    { L".jpeg", WIC_CODEC_JPEG },
+    { L".png",  WIC_CODEC_PNG },
+    { L".dds",  CODEC_DDS },
+    { L".tga",  CODEC_TGA },
+    { L".hdr",  CODEC_HDR },
+    { L".tif",  WIC_CODEC_TIFF },
+    { L".tiff", WIC_CODEC_TIFF },
+    { L".wdp",  WIC_CODEC_WMP },
+    { L".hdp",  WIC_CODEC_WMP },
+    { L".jxr",  WIC_CODEC_WMP },
 #ifdef USE_OPENEXR
-    { L"EXR",   CODEC_EXR },
+    { L"exr",   CODEC_EXR },
 #endif
     { nullptr,  CODEC_DDS }
 };
@@ -375,12 +387,12 @@ namespace
 #pragma prefast(disable : 26018, "Only used with static internal arrays")
 #endif
 
-    DWORD LookupByName(const wchar_t *pName, const SValue *pArray)
+    uint32_t LookupByName(const wchar_t *pName, const SValue *pArray)
     {
-        while (pArray->pName)
+        while (pArray->name)
         {
-            if (!_wcsicmp(pName, pArray->pName))
-                return pArray->dwValue;
+            if (!_wcsicmp(pName, pArray->name))
+                return pArray->value;
 
             pArray++;
         }
@@ -388,12 +400,12 @@ namespace
         return 0;
     }
 
-    const wchar_t* LookupByValue(DWORD pValue, const SValue *pArray)
+    const wchar_t* LookupByValue(uint32_t pValue, const SValue *pArray)
     {
-        while (pArray->pName)
+        while (pArray->name)
         {
-            if (pValue == pArray->dwValue)
-                return pArray->pName;
+            if (pValue == pArray->value)
+                return pArray->name;
 
             pArray++;
         }
@@ -475,22 +487,106 @@ namespace
         }
     }
 
+    void ProcessFileList(std::wifstream& inFile, std::list<SConversion>& files)
+    {
+        std::list<SConversion> flist;
+        std::set<std::wstring> excludes;
+        wchar_t fname[1024] = {};
+        for (;;)
+        {
+            inFile >> fname;
+            if (!inFile)
+                break;
+
+            if (*fname == L'#')
+            {
+                // Comment
+            }
+            else if (*fname == L'-')
+            {
+                if (flist.empty())
+                {
+                    wprintf(L"WARNING: Ignoring the line '%ls' in -flist\n", fname);
+                }
+                else
+                {
+                    if (wcspbrk(fname, L"?*") != nullptr)
+                    {
+                        std::list<SConversion> removeFiles;
+                        SearchForFiles(&fname[1], removeFiles, false);
+
+                        for (auto it : removeFiles)
+                        {
+                            _wcslwr_s(it.szSrc);
+                            excludes.insert(it.szSrc);
+                        }
+                    }
+                    else
+                    {
+                        std::wstring name = (fname + 1);
+                        std::transform(name.begin(), name.end(), name.begin(), towlower);
+                        excludes.insert(name);
+                    }
+                }
+            }
+            else if (wcspbrk(fname, L"?*") != nullptr)
+            {
+                SearchForFiles(fname, flist, false);
+            }
+            else
+            {
+                SConversion conv = {};
+                wcscpy_s(conv.szSrc, MAX_PATH, fname);
+                flist.push_back(conv);
+            }
+
+            inFile.ignore(1000, '\n');
+        }
+
+        inFile.close();
+
+        if (!excludes.empty())
+        {
+            // Remove any excluded files
+            for (auto it = flist.begin(); it != flist.end();)
+            {
+                std::wstring name = it->szSrc;
+                std::transform(name.begin(), name.end(), name.begin(), towlower);
+                auto item = it;
+                ++it;
+                if (excludes.find(name) != excludes.end())
+                {
+                    flist.erase(item);
+                }
+            }
+        }
+
+        if (flist.empty())
+        {
+            wprintf(L"WARNING: No file names found in -flist\n");
+        }
+        else
+        {
+            files.splice(files.end(), flist);
+        }
+    }
+
     void PrintFormat(DXGI_FORMAT Format)
     {
-        for (const SValue *pFormat = g_pFormats; pFormat->pName; pFormat++)
+        for (auto pFormat = g_pFormats; pFormat->name; pFormat++)
         {
-            if (static_cast<DXGI_FORMAT>(pFormat->dwValue) == Format)
+            if (static_cast<DXGI_FORMAT>(pFormat->value) == Format)
             {
-                wprintf(L"%ls", pFormat->pName);
+                wprintf(L"%ls", pFormat->name);
                 return;
             }
         }
 
-        for (const SValue *pFormat = g_pReadOnlyFormats; pFormat->pName; pFormat++)
+        for (auto pFormat = g_pReadOnlyFormats; pFormat->name; pFormat++)
         {
-            if (static_cast<DXGI_FORMAT>(pFormat->dwValue) == Format)
+            if (static_cast<DXGI_FORMAT>(pFormat->value) == Format)
             {
-                wprintf(L"%ls", pFormat->pName);
+                wprintf(L"%ls", pFormat->name);
                 return;
             }
         }
@@ -500,9 +596,9 @@ namespace
 
     void PrintList(size_t cch, const SValue *pValue)
     {
-        while (pValue->pName)
+        while (pValue->name)
         {
-            size_t cchName = wcslen(pValue->pName);
+            size_t cchName = wcslen(pValue->name);
 
             if (cch + cchName + 2 >= 80)
             {
@@ -510,7 +606,7 @@ namespace
                 cch = 6;
             }
 
-            wprintf(L"%ls ", pValue->pName);
+            wprintf(L"%ls ", pValue->name);
             cch += cchName + 2;
             pValue++;
         }
@@ -577,6 +673,8 @@ namespace
         wprintf(L"   -o <filename>       output filename\n");
         wprintf(L"   -l                  force output filename to lower case\n");
         wprintf(L"   -y                  overwrite existing output file (if any)\n");
+        wprintf(L"   -c <hex-RGB>        highlight difference color (defaults to off)\n");
+        wprintf(L"   -t <threshold>      highlight threshold (defaults to 0.25)\n");
         wprintf(L"\n                       (dumpbc only)\n");
         wprintf(L"   -targetx <num>      dump pixels at location x (defaults to all)\n");
         wprintf(L"   -targety <num>      dump pixels at location y (defaults to all)\n");
@@ -603,8 +701,8 @@ namespace
 
         LPWSTR errorText = nullptr;
 
-        DWORD result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_ALLOCATE_BUFFER, nullptr,
-            static_cast<DWORD>(hr),
+        DWORD result = FormatMessageW(FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS | FORMAT_MESSAGE_ALLOCATE_BUFFER,
+            nullptr, static_cast<DWORD>(hr),
             MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), reinterpret_cast<LPWSTR>(&errorText), 0, nullptr);
 
         *desc = 0;
@@ -629,7 +727,7 @@ namespace
 
     HRESULT LoadImage(
         const wchar_t *fileName,
-        DWORD dwOptions,
+        uint32_t dwOptions,
         TEX_FILTER_FLAGS dwFilter,
         TexMetadata& info,
         std::unique_ptr<ScratchImage>& image)
@@ -705,7 +803,7 @@ namespace
         }
     }
 
-    HRESULT SaveImage(const Image* image, const wchar_t *fileName, DWORD codec)
+    HRESULT SaveImage(const Image* image, const wchar_t *fileName, uint32_t codec)
     {
         switch (codec)
         {
@@ -1295,6 +1393,8 @@ namespace
         const Image& image2,
         TEX_FILTER_FLAGS dwFilter,
         DXGI_FORMAT format,
+        uint32_t diffColor,
+        float threshold,
         ScratchImage& result)
     {
         if (!image1.pixels || !image2.pixels)
@@ -1340,9 +1440,14 @@ namespace
         if (!imageA || !imageB)
             return E_POINTER;
 
+        XMVECTOR colorValue = PackedVector::XMLoadColor(reinterpret_cast<const PackedVector::XMCOLOR*>(&diffColor));
+        colorValue = XMVectorSelect(g_XMIdentityR3, colorValue, g_XMSelect1110);
+
         ScratchImage diffImage;
         HRESULT hr = TransformImage(*imageA, [&](XMVECTOR* outPixels, const XMVECTOR * inPixels, size_t width, size_t y)
             {
+                XMVECTOR tolerance = XMVectorReplicate(threshold);
+
                 auto *inPixelsB = reinterpret_cast<XMVECTOR*>(imageB->pixels + (y*imageB->rowPitch));
 
                 for (size_t x = 0; x < width; ++x)
@@ -1352,17 +1457,26 @@ namespace
 
                     v1 = XMVectorSubtract(v1, v2);
                     v1 = XMVectorAbs(v1);
-
                     v1 = XMVectorSelect(g_XMIdentityR3, v1, g_XMSelect1110);
 
-                    *outPixels++ = v1;
+                    if (diffColor && XMVector3GreaterOrEqual(v1, tolerance))
+                    {
+                        *outPixels++ = colorValue;
+                    }
+                    else
+                    {
+                        *outPixels++ = v1;
+                    }
                 }
             }, (format == DXGI_FORMAT_R32G32B32A32_FLOAT) ? result : diffImage);
         if (FAILED(hr))
             return hr;
 
-        if (format == DXGI_FORMAT_R32G32B32A32_FLOAT)
+        if (format == diffImage.GetMetadata().format)
+        {
+            std::swap(diffImage, result);
             return S_OK;
+        }
 
         return Convert(diffImage.GetImages(), diffImage.GetImageCount(), diffImage.GetMetadata(), format, dwFilter, TEX_THRESHOLD_DEFAULT, result);
     }
@@ -3100,9 +3214,14 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
     TEX_FILTER_FLAGS dwFilter = TEX_FILTER_DEFAULT;
     int pixelx = -1;
     int pixely = -1;
+    uint32_t diffColor = 0;
+    float threshold = 0.25f;
     DXGI_FORMAT diffFormat = DXGI_FORMAT_B8G8R8A8_UNORM;
-    DWORD fileType = WIC_CODEC_BMP;
+    uint32_t fileType = WIC_CODEC_BMP;
     wchar_t szOutputFile[MAX_PATH] = {};
+
+    // Set locale for output since GetErrorDesc can get localized strings.
+    std::locale::global(std::locale(""));
 
     // Initialize COM (needed for WIC)
     HRESULT hr = hr = CoInitializeEx(nullptr, COINIT_MULTITHREADED);
@@ -3119,7 +3238,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
         return 0;
     }
 
-    DWORD dwCommand = LookupByName(argv[1], g_pCommands);
+    uint32_t dwCommand = LookupByName(argv[1], g_pCommands);
     switch (dwCommand)
     {
     case CMD_INFO:
@@ -3135,7 +3254,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
         return 1;
     }
 
-    DWORD dwOptions = 0;
+    uint32_t dwOptions = 0;
     std::list<SConversion> conversion;
 
     for (int iArg = 2; iArg < argc; iArg++)
@@ -3152,7 +3271,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             if (*pValue)
                 *pValue++ = 0;
 
-            DWORD dwOption = LookupByName(pArg, g_pOptions);
+            uint32_t dwOption = LookupByName(pArg, g_pOptions);
 
             if (!dwOption || (dwOptions & (1 << dwOption)))
             {
@@ -3171,6 +3290,8 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             case OPT_OUTPUTFILE:
             case OPT_TARGET_PIXELX:
             case OPT_TARGET_PIXELY:
+            case OPT_DIFF_COLOR:
+            case OPT_THRESHOLD:
             case OPT_FILELIST:
                 if (!*pValue)
                 {
@@ -3283,6 +3404,27 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                 }
                 break;
 
+            case OPT_DIFF_COLOR:
+                if (swscanf_s(pValue, L"%x", &diffColor) != 1)
+                {
+                    printf("Invalid value specified with -c (%ls)\n", pValue);
+                    printf("\n");
+                    PrintUsage();
+                    return 1;
+                }
+                diffColor &= 0xFFFFFF;
+                break;
+
+            case OPT_THRESHOLD:
+                if (swscanf_s(pValue, L"%f", &threshold) != 1)
+                {
+                    printf("Invalid value specified with -t (%ls)\n", pValue);
+                    printf("\n");
+                    PrintUsage();
+                    return 1;
+                }
+                break;
+
             case OPT_FILELIST:
             {
                 std::wifstream inFile(pValue);
@@ -3291,37 +3433,10 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     wprintf(L"Error opening -flist file %ls\n", pValue);
                     return 1;
                 }
-                wchar_t fname[1024] = {};
-                for (;;)
-                {
-                    inFile >> fname;
-                    if (!inFile)
-                        break;
 
-                    if (*fname == L'#')
-                    {
-                        // Comment
-                    }
-                    else if (*fname == L'-')
-                    {
-                        wprintf(L"Command-line arguments not supported in -flist file\n");
-                        return 1;
-                    }
-                    else if (wcspbrk(fname, L"?*") != nullptr)
-                    {
-                        wprintf(L"Wildcards not supported in -flist file\n");
-                        return 1;
-                    }
-                    else
-                    {
-                        SConversion conv = {};
-                        wcscpy_s(conv.szSrc, MAX_PATH, fname);
-                        conversion.push_back(conv);
-                    }
+                inFile.imbue(std::locale::classic());
 
-                    inFile.ignore(1000, '\n');
-                }
-                inFile.close();
+                ProcessFileList(inFile, conversion);
             }
             break;
 
@@ -3428,7 +3543,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     wprintf(L"WARNING: ignoring all images but first one in each file\n");
 
                 ScratchImage diffImage;
-                hr = Difference(*image1->GetImage(0, 0, 0), *image2->GetImage(0, 0, 0), dwFilter, diffFormat, diffImage);
+                hr = Difference(*image1->GetImage(0, 0, 0), *image2->GetImage(0, 0, 0), dwFilter, diffFormat, diffColor, threshold, diffImage);
                 if (FAILED(hr))
                 {
                     wprintf(L"Failed diffing images (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
@@ -3437,7 +3552,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 if (dwOptions & (1 << OPT_TOLOWER))
                 {
-                    (void)_wcslwr_s(szOutputFile);
+                    std::ignore = _wcslwr_s(szOutputFile);
                 }
 
                 if (~dwOptions & (1 << OPT_OVERWRITE))

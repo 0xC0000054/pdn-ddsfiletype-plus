@@ -3,7 +3,7 @@
 
 cmake_minimum_required (VERSION 3.11)
 
-set(DIRECTXTEX_VERSION 1.9.1)
+set(DIRECTXTEX_VERSION 1.9.5)
 
 project (DirectXTex
   VERSION ${DIRECTXTEX_VERSION}
@@ -23,6 +23,8 @@ option(BUILD_DX12 "Build with DirectX12 Runtime support" ON)
 option(BC_USE_OPENMP "Build with OpenMP support" ON)
 
 option(ENABLE_CODE_ANALYSIS "Use Static Code Analysis on build" OFF)
+
+option(USE_PREBUILT_SHADERS "Use externally built HLSL shaders" OFF)
 
 # Includes the functions for loading/saving OpenEXR files at runtime
 # NOTE requires adding DirectXTexEXR.h/.cpp source files (vcpkg does this automatically)
@@ -97,20 +99,35 @@ if(ENABLE_OPENEXR_SUPPORT)
 endif()
 
 if(BUILD_DX11 AND WIN32)
-    set(LIBRARY_SOURCES ${LIBRARY_SOURCES}
-        DirectXTex/Shaders/Compiled/BC6HEncode_EncodeBlockCS.inc)
+    if (NOT COMPILED_SHADERS)
+        if (USE_PREBUILT_SHADERS)
+            message(FATAL_ERROR "ERROR: Using prebuilt shaders requires the COMPILED_SHADERS variable is set")
+        endif()
+        set(COMPILED_SHADERS ${CMAKE_CURRENT_BINARY_DIR}/Shaders/Compiled)
+        file(MAKE_DIRECTORY ${COMPILED_SHADERS})
+    endif()
 
-   add_custom_command(
-       OUTPUT "${PROJECT_SOURCE_DIR}/DirectXTex/Shaders/Compiled/BC6HEncode_EncodeBlockCS.inc"
-       MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/DirectXTex/Shaders/CompileShaders.cmd"
-       DEPENDS ${SHADER_SOURCES}
-       COMMENT "Generating HLSL shaders..."
-       COMMAND "CompileShaders.cmd"
-       WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/DirectXTex/Shaders"
-       USES_TERMINAL)
+    set(LIBRARY_SOURCES ${LIBRARY_SOURCES}
+        ${COMPILED_SHADERS}/BC6HEncode_EncodeBlockCS.inc)
+
+    if (NOT USE_PREBUILT_SHADERS)
+        add_custom_command(
+            OUTPUT "${COMPILED_SHADERS}/BC6HEncode_EncodeBlockCS.inc"
+            MAIN_DEPENDENCY "${PROJECT_SOURCE_DIR}/DirectXTex/Shaders/CompileShaders.cmd"
+            DEPENDS ${SHADER_SOURCES}
+            COMMENT "Generating HLSL shaders..."
+            COMMAND set CompileShadersOutput=${COMPILED_SHADERS}
+            COMMAND CompileShaders.cmd
+            WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}/DirectXTex/Shaders"
+            USES_TERMINAL)
+    endif()
 endif()
 
 add_library(${PROJECT_NAME} STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS})
+
+if(BUILD_DX11 AND WIN32)
+   target_include_directories(${PROJECT_NAME} PRIVATE ${COMPILED_SHADERS})
+endif()
 
 source_group(${PROJECT_NAME} REGULAR_EXPRESSION DirectXTex/*.*)
 
@@ -144,6 +161,7 @@ if ((NOT WIN32) OR VCPKG_TOOLCHAIN)
     find_package(directx-headers CONFIG REQUIRED)
     find_package(directxmath CONFIG REQUIRED)
     target_link_libraries(${PROJECT_NAME} PRIVATE Microsoft::DirectX-Headers Microsoft::DirectXMath)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE USING_DIRECTX_HEADERS)
 endif()
 
 #--- Package
@@ -296,8 +314,12 @@ if(WIN32)
     endif()
 
     if(BUILD_DX12 OR WINDOWS_STORE)
+        if(BUILD_DX12)
+          message("INFO: Building with DirectX 12 Runtime support")
+        endif()
         target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0A00)
     else()
+        message("INFO: Building with Windows 7 compatibility")
         target_compile_definitions(${PROJECT_NAME} PRIVATE _WIN32_WINNT=0x0601)
     endif()
 endif()
