@@ -15,7 +15,7 @@ using System;
 
 namespace DdsFileTypePlus
 {
-    internal sealed class Texture : IDisposable
+    internal sealed class Texture : Disposable
     {
         private Surface surface;
         private readonly bool ownsSurface;
@@ -36,13 +36,22 @@ namespace DdsFileTypePlus
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (this.surface != null && this.ownsSurface)
+            if (disposing)
             {
-                this.surface.Dispose();
-                this.surface = null;
+                if (this.surface != null)
+                {
+                    if (this.ownsSurface)
+                    {
+                        this.surface.Dispose();
+                    }
+
+                    this.surface = null;
+                }
             }
+
+            base.Dispose(disposing);
         }
     }
 }

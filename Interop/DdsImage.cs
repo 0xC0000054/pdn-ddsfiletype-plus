@@ -10,15 +10,15 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+using PaintDotNet;
 using System;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus.Interop
 {
-    internal sealed class DdsImage : IDisposable
+    internal sealed class DdsImage : Disposable
     {
         private DDSLoadInfo info;
-        private bool disposed;
 
         public int Width => this.info.width;
 
@@ -29,29 +29,26 @@ namespace DdsFileTypePlus.Interop
             this.info = info;
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (!this.disposed)
+            if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                this.disposed = true;
-
-                if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-                {
-                    DdsIO_x64.FreeLoadInfo(ref this.info);
-                }
-                else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-                {
-                    DdsIO_x86.FreeLoadInfo(ref this.info);
-                }
-                else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                {
-                    DdsIO_ARM64.FreeLoadInfo(ref this.info);
-                }
-                else
-                {
-                    throw new PlatformNotSupportedException();
-                }
+                DdsIO_x64.FreeLoadInfo(ref this.info);
             }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
+            {
+                DdsIO_x86.FreeLoadInfo(ref this.info);
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                DdsIO_ARM64.FreeLoadInfo(ref this.info);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
+            }
+
+            base.Dispose(disposing);
         }
 
         public unsafe ColorRgba* GetRowAddressUnchecked(int y)

@@ -10,7 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using System;
+using PaintDotNet;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,10 +19,9 @@ namespace DdsFileTypePlus
 {
     [DebuggerDisplay("Count = {Count}")]
     [DebuggerTypeProxy(typeof(TextureCollectionDebugView))]
-    internal sealed class TextureCollection : IList<Texture>, IReadOnlyList<Texture>, IDisposable
+    internal sealed class TextureCollection : Disposable, IList<Texture>, IReadOnlyList<Texture>
     {
         private readonly List<Texture> items;
-        private bool disposed;
 
         public TextureCollection(int capacity)
         {
@@ -78,19 +77,6 @@ namespace DdsFileTypePlus
             this.items.CopyTo(array, arrayIndex);
         }
 
-        public void Dispose()
-        {
-            if (!this.disposed)
-            {
-                this.disposed = true;
-
-                for (int i = 0; i < this.items.Count; i++)
-                {
-                    this.items[i]?.Dispose();
-                }
-            }
-        }
-
         public IEnumerator<Texture> GetEnumerator()
         {
             return this.items.GetEnumerator();
@@ -131,6 +117,19 @@ namespace DdsFileTypePlus
             DisposePreviousItem(index);
 
             this.items.RemoveAt(index);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                for (int i = 0; i < this.items.Count; i++)
+                {
+                    this.items[i]?.Dispose();
+                }
+            }
+
+            base.Dispose(disposing);
         }
 
         private void DisposePreviousItem(int index)
