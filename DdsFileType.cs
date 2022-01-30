@@ -197,7 +197,17 @@ namespace DdsFileTypePlus
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
             ResamplingAlgorithm mipSampling = (ResamplingAlgorithm)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
 
-            DdsFile.Save(this.services, input, output, fileFormat, errorMetric, compressionSpeed, cubeMap, generateMipmaps, mipSampling, scratchSurface, progressCallback);
+            DdsFile.Save(this.services,
+                         input,
+                         output,
+                         fileFormat,
+                         errorMetric,
+                         compressionSpeed,
+                         cubeMap,
+                         generateMipmaps,
+                         mipSampling,
+                         scratchSurface,
+                         progressCallback);
         }
 
         public enum PropertyNames
