@@ -28,8 +28,7 @@ namespace DdsFileTypePlus
             // Use a dictionary to map the resource name to its enumeration value.
             // This avoids repeated calls to Enum.TryParse.
             // Adapted from https://stackoverflow.com/a/13677446
-            pdnLocalizedStringMap = Enum.GetValues(typeof(DdsFileTypePlusStringName))
-                                        .Cast<DdsFileTypePlusStringName>()
+            pdnLocalizedStringMap = Enum.GetValues<DdsFileTypePlusStringName>()
                                         .ToDictionary(kv => kv.ToString(), kv => kv, StringComparer.OrdinalIgnoreCase);
         }
 
