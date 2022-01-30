@@ -142,6 +142,7 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.R8Unsigned, this.strings.GetString("DdsFileFormat_R8Unsigned"));
             formatPCI.SetValueDisplayName(DdsFileFormat.R8G8Unsigned, this.strings.GetString("DdsFileFormat_R8G8Unsigned"));
             formatPCI.SetValueDisplayName(DdsFileFormat.R8G8Signed, this.strings.GetString("DdsFileFormat_R8G8Signed"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.R32Float, this.strings.GetString("DdsFileFormat_R32Float"));
 
             PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionSpeed);
             compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionSpeed_DisplayName");

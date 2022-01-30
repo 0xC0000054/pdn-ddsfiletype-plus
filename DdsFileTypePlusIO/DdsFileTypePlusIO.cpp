@@ -72,6 +72,8 @@ namespace
             return DXGI_FORMAT_R8G8_SNORM;
         case DDS_FORMAT_R8G8B8A8:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
+        case DDS_FORMAT_R32_FLOAT:
+            return DXGI_FORMAT_R32_FLOAT;
         default:
             return DXGI_FORMAT_UNKNOWN;
         }

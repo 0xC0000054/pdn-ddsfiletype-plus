@@ -68,6 +68,7 @@ extern "C" {
         DDS_FORMAT_R8_UNORM,
         DDS_FORMAT_R8G8_UNORM,
         DDS_FORMAT_R8G8_SNORM,
+        DDS_FORMAT_R32_FLOAT,
     };
 
     enum DdsErrorMetric

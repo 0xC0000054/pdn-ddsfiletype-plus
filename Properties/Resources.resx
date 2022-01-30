@@ -112,10 +112,10 @@
     <value>2.0</value>
   </resheader>
   <resheader name="reader">
-    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <resheader name="writer">
-    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=6.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <data name="BC7CompressionSpeed_DisplayName" xml:space="preserve">
     <value>BC6H / BC7 Compression Speed</value>
@@ -191,6 +191,9 @@
   </data>
   <data name="DdsFileFormat_BC7Srgb" xml:space="preserve">
     <value>BC7 (sRGB, DX 11+)</value>
+  </data>
+  <data name="DdsFileFormat_R32Float" xml:space="preserve">
+    <value>R32 (Linear, Float)</value>
   </data>
   <data name="DdsFileFormat_R8G8B8A8" xml:space="preserve">
     <value>R8G8B8A8 (Linear, A8B8G8R8)</value>

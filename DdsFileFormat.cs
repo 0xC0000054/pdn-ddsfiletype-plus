@@ -40,6 +40,7 @@ namespace DdsFileTypePlus
         B8G8R8,
         R8Unsigned,
         R8G8Unsigned,
-        R8G8Signed
+        R8G8Signed,
+        R32Float
     }
 }
