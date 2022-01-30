@@ -61,7 +61,7 @@ namespace DdsFileTypePlus
 
         public override PropertyCollection OnCreateSavePropertyCollection()
         {
-            List<Property> props = new List<Property>
+            List<Property> props = new()
             {
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.FileFormat, DdsFileFormat.BC1, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.BC7CompressionSpeed, BC7CompressionSpeed.Medium, false),
@@ -73,7 +73,7 @@ namespace DdsFileTypePlus
                 new UriProperty(PropertyNames.GitHubLink, new Uri("https://github.com/0xC0000054/pdn-ddsfiletype-plus"))
             };
 
-            List<PropertyCollectionRule> rules = new List<PropertyCollectionRule>
+            List<PropertyCollectionRule> rules = new()
             {
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
                     PropertyNames.BC7CompressionSpeed,

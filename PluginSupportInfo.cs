@@ -34,6 +34,6 @@ namespace DdsFileTypePlus
 
         public Version Version => typeof(PluginSupportInfo).Assembly.GetName().Version;
 
-        public Uri WebsiteUri => new Uri(@"https://forums.getpaint.net/topic/111731-dds-filetype-plus");
+        public Uri WebsiteUri => new(@"https://forums.getpaint.net/topic/111731-dds-filetype-plus");
     }
 }

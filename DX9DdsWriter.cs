@@ -51,7 +51,7 @@ namespace DdsFileTypePlus
 
         internal void Save(TextureCollection textures, Stream output, ProgressEventHandler progressCallback)
         {
-            DdsHeader header = new DdsHeader(this.width, this.height, this.arraySize, this.mipLevels, this.format);
+            DdsHeader header = new(this.width, this.height, this.arraySize, this.mipLevels, this.format);
 
             output.WriteUInt32(DdsMagic);
             header.Write(output);

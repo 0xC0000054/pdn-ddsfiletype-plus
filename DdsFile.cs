@@ -123,7 +123,7 @@ namespace DdsFileTypePlus
                         };
                     }
 
-                    DDSSaveInfo info = new DDSSaveInfo
+                    DDSSaveInfo info = new()
                     {
                         width = width,
                         height = height,
@@ -306,7 +306,7 @@ namespace DdsFileTypePlus
                     // Downscaling images with transparency is done in a way that allows the completely transparent areas
                     // to retain their RGB color values, this behavior is required by some programs that use DDS files.
 
-                    using (Surface color = new Surface(mipWidth, mipHeight))
+                    using (Surface color = new(mipWidth, mipHeight))
                     {
                         using (Surface opaqueClone = fullSize.Clone())
                         {

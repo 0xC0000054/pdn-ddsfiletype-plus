@@ -21,8 +21,8 @@ namespace DdsFileTypePlus
     {
         public static unsafe DdsImage Load(Stream stream)
         {
-            StreamIOCallbacks streamIO = new StreamIOCallbacks(stream);
-            IOCallbacks callbacks = new IOCallbacks
+            StreamIOCallbacks streamIO = new(stream);
+            IOCallbacks callbacks = new()
             {
                 Read = streamIO.Read,
                 Write = streamIO.Write,
@@ -31,7 +31,7 @@ namespace DdsFileTypePlus
             };
 
             int hr;
-            DDSLoadInfo info = new DDSLoadInfo();
+            DDSLoadInfo info = new();
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
@@ -83,8 +83,8 @@ namespace DdsFileTypePlus
             Stream output,
             DdsProgressCallback progressCallback)
         {
-            StreamIOCallbacks streamIO = new StreamIOCallbacks(output);
-            IOCallbacks callbacks = new IOCallbacks
+            StreamIOCallbacks streamIO = new(output);
+            IOCallbacks callbacks = new()
             {
                 Read = streamIO.Read,
                 Write = streamIO.Write,
