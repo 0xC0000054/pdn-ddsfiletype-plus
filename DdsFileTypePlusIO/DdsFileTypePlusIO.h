@@ -28,60 +28,62 @@ extern "C" {
     };
 
     // This must be kept in sync with DdsFileFormat.cs
-    enum DdsFileFormat
+    enum class DdsFileFormat : int32_t
     {
         // DXT1
-        DDS_FORMAT_BC1,
+        BC1,
         // BC1 sRGB (DX 10+)
-        DDS_FORMAT_BC1_SRGB,
+        BC1_SRGB,
         // DXT3
-        DDS_FORMAT_BC2,
+        BC2,
         // BC2 sRGB (DX 10+)
-        DDS_FORMAT_BC2_SRGB,
+        BC2_SRGB,
         // DXT5
-        DDS_FORMAT_BC3,
+        BC3,
         // BC3 sRGB (DX 10+)
-        DDS_FORMAT_BC3_SRGB,
+        BC3_SRGB,
         // BC4 Unsigned
-        DDS_FORMAT_BC4_UNORM,
+        BC4_UNORM,
         // BC5 Unsigned
-        DDS_FORMAT_BC5_UNORM,
+        BC5_UNORM,
         // BC5 Signed
-        DDS_FORMAT_BC5_SNORM,
+        BC5_SNORM,
         // BC6H Unsigned (DX 11+)
-        DDS_FORMAT_BC6H_UF16,
+        BC6H_UF16,
         // BC7 (DX 11+)
-        DDS_FORMAT_BC7,
+        BC7,
         // BC7 sRGB (DX 11+)
-        DDS_FORMAT_BC7_SRGB,
-        DDS_FORMAT_B8G8R8A8,
-        DDS_FORMAT_B8G8R8A8_SRGB,
-        DDS_FORMAT_B8G8R8X8,
-        DDS_FORMAT_B8G8R8X8_SRGB,
-        DDS_FORMAT_R8G8B8A8,
-        DDS_FORMAT_R8G8B8A8_SRGB,
-        DDS_FORMAT_R8G8B8X8, // Not supported by DirectX 10+, but included for documentation.
-        DDS_FORMAT_B5G5R5A1,
-        DDS_FORMAT_B4G4R4A4,
-        DDS_FORMAT_B5G6R5,
-        DDS_FORMAT_B8G8R8, // Not supported by DirectX 10+, but included for documentation.
-        DDS_FORMAT_R8_UNORM,
-        DDS_FORMAT_R8G8_UNORM,
-        DDS_FORMAT_R8G8_SNORM,
-        DDS_FORMAT_R32_FLOAT,
+        BC7_SRGB,
+        B8G8R8A8,
+        B8G8R8A8_SRGB,
+        B8G8R8X8,
+        B8G8R8X8_SRGB,
+        R8G8B8A8,
+        R8G8B8A8_SRGB,
+        R8G8B8X8, // Not supported by DirectX 10+, but included for documentation.
+        B5G5R5A1,
+        B4G4R4A4,
+        B5G6R5,
+        B8G8R8, // Not supported by DirectX 10+, but included for documentation.
+        R8_UNORM,
+        R8G8_UNORM,
+        R8G8_SNORM,
+        R32_FLOAT,
     };
 
-    enum DdsErrorMetric
+    // This must be kept in sync with DdsErrorMetric.cs
+    enum class DdsErrorMetric : int32_t
     {
-        DDS_ERROR_METRIC_PERCEPTUAL,
-        DDS_ERROR_METRIC_UNIFORM
+        Perceptual,
+        Uniform
     };
 
-    enum BC7CompressionSpeed
+    // This must be kept in sync with BC7CompressionSpeed.cs
+    enum class BC7CompressionSpeed : int32_t
     {
-        BC7_COMPRESSION_SPEED_FAST,
-        BC7_COMPRESSION_SPEED_MEDIUM,
-        BC7_COMPRESSION_SPEED_SLOW
+        Fast,
+        Medium,
+        Slow
     };
 
     struct DDSSaveInfo

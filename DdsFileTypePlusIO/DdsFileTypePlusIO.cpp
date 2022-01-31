@@ -24,55 +24,55 @@ namespace
     {
         switch (format)
         {
-        case DDS_FORMAT_BC1:
+        case DdsFileFormat::BC1:
             return DXGI_FORMAT_BC1_UNORM;
-        case DDS_FORMAT_BC1_SRGB:
+        case DdsFileFormat::BC1_SRGB:
             return DXGI_FORMAT_BC1_UNORM_SRGB;
-        case DDS_FORMAT_BC2:
+        case DdsFileFormat::BC2:
             return DXGI_FORMAT_BC2_UNORM;
-        case DDS_FORMAT_BC2_SRGB:
+        case DdsFileFormat::BC2_SRGB:
             return DXGI_FORMAT_BC2_UNORM_SRGB;
-        case DDS_FORMAT_BC3:
+        case DdsFileFormat::BC3:
             return DXGI_FORMAT_BC3_UNORM;
-        case DDS_FORMAT_BC3_SRGB:
+        case DdsFileFormat::BC3_SRGB:
             return DXGI_FORMAT_BC3_UNORM_SRGB;
-        case DDS_FORMAT_BC4_UNORM:
+        case DdsFileFormat::BC4_UNORM:
             return DXGI_FORMAT_BC4_UNORM;
-        case DDS_FORMAT_BC5_UNORM:
+        case DdsFileFormat::BC5_UNORM:
             return DXGI_FORMAT_BC5_UNORM;
-        case DDS_FORMAT_BC5_SNORM:
+        case DdsFileFormat::BC5_SNORM:
             return DXGI_FORMAT_BC5_SNORM;
-        case DDS_FORMAT_BC6H_UF16:
+        case DdsFileFormat::BC6H_UF16:
             return DXGI_FORMAT_BC6H_UF16;
-        case DDS_FORMAT_BC7:
+        case DdsFileFormat::BC7:
             return DXGI_FORMAT_BC7_UNORM;
-        case DDS_FORMAT_BC7_SRGB:
+        case DdsFileFormat::BC7_SRGB:
             return DXGI_FORMAT_BC7_UNORM_SRGB;
-        case DDS_FORMAT_B8G8R8A8:
+        case DdsFileFormat::B8G8R8A8:
             return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case DDS_FORMAT_B8G8R8X8:
+        case DdsFileFormat::B8G8R8X8:
             return DXGI_FORMAT_B8G8R8X8_UNORM;
-        case DDS_FORMAT_B8G8R8A8_SRGB:
+        case DdsFileFormat::B8G8R8A8_SRGB:
             return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-        case DDS_FORMAT_B8G8R8X8_SRGB:
+        case DdsFileFormat::B8G8R8X8_SRGB:
             return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-        case DDS_FORMAT_B5G5R5A1:
+        case DdsFileFormat::B5G5R5A1:
             return DXGI_FORMAT_B5G5R5A1_UNORM;
-        case DDS_FORMAT_B4G4R4A4:
+        case DdsFileFormat::B4G4R4A4:
             return DXGI_FORMAT_B4G4R4A4_UNORM;
-        case DDS_FORMAT_B5G6R5:
+        case DdsFileFormat::B5G6R5:
             return DXGI_FORMAT_B5G6R5_UNORM;
-        case DDS_FORMAT_R8G8B8A8_SRGB:
+        case DdsFileFormat::R8G8B8A8_SRGB:
             return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-        case DDS_FORMAT_R8_UNORM:
+        case DdsFileFormat::R8_UNORM:
             return DXGI_FORMAT_R8_UNORM;
-        case DDS_FORMAT_R8G8_UNORM:
+        case DdsFileFormat::R8G8_UNORM:
             return DXGI_FORMAT_R8G8_UNORM;
-        case DDS_FORMAT_R8G8_SNORM:
+        case DdsFileFormat::R8G8_SNORM:
             return DXGI_FORMAT_R8G8_SNORM;
-        case DDS_FORMAT_R8G8B8A8:
+        case DdsFileFormat::R8G8B8A8:
             return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case DDS_FORMAT_R32_FLOAT:
+        case DdsFileFormat::R32_FLOAT:
             return DXGI_FORMAT_R32_FLOAT;
         default:
             return DXGI_FORMAT_UNKNOWN;
@@ -116,13 +116,13 @@ namespace
 
         switch (info->format)
         {
-        case DDS_FORMAT_B8G8R8A8_SRGB:
-        case DDS_FORMAT_B8G8R8X8_SRGB:
-        case DDS_FORMAT_BC1_SRGB:
-        case DDS_FORMAT_BC2_SRGB:
-        case DDS_FORMAT_BC3_SRGB:
-        case DDS_FORMAT_BC7_SRGB:
-        case DDS_FORMAT_R8G8B8A8_SRGB:
+        case DdsFileFormat::B8G8R8A8_SRGB:
+        case DdsFileFormat::B8G8R8X8_SRGB:
+        case DdsFileFormat::BC1_SRGB:
+        case DdsFileFormat::BC2_SRGB:
+        case DdsFileFormat::BC3_SRGB:
+        case DdsFileFormat::BC7_SRGB:
+        case DdsFileFormat::R8G8B8A8_SRGB:
             metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
             break;
         default:
@@ -450,7 +450,7 @@ HRESULT __stdcall Save(
 
         TEX_COMPRESS_FLAGS compressFlags = TEX_COMPRESS_DEFAULT | TEX_COMPRESS_PARALLEL;
 
-        if (input->errorMetric == DDS_ERROR_METRIC_UNIFORM)
+        if (input->errorMetric == DdsErrorMetric::Uniform)
         {
             compressFlags |= TEX_COMPRESS_UNIFORM;
         }
@@ -463,13 +463,13 @@ HRESULT __stdcall Save(
         {
             switch (input->compressionSpeed)
             {
-            case BC7_COMPRESSION_SPEED_FAST:
+            case BC7CompressionSpeed::Fast:
                 compressFlags |= TEX_COMPRESS_BC7_QUICK;
                 break;
-            case BC7_COMPRESSION_SPEED_SLOW:
+            case BC7CompressionSpeed::Slow:
                 compressFlags |= TEX_COMPRESS_BC7_USE_3SUBSETS;
                 break;
-            case BC7_COMPRESSION_SPEED_MEDIUM:
+            case BC7CompressionSpeed::Medium:
             default:
                 break;
             }
