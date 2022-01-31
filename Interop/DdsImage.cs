@@ -33,15 +33,15 @@ namespace DdsFileTypePlus.Interop
         {
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                DdsIO_x64.FreeLoadInfo(ref this.info);
+                DdsIO_x64.FreeLoadInfo(this.info);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
             {
-                DdsIO_x86.FreeLoadInfo(ref this.info);
+                DdsIO_x86.FreeLoadInfo(this.info);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                DdsIO_ARM64.FreeLoadInfo(ref this.info);
+                DdsIO_ARM64.FreeLoadInfo(this.info);
             }
             else
             {

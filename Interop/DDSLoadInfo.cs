@@ -16,7 +16,7 @@ using System.Runtime.InteropServices;
 namespace DdsFileTypePlus.Interop
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal struct DDSLoadInfo
+    internal sealed class DDSLoadInfo
     {
         public IntPtr scan0;
         public int width;

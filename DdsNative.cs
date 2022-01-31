@@ -35,15 +35,15 @@ namespace DdsFileTypePlus
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                hr = DdsIO_x64.Load(callbacks, ref info);
+                hr = DdsIO_x64.Load(callbacks, info);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
             {
-                hr = DdsIO_x86.Load(callbacks, ref info);
+                hr = DdsIO_x86.Load(callbacks, info);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                hr = DdsIO_ARM64.Load(callbacks, ref info);
+                hr = DdsIO_ARM64.Load(callbacks, info);
             }
             else
             {

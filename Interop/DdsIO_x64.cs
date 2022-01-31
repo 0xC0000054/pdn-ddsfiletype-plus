@@ -20,11 +20,11 @@ namespace DdsFileTypePlus.Interop
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        internal static extern int Load([In] IOCallbacks callbacks, [In, Out] ref DDSLoadInfo info);
+        internal static extern int Load([In] IOCallbacks callbacks, [In, Out] DDSLoadInfo info);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        internal static extern void FreeLoadInfo([In, Out] ref DDSLoadInfo info);
+        internal static extern void FreeLoadInfo([In, Out] DDSLoadInfo info);
 
         [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
