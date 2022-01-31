@@ -13,7 +13,15 @@
 #pragma once
 
 #include <stdint.h>
+
+// Suppress the C26812 'The enum type 'x' is unscoped.Prefer 'enum class' over 'enum' (Enum.3)'
+// warning for the DirectXTex headers.
+#pragma warning(push)
+#pragma warning(disable: 26812)
+
 #include "DirectXTex.h"
+
+#pragma warning(pop)
 
 #ifdef __cplusplus
 extern "C" {
