@@ -79,7 +79,7 @@ namespace
 
 #ifndef WIN32
     template<size_t sizeOfBuffer>
-    inline int sprintf_s(char (&buffer)[sizeOfBuffer], const char* format, ...)
+    inline int sprintf_s(char(&buffer)[sizeOfBuffer], const char* format, ...)
     {
         // This is adapter code. It is not a full implementation of sprintf_s!
         va_list ap;
@@ -131,8 +131,8 @@ namespace
                 break;
             }
 
-            const size_t formatLen = sizeof(g_Format) - 1;
-            const size_t exposureLen = sizeof(g_Exposure) - 1;
+            constexpr size_t formatLen = sizeof(g_Format) - 1;
+            constexpr size_t exposureLen = sizeof(g_Exposure) - 1;
             if ((size > formatLen) && memcmp(info, g_Format, formatLen) == 0)
             {
                 info += formatLen;
@@ -148,7 +148,7 @@ namespace
 
                 static_assert(sizeof(g_sRGBE) == sizeof(g_sXYZE), "Format strings length mismatch");
 
-                const size_t encodingLen = sizeof(g_sRGBE) - 1;
+                constexpr size_t encodingLen = sizeof(g_sRGBE) - 1;
 
                 if (size < encodingLen)
                 {
@@ -162,7 +162,7 @@ namespace
 
                 formatFound = true;
 
-                size_t len = FindEOL(info, size);
+                const size_t len = FindEOL(info, size);
                 if (len == size_t(-1))
                 {
                     return E_FAIL;
@@ -184,7 +184,7 @@ namespace
                     ++info;
                 }
 
-                size_t len = FindEOL(info, size);
+                const size_t len = FindEOL(info, size);
                 if (len == size_t(-1)
                     || len < 1)
                 {
@@ -206,7 +206,7 @@ namespace
             }
             else
             {
-                size_t len = FindEOL(info, size);
+                const size_t len = FindEOL(info, size);
                 if (len == size_t(-1))
                 {
                     return E_FAIL;
@@ -225,7 +225,7 @@ namespace
         // Get orientation
         char orientation[256] = {};
 
-        size_t len = FindEOL(info, std::min<size_t>(sizeof(orientation), size - 1));
+        const size_t len = FindEOL(info, std::min<size_t>(sizeof(orientation), size - 1));
         if (len == size_t(-1)
             || len <= 2)
         {
@@ -314,9 +314,9 @@ namespace
         for (size_t j = 0; j < width; ++j)
         {
             if (pSource + 2 >= ePtr) break;
-            float r = pSource[0] >= 0.f ? pSource[0] : 0.f;
-            float g = pSource[1] >= 0.f ? pSource[1] : 0.f;
-            float b = pSource[2] >= 0.f ? pSource[2] : 0.f;
+            const float r = pSource[0] >= 0.f ? pSource[0] : 0.f;
+            const float g = pSource[1] >= 0.f ? pSource[1] : 0.f;
+            const float b = pSource[2] >= 0.f ? pSource[2] : 0.f;
             pSource += fpp;
 
             const float max_xy = (r > g) ? r : g;
@@ -328,9 +328,9 @@ namespace
                 max_xyz = frexpf(max_xyz, &e) * 256.f / max_xyz;
                 e += 128;
 
-                uint8_t red = uint8_t(r * max_xyz);
-                uint8_t green = uint8_t(g * max_xyz);
-                uint8_t blue = uint8_t(b * max_xyz);
+                const uint8_t red = uint8_t(r * max_xyz);
+                const uint8_t green = uint8_t(g * max_xyz);
+                const uint8_t blue = uint8_t(b * max_xyz);
 
                 pDestination[0] = red;
                 pDestination[1] = green;
@@ -370,9 +370,9 @@ namespace
                 max_xyz = frexpf(max_xyz, &e) * 256.f / max_xyz;
                 e += 128;
 
-                uint8_t red = uint8_t(r * max_xyz);
-                uint8_t green = uint8_t(g * max_xyz);
-                uint8_t blue = uint8_t(b * max_xyz);
+                const uint8_t red = uint8_t(r * max_xyz);
+                const uint8_t green = uint8_t(g * max_xyz);
+                const uint8_t blue = uint8_t(b * max_xyz);
 
                 pDestination[0] = red;
                 pDestination[1] = green;
@@ -400,7 +400,7 @@ namespace
             return 0;
         }
 
-#ifdef WRITE_OLD_COLORS
+    #ifdef WRITE_OLD_COLORS
         size_t encSize = 0;
 
         const uint8_t* scanPtr = rgbe;
@@ -502,7 +502,7 @@ namespace
         }
 
         return encSize;
-#else
+    #else
         enc[0] = 2;
         enc[1] = 2;
         enc[2] = uint8_t(width >> 8);
@@ -569,7 +569,7 @@ namespace
         }
 
         return encSize;
-#endif
+    #endif
     }
 }
 
@@ -623,7 +623,7 @@ HRESULT DirectX::GetMetadataFromHDRFile(const wchar_t* szFile, TexMetadata& meta
         return HRESULT_E_FILE_TOO_LARGE;
     }
 
-    size_t len = fileInfo.EndOfFile.LowPart;
+    const size_t len = fileInfo.EndOfFile.LowPart;
 #else // !WIN32
     std::ifstream inFile(std::filesystem::path(szFile), std::ios::in | std::ios::binary | std::ios::ate);
     if (!inFile)
@@ -640,7 +640,7 @@ HRESULT DirectX::GetMetadataFromHDRFile(const wchar_t* szFile, TexMetadata& meta
     if (!inFile)
         return E_FAIL;
 
-    size_t len = fileLen;
+    const size_t len = fileLen;
 #endif
 
     // Need at least enough data to fill the standard header to be a valid HDR
@@ -659,9 +659,9 @@ HRESULT DirectX::GetMetadataFromHDRFile(const wchar_t* szFile, TexMetadata& meta
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    auto headerLen = static_cast<size_t>(bytesRead);
+    auto const headerLen = static_cast<size_t>(bytesRead);
 #else
-    auto headerLen = std::min<size_t>(sizeof(header), len);
+    auto const headerLen = std::min<size_t>(sizeof(header), len);
 
     inFile.read(reinterpret_cast<char*>(header), headerLen);
     if (!inFile)
@@ -695,7 +695,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
     if (offset > size)
         return E_FAIL;
 
-    size_t remaining = size - offset;
+    const size_t remaining = size - offset;
     if (remaining == 0)
         return E_FAIL;
 
@@ -748,7 +748,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
             for (int channel = 0; channel < 4; ++channel)
             {
                 auto pixelLoc = scanLine + channel;
-                for(size_t pixelCount = 0; pixelCount < mdata.width;)
+                for (size_t pixelCount = 0; pixelCount < mdata.width;)
                 {
                     if (pixelLen < 2)
                     {
@@ -820,7 +820,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
                     }
 
                     // "Standard" Run Length Encoding
-                    size_t spanLen = size_t(inColor[3]) << bitShift;
+                    const size_t spanLen = size_t(inColor[3]) << bitShift;
                     if (spanLen + pixelCount > mdata.width)
                     {
                         image.Release();
@@ -874,7 +874,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
 
         for (size_t j = 0; j < image.GetPixelsSize(); j += 16)
         {
-            auto exponent = static_cast<int>(fdata[3]);
+            auto const exponent = static_cast<int>(fdata[3]);
             fdata[0] = 1.0f / exposure*ldexpf((fdata[0] + 0.5f), exponent - (128 + 8));
             fdata[1] = 1.0f / exposure*ldexpf((fdata[1] + 0.5f), exponent - (128 + 8));
             fdata[2] = 1.0f / exposure*ldexpf((fdata[2] + 0.5f), exponent - (128 + 8));
@@ -927,7 +927,7 @@ HRESULT DirectX::LoadFromHDRFile(const wchar_t* szFile, TexMetadata* metadata, S
         return HRESULT_E_FILE_TOO_LARGE;
     }
 
-    size_t len = fileInfo.EndOfFile.LowPart;
+    const size_t len = fileInfo.EndOfFile.LowPart;
 #else // !WIN32
     std::ifstream inFile(std::filesystem::path(szFile), std::ios::in | std::ios::binary | std::ios::ate);
     if (!inFile)
@@ -944,7 +944,7 @@ HRESULT DirectX::LoadFromHDRFile(const wchar_t* szFile, TexMetadata* metadata, S
     if (!inFile)
         return E_FAIL;
 
-    size_t len = fileLen;
+    const size_t len = fileLen;
 #endif
 
     // Need at least enough data to fill the header to be a valid HDR
@@ -1020,7 +1020,7 @@ HRESULT DirectX::SaveToHDRMemory(const Image& image, Blob& blob) noexcept
     auto headerLen = static_cast<DWORD>(strlen(header));
 
     size_t rowPitch = image.width * 4;
-    size_t slicePitch = image.height * rowPitch;
+    const size_t slicePitch = image.height * rowPitch;
 
     HRESULT hr = blob.Initialize(headerLen + slicePitch);
     if (FAILED(hr))
@@ -1145,8 +1145,8 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
         return E_FAIL;
 #endif
 
-    uint64_t pitch = uint64_t(image.width) * 4u;
-    uint64_t slicePitch = uint64_t(image.height) * pitch;
+    const uint64_t pitch = uint64_t(image.width) * 4u;
+    const uint64_t slicePitch = uint64_t(image.height) * pitch;
 
     if (pitch > UINT32_MAX)
         return HRESULT_E_ARITHMETIC_OVERFLOW;
@@ -1163,8 +1163,8 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
             return hr;
 
         // Write blob
-#ifdef WIN32
-        auto bytesToWrite = static_cast<const DWORD>(blob.GetBufferSize());
+    #ifdef WIN32
+        auto const bytesToWrite = static_cast<const DWORD>(blob.GetBufferSize());
         DWORD bytesWritten;
         if (!WriteFile(hFile.get(), blob.GetBufferPointer(), bytesToWrite, &bytesWritten, nullptr))
         {
@@ -1175,13 +1175,13 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
         {
             return E_FAIL;
         }
-#else
+    #else
         outFile.write(reinterpret_cast<char*>(blob.GetBufferPointer()),
             static_cast<std::streamsize>(blob.GetBufferSize()));
 
         if (!outFile)
             return E_FAIL;
-#endif
+    #endif
     }
     else
     {
@@ -1196,8 +1196,8 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
         char header[256] = {};
         sprintf_s(header, g_Header, image.height, image.width);
 
-#ifdef WIN32
-        auto headerLen = static_cast<DWORD>(strlen(header));
+    #ifdef WIN32
+        auto const headerLen = static_cast<DWORD>(strlen(header));
 
         DWORD bytesWritten;
         if (!WriteFile(hFile.get(), header, headerLen, &bytesWritten, nullptr))
@@ -1207,21 +1207,21 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
 
         if (bytesWritten != headerLen)
             return E_FAIL;
-#else
+    #else
         outFile.write(reinterpret_cast<char*>(header), static_cast<std::streamsize>(strlen(header)));
         if (!outFile)
             return E_FAIL;
-#endif
+    #endif
 
-#ifdef DISABLE_COMPRESS
-        // Uncompressed write
+    #ifdef DISABLE_COMPRESS
+            // Uncompressed write
         auto sPtr = reinterpret_cast<const uint8_t*>(image.pixels);
         for (size_t scan = 0; scan < image.height; ++scan)
         {
             FloatToRGBE(rgbe, reinterpret_cast<const float*>(sPtr), image.width, fpp);
             sPtr += image.rowPitch;
 
-    #ifdef WIN32
+        #ifdef WIN32
             if (!WriteFile(hFile.get(), rgbe, static_cast<DWORD>(rowPitch), &bytesWritten, nullptr))
             {
                 return HRESULT_FROM_WIN32(GetLastError());
@@ -1229,20 +1229,20 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
 
             if (bytesWritten != rowPitch)
                 return E_FAIL;
-    #else
+        #else
             outFile.write(reinterpret_cast<char*>(rgbe), static_cast<std::streamsize>(rowPitch));
             if (!outFile)
                 return E_FAIL;
-    #endif
+        #endif
 
         }
-#else
+    #else
         auto enc = temp.get() + rowPitch;
 
         const uint8_t* sPtr = image.pixels;
         for (size_t scan = 0; scan < image.height; ++scan)
         {
-             if (image.format == DXGI_FORMAT_R32G32B32A32_FLOAT || image.format == DXGI_FORMAT_R32G32B32_FLOAT)
+            if (image.format == DXGI_FORMAT_R32G32B32A32_FLOAT || image.format == DXGI_FORMAT_R32G32B32_FLOAT)
             {
                 FloatToRGBE(rgbe, reinterpret_cast<const float*>(sPtr), image.width, fpp);
             }
@@ -1252,13 +1252,13 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
             }
             sPtr += image.rowPitch;
 
-            size_t encSize = EncodeRLE(enc, rgbe, rowPitch, image.width);
+            const size_t encSize = EncodeRLE(enc, rgbe, rowPitch, image.width);
             if (encSize > 0)
             {
                 if (encSize > UINT32_MAX)
                     return HRESULT_E_ARITHMETIC_OVERFLOW;
 
-#ifdef WIN32
+            #ifdef WIN32
                 if (!WriteFile(hFile.get(), enc, static_cast<DWORD>(encSize), &bytesWritten, nullptr))
                 {
                     return HRESULT_FROM_WIN32(GetLastError());
@@ -1266,15 +1266,15 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
 
                 if (bytesWritten != encSize)
                     return E_FAIL;
-#else
+            #else
                 outFile.write(reinterpret_cast<char*>(enc), static_cast<std::streamsize>(encSize));
                 if (!outFile)
                     return E_FAIL;
-#endif
+            #endif
             }
             else
             {
-#ifdef WIN32
+            #ifdef WIN32
                 if (!WriteFile(hFile.get(), rgbe, static_cast<DWORD>(rowPitch), &bytesWritten, nullptr))
                 {
                     return HRESULT_FROM_WIN32(GetLastError());
@@ -1282,14 +1282,14 @@ HRESULT DirectX::SaveToHDRFile(const Image& image, const wchar_t* szFile) noexce
 
                 if (bytesWritten != rowPitch)
                     return E_FAIL;
-#else
+            #else
                 outFile.write(reinterpret_cast<char*>(rgbe), static_cast<std::streamsize>(rowPitch));
                 if (!outFile)
                     return E_FAIL;
-#endif
+            #endif
             }
         }
-#endif
+    #endif
     }
 
 #ifdef WIN32

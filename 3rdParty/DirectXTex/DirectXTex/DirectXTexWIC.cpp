@@ -12,6 +12,7 @@
 #include "DirectXTexP.h"
 
 using namespace DirectX;
+using namespace DirectX::Internal;
 using Microsoft::WRL::ComPtr;
 
 namespace
@@ -99,13 +100,13 @@ namespace
 
         *alphaMode = TEX_ALPHA_MODE_UNKNOWN;
 
-        DXGI_FORMAT format = _WICToDXGI(pixelFormat);
+        DXGI_FORMAT format = WICToDXGI(pixelFormat);
 
         if (format == DXGI_FORMAT_UNKNOWN)
         {
             if (memcmp(&GUID_WICPixelFormat96bppRGBFixedPoint, &pixelFormat, sizeof(WICPixelFormatGUID)) == 0)
             {
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
+            #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
                 if (iswic2)
                 {
                     if (pConvert)
@@ -113,9 +114,9 @@ namespace
                     format = DXGI_FORMAT_R32G32B32_FLOAT;
                 }
                 else
-#else
+                #else
                 UNREFERENCED_PARAMETER(iswic2);
-#endif
+            #endif
                 {
                     if (pConvert)
                         memcpy_s(pConvert, sizeof(WICPixelFormatGUID), &GUID_WICPixelFormat128bppRGBAFloat, sizeof(GUID));
@@ -132,7 +133,7 @@ namespace
                         if (pConvert)
                             memcpy_s(pConvert, sizeof(WICPixelFormatGUID), &g_WICConvert[i].target, sizeof(GUID));
 
-                        format = _WICToDXGI(g_WICConvert[i].target);
+                        format = WICToDXGI(g_WICConvert[i].target);
                         assert(format != DXGI_FORMAT_UNKNOWN);
                         *alphaMode = g_WICConvert[i].alphaMode;
                         break;
@@ -236,7 +237,7 @@ namespace
 
         ULONG STDMETHODCALLTYPE Release() override
         {
-            ULONG res = InterlockedDecrement(&mRefCount);
+            const ULONG res = InterlockedDecrement(&mRefCount);
             if (res == 0)
             {
                 delete this;
@@ -251,7 +252,7 @@ namespace
             auto ptr = static_cast<const uint8_t*>(mBlob.GetBufferPointer());
             if (cb > maxRead)
             {
-                uint64_t pos = uint64_t(m_streamPosition) + uint64_t(maxRead);
+                const uint64_t pos = uint64_t(m_streamPosition) + uint64_t(maxRead);
                 if (pos > UINT32_MAX)
                     return HRESULT_E_ARITHMETIC_OVERFLOW;
 
@@ -267,7 +268,7 @@ namespace
             }
             else
             {
-                uint64_t pos = uint64_t(m_streamPosition) + uint64_t(cb);
+                const uint64_t pos = uint64_t(m_streamPosition) + uint64_t(cb);
                 if (pos > UINT32_MAX)
                     return HRESULT_E_ARITHMETIC_OVERFLOW;
 
@@ -285,8 +286,8 @@ namespace
 
         HRESULT STDMETHODCALLTYPE Write(void const* pv, ULONG cb, ULONG* pcbWritten) override
         {
-            size_t blobSize = mBlob.GetBufferSize();
-            size_t spaceAvailable = blobSize - m_streamPosition;
+            const size_t blobSize = mBlob.GetBufferSize();
+            const size_t spaceAvailable = blobSize - m_streamPosition;
             size_t growAmount = cb;
 
             if (spaceAvailable > 0)
@@ -304,7 +305,7 @@ namespace
             if (growAmount > 0)
             {
                 uint64_t newSize = uint64_t(blobSize);
-                uint64_t targetSize = uint64_t(blobSize) + growAmount;
+                const uint64_t targetSize = uint64_t(blobSize) + growAmount;
                 HRESULT hr = ComputeGrowSize(newSize, targetSize);
                 if (FAILED(hr))
                     return hr;
@@ -314,7 +315,7 @@ namespace
                     return hr;
             }
 
-            uint64_t pos = uint64_t(m_streamPosition) + uint64_t(cb);
+            const uint64_t pos = uint64_t(m_streamPosition) + uint64_t(cb);
             if (pos > UINT32_MAX)
                 return HRESULT_E_ARITHMETIC_OVERFLOW;
 
@@ -337,7 +338,7 @@ namespace
             if (size.HighPart > 0)
                 return E_OUTOFMEMORY;
 
-            size_t blobSize = mBlob.GetBufferSize();
+            const size_t blobSize = mBlob.GetBufferSize();
 
             if (blobSize >= size.LowPart)
             {
@@ -352,7 +353,7 @@ namespace
             else
             {
                 uint64_t newSize = uint64_t(blobSize);
-                uint64_t targetSize = uint64_t(size.QuadPart);
+                const uint64_t targetSize = uint64_t(size.QuadPart);
                 HRESULT hr = ComputeGrowSize(newSize, targetSize);
                 if (FAILED(hr))
                     return hr;
@@ -493,7 +494,7 @@ namespace
         size_t m_streamEOF;
         ULONG mRefCount;
 
-        static HRESULT ComputeGrowSize(uint64_t& newSize, uint64_t& targetSize) noexcept
+        static HRESULT ComputeGrowSize(uint64_t& newSize, const uint64_t targetSize) noexcept
         {
             // We grow by doubling until we hit 256MB, then we add 16MB at a time.
             while (newSize < targetSize)
@@ -599,7 +600,7 @@ namespace
                         sRGB = (flags & WIC_FLAGS_DEFAULT_SRGB) != 0;
                     }
                 }
-#if (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
+            #if (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
                 else if (memcmp(&containerFormat, &GUID_ContainerFormatJpeg, sizeof(GUID)) == 0)
                 {
                     if (SUCCEEDED(metareader->GetMetadataByName(L"/app1/ifd/exif/{ushort=40961}", &value)) && value.vt == VT_UI2)
@@ -622,7 +623,7 @@ namespace
                         sRGB = (flags & WIC_FLAGS_DEFAULT_SRGB) != 0;
                     }
                 }
-#else
+            #else
                 else if (SUCCEEDED(metareader->GetMetadataByName(L"System.Image.ColorSpace", &value)) && value.vt == VT_UI2)
                 {
                     sRGB = (value.uiVal == 1);
@@ -631,7 +632,7 @@ namespace
                 {
                     sRGB = (flags & WIC_FLAGS_DEFAULT_SRGB) != 0;
                 }
-#endif
+            #endif
 
                 std::ignore = PropVariantClear(&value);
 
@@ -712,7 +713,8 @@ namespace
                 return E_UNEXPECTED;
             }
 
-            hr = FC->Initialize(frame, convertGUID, _GetWICDither(flags), nullptr, 0, WICBitmapPaletteTypeMedianCut);
+            hr = FC->Initialize(frame, convertGUID, GetWICDither(flags), nullptr,
+                0, WICBitmapPaletteTypeMedianCut);
             if (FAILED(hr))
                 return hr;
 
@@ -747,7 +749,7 @@ namespace
             return E_NOINTERFACE;
 
         WICPixelFormatGUID sourceGUID;
-        if (!_DXGIToWIC(metadata.format, sourceGUID))
+        if (!DXGIToWIC(metadata.format, sourceGUID))
             return E_FAIL;
 
         for (size_t index = 0; index < metadata.arraySize; ++index)
@@ -797,7 +799,8 @@ namespace
                         return E_UNEXPECTED;
                     }
 
-                    hr = FC->Initialize(frame.Get(), sourceGUID, _GetWICDither(flags), nullptr, 0, WICBitmapPaletteTypeMedianCut);
+                    hr = FC->Initialize(frame.Get(), sourceGUID, GetWICDither(flags), nullptr,
+                        0, WICBitmapPaletteTypeMedianCut);
                     if (FAILED(hr))
                         return hr;
 
@@ -814,7 +817,9 @@ namespace
                 if (FAILED(hr))
                     return hr;
 
-                hr = scaler->Initialize(frame.Get(), static_cast<UINT>(metadata.width), static_cast<UINT>(metadata.height), _GetWICInterp(flags));
+                hr = scaler->Initialize(frame.Get(),
+                    static_cast<UINT>(metadata.width), static_cast<UINT>(metadata.height),
+                    GetWICInterp(flags));
                 if (FAILED(hr))
                     return hr;
 
@@ -845,7 +850,8 @@ namespace
                         return E_UNEXPECTED;
                     }
 
-                    hr = FC->Initialize(scaler.Get(), sourceGUID, _GetWICDither(flags), nullptr, 0, WICBitmapPaletteTypeMedianCut);
+                    hr = FC->Initialize(scaler.Get(), sourceGUID, GetWICDither(flags), nullptr,
+                        0, WICBitmapPaletteTypeMedianCut);
                     if (FAILED(hr))
                         return hr;
 
@@ -879,7 +885,7 @@ namespace
             PROPVARIANT value;
             PropVariantInit(&value);
 
-            bool sRGB = ((flags & WIC_FLAGS_FORCE_LINEAR) == 0) && ((flags & WIC_FLAGS_FORCE_SRGB) != 0 || IsSRGB(format));
+            const bool sRGB = ((flags & WIC_FLAGS_FORCE_LINEAR) == 0) && ((flags & WIC_FLAGS_FORCE_SRGB) != 0 || IsSRGB(format));
 
             value.vt = VT_LPSTR;
             value.pszVal = const_cast<char*>("DirectXTex");
@@ -907,7 +913,7 @@ namespace
                     std::ignore = metawriter->RemoveMetadataByName(L"/sRGB/RenderingIntent");
                 }
             }
-#if (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
+        #if (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
             else if (memcmp(&containerFormat, &GUID_ContainerFormatJpeg, sizeof(GUID)) == 0)
             {
                 // Set Software name
@@ -934,7 +940,7 @@ namespace
                     std::ignore = metawriter->SetMetadataByName(L"/ifd/exif/{ushort=40961}", &value);
                 }
             }
-#else
+        #else
             else
             {
                 // Set Software name
@@ -948,7 +954,7 @@ namespace
                     std::ignore = metawriter->SetMetadataByName(L"System.Image.ColorSpace", &value);
                 }
             }
-#endif
+        #endif
         }
         else if (hr == WINCODEC_ERR_UNSUPPORTEDOPERATION)
         {
@@ -978,7 +984,7 @@ namespace
             return E_POINTER;
 
         WICPixelFormatGUID pfGuid;
-        if (!_DXGIToWIC(image.format, pfGuid))
+        if (!DXGIToWIC(image.format, pfGuid))
             return HRESULT_E_NOT_SUPPORTED;
 
         HRESULT hr = frame->Initialize(props);
@@ -1041,7 +1047,8 @@ namespace
                 return E_UNEXPECTED;
             }
 
-            hr = FC->Initialize(source.Get(), targetGuid, _GetWICDither(flags), nullptr, 0, WICBitmapPaletteTypeMedianCut);
+            hr = FC->Initialize(source.Get(), targetGuid, GetWICDither(flags), nullptr,
+                0, WICBitmapPaletteTypeMedianCut);
             if (FAILED(hr))
                 return hr;
 
@@ -1562,7 +1569,7 @@ HRESULT DirectX::SaveToWICFile(
     if (FAILED(hr))
     {
         stream.Reset();
-        DeleteFileW(szFile);
+        std::ignore = DeleteFileW(szFile);
         return hr;
     }
 
@@ -1604,7 +1611,7 @@ HRESULT DirectX::SaveToWICFile(
     if (FAILED(hr))
     {
         stream.Reset();
-        DeleteFileW(szFile);
+        std::ignore = DeleteFileW(szFile);
         return hr;
     }
 

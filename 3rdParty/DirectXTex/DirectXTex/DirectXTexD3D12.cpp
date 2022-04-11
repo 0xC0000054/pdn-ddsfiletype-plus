@@ -144,14 +144,14 @@ namespace
         }
 
         numberOfResources = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
-                            ? 1u : desc.DepthOrArraySize;
+            ? 1u : desc.DepthOrArraySize;
         numberOfResources *= desc.MipLevels;
         numberOfResources *= numberOfPlanes;
 
         if (numberOfResources > D3D12_REQ_SUBRESOURCES)
             return E_UNEXPECTED;
 
-        size_t memAlloc = (sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * numberOfResources;
+        const size_t memAlloc = (sizeof(D3D12_PLACED_SUBRESOURCE_FOOTPRINT) + sizeof(UINT) + sizeof(UINT64)) * numberOfResources;
         if (memAlloc > SIZE_MAX)
             return E_UNEXPECTED;
 
@@ -194,8 +194,8 @@ namespace
         if (FAILED(hr))
             return hr;
 
-        CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
-        CD3DX12_HEAP_PROPERTIES readBackHeapProperties(D3D12_HEAP_TYPE_READBACK);
+        const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+        const CD3DX12_HEAP_PROPERTIES readBackHeapProperties(D3D12_HEAP_TYPE_READBACK);
 
         // Readback resources must be buffers
         D3D12_RESOURCE_DESC bufferDesc = {};
@@ -253,7 +253,7 @@ namespace
                 {
                     for (UINT level = 0; level < desc.MipLevels; ++level)
                     {
-                        UINT index = D3D12CalcSubresource(level, item, plane, desc.MipLevels, desc.DepthOrArraySize);
+                        const UINT index = D3D12CalcSubresource(level, item, plane, desc.MipLevels, desc.DepthOrArraySize);
                         commandList->ResolveSubresource(pTemp.Get(), index, pSource, index, fmt);
                     }
                 }
@@ -281,8 +281,8 @@ namespace
         // Get the copy target location
         for (UINT j = 0; j < numberOfResources; ++j)
         {
-            CD3DX12_TEXTURE_COPY_LOCATION copyDest(pStaging.Get(), pLayout[j]);
-            CD3DX12_TEXTURE_COPY_LOCATION copySrc(copySource.Get(), j);
+            const CD3DX12_TEXTURE_COPY_LOCATION copyDest(pStaging.Get(), pLayout[j]);
+            const CD3DX12_TEXTURE_COPY_LOCATION copySrc(copySource.Get(), j);
             commandList->CopyTextureRegion(&copyDest, 0, 0, 0, &copySrc, nullptr);
         }
 
@@ -304,11 +304,11 @@ namespace
         // Block until the copy is complete
         while (fence->GetCompletedValue() < 1)
         {
-#ifdef WIN32
+        #ifdef WIN32
             SwitchToThread();
-#else
+        #else
             std::this_thread::yield();
-#endif
+        #endif
         }
 
         return S_OK;
@@ -332,7 +332,7 @@ bool DirectX::IsSupportedTexture(
         return false;
 
     // Validate format
-    DXGI_FORMAT fmt = metadata.format;
+    const DXGI_FORMAT fmt = metadata.format;
 
     if (!IsValid(fmt))
         return false;
@@ -342,10 +342,10 @@ bool DirectX::IsSupportedTexture(
         return false;
 
     // Validate array size, dimension, and width/height
-    size_t arraySize = metadata.arraySize;
-    size_t iWidth = metadata.width;
-    size_t iHeight = metadata.height;
-    size_t iDepth = metadata.depth;
+    const size_t arraySize = metadata.arraySize;
+    const size_t iWidth = metadata.width;
+    const size_t iHeight = metadata.height;
+    const size_t iDepth = metadata.depth;
 
     // Most cases are known apriori based on feature level, but we use this for robustness to handle the few optional cases
     D3D12_FEATURE_DATA_FORMAT_SUPPORT formatSupport = { fmt, D3D12_FORMAT_SUPPORT1_NONE, D3D12_FORMAT_SUPPORT2_NONE };
@@ -371,7 +371,7 @@ bool DirectX::IsSupportedTexture(
             return false;
 
         {
-            uint64_t numberOfResources = uint64_t(arraySize) * uint64_t(metadata.mipLevels);
+            const uint64_t numberOfResources = uint64_t(arraySize) * uint64_t(metadata.mipLevels);
             if (numberOfResources > D3D12_REQ_SUBRESOURCES)
                 return false;
         }
@@ -400,7 +400,7 @@ bool DirectX::IsSupportedTexture(
         }
 
         {
-            uint64_t numberOfResources = uint64_t(arraySize) * uint64_t(metadata.mipLevels);
+            const uint64_t numberOfResources = uint64_t(arraySize) * uint64_t(metadata.mipLevels);
             if (numberOfResources > D3D12_REQ_SUBRESOURCES)
                 return false;
         }
@@ -477,14 +477,14 @@ HRESULT DirectX::CreateTextureEx(
     desc.Height = static_cast<UINT>(metadata.height);
     desc.MipLevels = static_cast<UINT16>(metadata.mipLevels);
     desc.DepthOrArraySize = (metadata.dimension == TEX_DIMENSION_TEXTURE3D)
-                            ? static_cast<UINT16>(metadata.depth)
-                            : static_cast<UINT16>(metadata.arraySize);
+        ? static_cast<UINT16>(metadata.depth)
+        : static_cast<UINT16>(metadata.arraySize);
     desc.Format = format;
     desc.Flags = resFlags;
     desc.SampleDesc.Count = 1;
     desc.Dimension = static_cast<D3D12_RESOURCE_DIMENSION>(metadata.dimension);
 
-    CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
+    const CD3DX12_HEAP_PROPERTIES defaultHeapProperties(D3D12_HEAP_TYPE_DEFAULT);
 
     HRESULT hr = pDevice->CreateCommittedResource(
         &defaultHeapProperties,
@@ -513,7 +513,7 @@ HRESULT DirectX::PrepareUpload(
     if (!pDevice || !srcImages || !nimages || !metadata.mipLevels || !metadata.arraySize)
         return E_INVALIDARG;
 
-    UINT numberOfPlanes = D3D12GetFormatPlaneCount(pDevice, metadata.format);
+    const UINT numberOfPlanes = D3D12GetFormatPlaneCount(pDevice, metadata.format);
     if (!numberOfPlanes)
         return E_INVALIDARG;
 
@@ -524,7 +524,7 @@ HRESULT DirectX::PrepareUpload(
     }
 
     size_t numberOfResources = (metadata.dimension == TEX_DIMENSION_TEXTURE3D)
-                               ? 1u : metadata.arraySize;
+        ? 1u : metadata.arraySize;
     numberOfResources *= metadata.mipLevels;
     numberOfResources *= numberOfPlanes;
 
@@ -554,7 +554,7 @@ HRESULT DirectX::PrepareUpload(
 
             for (size_t level = 0; level < metadata.mipLevels; ++level)
             {
-                size_t index = metadata.ComputeIndex(level, 0, 0);
+                const size_t index = metadata.ComputeIndex(level, 0, 0);
                 if (index >= nimages)
                     return E_FAIL;
 
@@ -572,7 +572,7 @@ HRESULT DirectX::PrepareUpload(
                 const uint8_t* pSlice = img.pixels + img.slicePitch;
                 for (size_t slice = 1; slice < depth; ++slice)
                 {
-                    size_t tindex = metadata.ComputeIndex(level, 0, slice);
+                    const size_t tindex = metadata.ComputeIndex(level, 0, slice);
                     if (tindex >= nimages)
                         return E_FAIL;
 
@@ -615,7 +615,7 @@ HRESULT DirectX::PrepareUpload(
             {
                 for (size_t level = 0; level < metadata.mipLevels; ++level)
                 {
-                    size_t index = metadata.ComputeIndex(level, item, 0);
+                    const size_t index = metadata.ComputeIndex(level, item, 0);
                     if (index >= nimages)
                         return E_FAIL;
 
@@ -664,7 +664,7 @@ HRESULT DirectX::CaptureTexture(
     ComPtr<ID3D12Device> device;
     pCommandQueue->GetDevice(IID_GRAPHICS_PPV_ARGS(device.GetAddressOf()));
 
-    auto desc = pSource->GetDesc();
+    auto const desc = pSource->GetDesc();
 
     ComPtr<ID3D12Resource> pStaging;
     std::unique_ptr<uint8_t[]> layoutBuff;
@@ -691,7 +691,7 @@ HRESULT DirectX::CaptureTexture(
 
     switch (desc.Dimension)
     {
-        case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
+    case D3D12_RESOURCE_DIMENSION_TEXTURE1D:
         {
             TexMetadata mdata;
             mdata.width = static_cast<size_t>(desc.Width);
@@ -759,9 +759,9 @@ HRESULT DirectX::CaptureTexture(
         return E_FAIL;
     }
 
-    UINT arraySize = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
-                     ? 1u
-                     : desc.DepthOrArraySize;
+    const UINT arraySize = (desc.Dimension == D3D12_RESOURCE_DIMENSION_TEXTURE3D)
+        ? 1u
+        : desc.DepthOrArraySize;
 
     for (UINT plane = 0; plane < numberOfPlanes; ++plane)
     {
@@ -769,7 +769,7 @@ HRESULT DirectX::CaptureTexture(
         {
             for (UINT level = 0; level < desc.MipLevels; ++level)
             {
-                UINT dindex = D3D12CalcSubresource(level, item, plane, desc.MipLevels, arraySize);
+                const UINT dindex = D3D12CalcSubresource(level, item, plane, desc.MipLevels, arraySize);
                 assert(dindex < numberOfResources);
 
                 const Image* img = result.GetImage(level, item, 0);

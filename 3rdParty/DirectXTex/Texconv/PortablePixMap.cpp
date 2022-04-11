@@ -82,12 +82,12 @@ namespace
     {
         blob.reset();
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
+    #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
         ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
+    #else
         ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
             FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
+    #endif
         if (!hFile)
         {
             return HRESULT_FROM_WIN32(GetLastError());
@@ -159,7 +159,7 @@ HRESULT __cdecl LoadFromPortablePixMap(
     if (ppmData[0] != 'P' || (ppmData[1] != '3' && ppmData[1] != '6'))
         return E_FAIL;
 
-    bool ascii = ppmData[1] == '3';
+    const bool ascii = ppmData[1] == '3';
 
     enum
     {
@@ -257,30 +257,30 @@ HRESULT __cdecl LoadFromPortablePixMap(
                 break;
 
             case PPM_HEIGHT:
-            {
-                if (u == 0)
-                    return E_FAIL;
-
-                if (metadata)
                 {
-                    *metadata = {};
-                    metadata->width = width;
-                    metadata->height = u;
-                    metadata->depth = metadata->arraySize = metadata->mipLevels = 1;
-                    metadata->format = DXGI_FORMAT_R8G8B8A8_UNORM;
-                    metadata->dimension = TEX_DIMENSION_TEXTURE2D;
+                    if (u == 0)
+                        return E_FAIL;
+
+                    if (metadata)
+                    {
+                        *metadata = {};
+                        metadata->width = width;
+                        metadata->height = u;
+                        metadata->depth = metadata->arraySize = metadata->mipLevels = 1;
+                        metadata->format = DXGI_FORMAT_R8G8B8A8_UNORM;
+                        metadata->dimension = TEX_DIMENSION_TEXTURE2D;
+                    }
+
+                    hr = image.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width, u, 1, 1);
+                    if (FAILED(hr))
+                        return hr;
+
+                    auto img = image.GetImage(0, 0, 0);
+
+                    pixels = reinterpret_cast<uint32_t*>(img->pixels);
+                    pixelEnd = pixels + width * u;
                 }
-                    
-                hr = image.Initialize2D(DXGI_FORMAT_R8G8B8A8_UNORM, width, u, 1, 1);
-                if (FAILED(hr))
-                    return hr;
-
-                auto img = image.GetImage(0, 0, 0);
-
-                pixels = reinterpret_cast<uint32_t*>(img->pixels);
-                pixelEnd = pixels + width * u;
-            }
-            break;
+                break;
 
             case PPM_MAX:
                 if (u == 0)
@@ -343,7 +343,7 @@ HRESULT __cdecl SaveToPortablePixMap(
     }
 
     char header[256] = {};
-    int len = sprintf_s(header, "P6\n%zu %zu\n255\n", image.width, image.height);
+    const int len = sprintf_s(header, "P6\n%zu %zu\n255\n", image.width, image.height);
     if (len == -1)
         return E_UNEXPECTED;
 
@@ -498,14 +498,14 @@ HRESULT __cdecl LoadFromPortablePixMapHDR(
     if (sscanf_s(dataStr, "%f%s", &aspectRatio, junkStr, 256) != 1)
         return E_FAIL;
 
-    bool bigendian = (aspectRatio >= 0);
+    const bool bigendian = (aspectRatio >= 0);
 
     pData += len + 1;
     pfmSize -= len + 1;
     if (!pfmSize)
         return E_FAIL;
 
-    size_t scanline = width * (half16 ? sizeof(uint16_t) : sizeof(float)) * (monochrome ? 1 : 3);
+    const size_t scanline = width * (half16 ? sizeof(uint16_t) : sizeof(float)) * (monochrome ? 1 : 3);
     if (pfmSize < scanline * height)
         return HRESULT_FROM_WIN32(ERROR_HANDLE_EOF);
 
@@ -636,7 +636,7 @@ HRESULT __cdecl SaveToPortablePixMapHDR(
     }
 
     char header[256] = {};
-    int len = sprintf_s(header, "P%c\n%zu %zu\n-1.000000\n",
+    const int len = sprintf_s(header, "P%c\n%zu %zu\n-1.000000\n",
         (image.format == DXGI_FORMAT_R32_FLOAT) ? 'f' : 'F',
         image.width, image.height);
 
@@ -680,7 +680,7 @@ HRESULT __cdecl SaveToPortablePixMapHDR(
 
     if (!WriteFile(hFile.get(), flipImage.GetPixels(), static_cast<DWORD>(flipImage.GetPixelsSize()), &bytesWritten, nullptr))
         return HRESULT_FROM_WIN32(GetLastError());
-        
+
     delonfail.clear();
 
     return S_OK;

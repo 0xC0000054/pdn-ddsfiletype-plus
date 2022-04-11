@@ -47,7 +47,7 @@ using Microsoft::WRL::ComPtr;
 // Macros
 //--------------------------------------------------------------------------------------
 #ifndef MAKEFOURCC
-    #define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
+#define MAKEFOURCC(ch0, ch1, ch2, ch3)                              \
                 ((uint32_t)(uint8_t)(ch0) | ((uint32_t)(uint8_t)(ch1) << 8) |       \
                 ((uint32_t)(uint8_t)(ch2) << 16) | ((uint32_t)(uint8_t)(ch3) << 24 ))
 #endif /* defined(MAKEFOURCC) */
@@ -59,7 +59,7 @@ using Microsoft::WRL::ComPtr;
 //--------------------------------------------------------------------------------------
 #pragma pack(push,1)
 
-const uint32_t DDS_MAGIC = 0x20534444; // "DDS "
+constexpr uint32_t DDS_MAGIC = 0x20534444; // "DDS "
 
 struct DDS_PIXELFORMAT
 {
@@ -150,7 +150,7 @@ namespace
         }
 
         // DDS files always start with the same magic number ("DDS ")
-        auto dwMagicNumber = *reinterpret_cast<const uint32_t*>(ddsData);
+        auto const dwMagicNumber = *reinterpret_cast<const uint32_t*>(ddsData);
         if (dwMagicNumber != DDS_MAGIC)
         {
             return E_FAIL;
@@ -199,13 +199,13 @@ namespace
         *bitSize = 0;
 
         // open the file
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
+    #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
         ScopedHandle hFile(safe_handle(CreateFile2(fileName,
             GENERIC_READ,
             FILE_SHARE_READ,
             OPEN_EXISTING,
             nullptr)));
-#else
+    #else
         ScopedHandle hFile(safe_handle(CreateFileW(fileName,
             GENERIC_READ,
             FILE_SHARE_READ,
@@ -213,7 +213,7 @@ namespace
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,
             nullptr)));
-#endif
+    #endif
 
         if (!hFile)
         {
@@ -266,7 +266,7 @@ namespace
         }
 
         // DDS files always start with the same magic number ("DDS ")
-        auto dwMagicNumber = *reinterpret_cast<const uint32_t*>(ddsData.get());
+        auto const dwMagicNumber = *reinterpret_cast<const uint32_t*>(ddsData.get());
         if (dwMagicNumber != DDS_MAGIC)
         {
             ddsData.reset();
@@ -338,9 +338,9 @@ namespace
         case D3DFMT_INDEX32:
         case D3DFMT_G16R16F:
         case D3DFMT_R32F:
-#if !defined(D3D_DISABLE_9EX)
+        #if !defined(D3D_DISABLE_9EX)
         case D3DFMT_D32_LOCKABLE:
-#endif
+        #endif
             return 32;
 
         case D3DFMT_R8G8B8:
@@ -383,9 +383,9 @@ namespace
             // http://msdn.microsoft.com/library/default.asp?url=/library/en-us/directshow/htm/directxvideoaccelerationdxvavideosubtypes.asp
         case MAKEFOURCC('A', 'I', '4', '4'):
         case MAKEFOURCC('I', 'A', '4', '4'):
-#if !defined(D3D_DISABLE_9EX)
+        #if !defined(D3D_DISABLE_9EX)
         case D3DFMT_S8_LOCKABLE:
-#endif
+        #endif
             return 8;
 
         case D3DFMT_DXT1:
@@ -394,10 +394,10 @@ namespace
         case MAKEFOURCC('Y', 'V', '1', '2'):
             return 12;
 
-#if !defined(D3D_DISABLE_9EX)
+        #if !defined(D3D_DISABLE_9EX)
         case D3DFMT_A1:
             return 1;
-#endif
+        #endif
 
         default:
             return 0;
@@ -474,7 +474,7 @@ namespace
         }
         else
         {
-            size_t bpp = BitsPerPixel(fmt);
+            const size_t bpp = BitsPerPixel(fmt);
             if (!bpp)
                 return E_INVALIDARG;
 
@@ -483,13 +483,13 @@ namespace
             numBytes = rowBytes * height;
         }
 
-#if defined(_M_IX86) || defined(_M_ARM) || defined(_M_HYBRID_X86_ARM64)
+    #if defined(_M_IX86) || defined(_M_ARM) || defined(_M_HYBRID_X86_ARM64)
         static_assert(sizeof(size_t) == 4, "Not a 32-bit platform!");
         if (numBytes > UINT32_MAX || rowBytes > UINT32_MAX || numRows > UINT32_MAX)
             return HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW);
-#else
+    #else
         static_assert(sizeof(size_t) == 8, "Not a 64-bit platform!");
-#endif
+    #endif
 
         if (outNumBytes)
         {
@@ -509,7 +509,7 @@ namespace
 
 
     //--------------------------------------------------------------------------------------
-    #define ISBITMASK( r,g,b,a ) ( ddpf.RBitMask == r && ddpf.GBitMask == g && ddpf.BBitMask == b && ddpf.ABitMask == a )
+#define ISBITMASK( r,g,b,a ) ( ddpf.RBitMask == r && ddpf.GBitMask == g && ddpf.BBitMask == b && ddpf.ABitMask == a )
 
     D3DFORMAT GetD3D9Format(const DDS_PIXELFORMAT& ddpf) noexcept
     {
@@ -766,10 +766,10 @@ namespace
         return D3DFMT_UNKNOWN;
     }
 
-    #undef ISBITMASK
+#undef ISBITMASK
 
 
-    //--------------------------------------------------------------------------------------
+//--------------------------------------------------------------------------------------
     HRESULT CreateTextureFromDDS(
         _In_ LPDIRECT3DDEVICE9 device,
         _In_ const DDS_HEADER* header,
@@ -800,7 +800,7 @@ namespace
         // We could support a subset of 'DX10' extended header DDS files, but we'll assume here we are only
         // supporting legacy DDS files for a Direct3D9 device
 
-        D3DFORMAT fmt = GetD3D9Format(header->ddspf);
+        const D3DFORMAT fmt = GetD3D9Format(header->ddspf);
         if (fmt == D3DFMT_UNKNOWN || BitsPerPixel(fmt) == 0)
         {
             return HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED);
