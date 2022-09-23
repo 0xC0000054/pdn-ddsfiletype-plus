@@ -412,20 +412,20 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Bicubic.
+        ///   Looks up a localized string similar to Adaptive (Best Quality).
         /// </summary>
-        internal static string ResamplingAlgorithm_Bicubic {
+        internal static string ResamplingAlgorithm_AdaptiveBestQuality {
             get {
-                return ResourceManager.GetString("ResamplingAlgorithm_Bicubic", resourceCulture);
+                return ResourceManager.GetString("ResamplingAlgorithm_AdaptiveBestQuality", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Bilinear.
+        ///   Looks up a localized string similar to Cubic.
         /// </summary>
-        internal static string ResamplingAlgorithm_Bilinear {
+        internal static string ResamplingAlgorithm_Cubic {
             get {
-                return ResourceManager.GetString("ResamplingAlgorithm_Bilinear", resourceCulture);
+                return ResourceManager.GetString("ResamplingAlgorithm_Cubic", resourceCulture);
             }
         }
         
@@ -439,20 +439,38 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Lanczos.
+        /// </summary>
+        internal static string ResamplingAlgorithm_Lanczos3 {
+            get {
+                return ResourceManager.GetString("ResamplingAlgorithm_Lanczos3", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Linear.
+        /// </summary>
+        internal static string ResamplingAlgorithm_Linear {
+            get {
+                return ResourceManager.GetString("ResamplingAlgorithm_Linear", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Linear (Low Quality).
+        /// </summary>
+        internal static string ResamplingAlgorithm_LinearLowQuality {
+            get {
+                return ResourceManager.GetString("ResamplingAlgorithm_LinearLowQuality", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Nearest Neighbor.
         /// </summary>
         internal static string ResamplingAlgorithm_NearestNeighbor {
             get {
                 return ResourceManager.GetString("ResamplingAlgorithm_NearestNeighbor", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Super Sampling.
-        /// </summary>
-        internal static string ResamplingAlgorithm_SuperSampling {
-            get {
-                return ResourceManager.GetString("ResamplingAlgorithm_SuperSampling", resourceCulture);
             }
         }
     }

@@ -234,19 +234,25 @@
   <data name="GenerateMipMaps_Description" xml:space="preserve">
     <value>Generate Mip Maps</value>
   </data>
-  <data name="ResamplingAlgorithm_Bicubic" xml:space="preserve">
-    <value>Bicubic</value>
+  <data name="ResamplingAlgorithm_AdaptiveBestQuality" xml:space="preserve">
+    <value>Adaptive (Best Quality)</value>
   </data>
-  <data name="ResamplingAlgorithm_Bilinear" xml:space="preserve">
-    <value>Bilinear</value>
+  <data name="ResamplingAlgorithm_Cubic" xml:space="preserve">
+    <value>Cubic</value>
   </data>
   <data name="ResamplingAlgorithm_Fant" xml:space="preserve">
     <value>Fant</value>
   </data>
+  <data name="ResamplingAlgorithm_Lanczos3" xml:space="preserve">
+    <value>Lanczos</value>
+  </data>
+  <data name="ResamplingAlgorithm_Linear" xml:space="preserve">
+    <value>Linear</value>
+  </data>
+  <data name="ResamplingAlgorithm_LinearLowQuality" xml:space="preserve">
+    <value>Linear (Low Quality)</value>
+  </data>
   <data name="ResamplingAlgorithm_NearestNeighbor" xml:space="preserve">
     <value>Nearest Neighbor</value>
-  </data>
-  <data name="ResamplingAlgorithm_SuperSampling" xml:space="preserve">
-    <value>Super Sampling</value>
   </data>
 </root>

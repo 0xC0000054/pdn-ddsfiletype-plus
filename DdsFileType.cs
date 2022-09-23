@@ -68,7 +68,7 @@ namespace DdsFileTypePlus
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
                 new BooleanProperty(PropertyNames.CubeMap, false),
                 new BooleanProperty(PropertyNames.GenerateMipMaps, false),
-                StaticListChoiceProperty.CreateForEnum(PropertyNames.MipMapResamplingAlgorithm, ResamplingAlgorithm.SuperSampling, false),
+                CreateMipMapResamplingAlgorithm(),
                 new UriProperty(PropertyNames.ForumLink, new Uri("https://forums.getpaint.net/topic/111731-dds-filetype-plus")),
                 new UriProperty(PropertyNames.GitHubLink, new Uri("https://github.com/0xC0000054/pdn-ddsfiletype-plus"))
             };
@@ -108,6 +108,24 @@ namespace DdsFileTypePlus
             };
 
             return new PropertyCollection(props, rules);
+
+            static StaticListChoiceProperty CreateMipMapResamplingAlgorithm()
+            {
+                object[] values = new object[]
+                {
+                    ResamplingAlgorithm.AdaptiveBestQuality,
+                    ResamplingAlgorithm.Cubic,
+                    ResamplingAlgorithm.Linear,
+                    ResamplingAlgorithm.LinearLowQuality,
+                    ResamplingAlgorithm.Lanczos3,
+                    ResamplingAlgorithm.NearestNeighbor,
+                    ResamplingAlgorithm.Fant,
+                };
+
+                int defaultChoiceIndex = Array.IndexOf(values, ResamplingAlgorithm.AdaptiveBestQuality);
+
+                return new StaticListChoiceProperty(PropertyNames.MipMapResamplingAlgorithm, values, defaultChoiceIndex, false);
+            }
         }
 
         public override ControlInfo OnCreateSaveConfigUI(PropertyCollection props)
@@ -166,11 +184,13 @@ namespace DdsFileTypePlus
 
             PropertyControlInfo mipResamplingPCI = configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm);
             mipResamplingPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.AdaptiveBestQuality, this.strings.GetString("ResamplingAlgorithm_AdaptiveBestQuality"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Cubic, this.strings.GetString("ResamplingAlgorithm_Cubic"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Linear, this.strings.GetString("ResamplingAlgorithm_Linear"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.LinearLowQuality, this.strings.GetString("ResamplingAlgorithm_LinearLowQuality"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Lanczos3, this.strings.GetString("ResamplingAlgorithm_Lanczos3"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, this.strings.GetString("ResamplingAlgorithm_NearestNeighbor"));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bicubic, this.strings.GetString("ResamplingAlgorithm_Bicubic"));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Bilinear, this.strings.GetString("ResamplingAlgorithm_Bilinear"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, this.strings.GetString("ResamplingAlgorithm_Fant"));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.SuperSampling, this.strings.GetString("ResamplingAlgorithm_SuperSampling"));
 
             PropertyControlInfo forumLinkPCI = configUI.FindControlForPropertyName(PropertyNames.ForumLink);
             forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ForumLink_DisplayName");
