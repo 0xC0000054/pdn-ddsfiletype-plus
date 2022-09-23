@@ -37,10 +37,6 @@ namespace DdsFileTypePlus
             {
                 hr = DdsIO_x64.Load(callbacks, info);
             }
-            else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-            {
-                hr = DdsIO_x86.Load(callbacks, info);
-            }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
                 hr = DdsIO_ARM64.Load(callbacks, info);
@@ -103,10 +99,6 @@ namespace DdsFileTypePlus
                     if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
                     {
                         hr = DdsIO_x64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
-                    }
-                    else if (RuntimeInformation.ProcessArchitecture == Architecture.X86)
-                    {
-                        hr = DdsIO_x86.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
                     }
                     else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
                     {
