@@ -421,7 +421,7 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Cubic.
+        ///   Looks up a localized string similar to Bicubic.
         /// </summary>
         internal static string ResamplingAlgorithm_Cubic {
             get {
@@ -448,7 +448,7 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Linear.
+        ///   Looks up a localized string similar to Bilinear.
         /// </summary>
         internal static string ResamplingAlgorithm_Linear {
             get {
@@ -457,7 +457,7 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Linear (Low Quality).
+        ///   Looks up a localized string similar to Bilinear (Low Quality).
         /// </summary>
         internal static string ResamplingAlgorithm_LinearLowQuality {
             get {

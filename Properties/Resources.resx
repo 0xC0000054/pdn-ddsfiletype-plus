@@ -238,7 +238,7 @@
     <value>Adaptive (Best Quality)</value>
   </data>
   <data name="ResamplingAlgorithm_Cubic" xml:space="preserve">
-    <value>Cubic</value>
+    <value>Bicubic</value>
   </data>
   <data name="ResamplingAlgorithm_Fant" xml:space="preserve">
     <value>Fant</value>
@@ -247,10 +247,10 @@
     <value>Lanczos</value>
   </data>
   <data name="ResamplingAlgorithm_Linear" xml:space="preserve">
-    <value>Linear</value>
+    <value>Bilinear</value>
   </data>
   <data name="ResamplingAlgorithm_LinearLowQuality" xml:space="preserve">
-    <value>Linear (Low Quality)</value>
+    <value>Bilinear (Low Quality)</value>
   </data>
   <data name="ResamplingAlgorithm_NearestNeighbor" xml:space="preserve">
     <value>Nearest Neighbor</value>
