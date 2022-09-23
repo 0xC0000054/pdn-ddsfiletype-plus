@@ -77,6 +77,7 @@ namespace DdsFileTypePlus
             DDSSaveInfo info,
             TextureCollection textures,
             Stream output,
+            IntPtr directComputeAdapter,
             DdsProgressCallback progressCallback)
         {
             StreamIOCallbacks streamIO = new(output);
@@ -98,11 +99,21 @@ namespace DdsFileTypePlus
                 {
                     if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
                     {
-                        hr = DdsIO_x64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
+                        hr = DdsIO_x64.Save(info,
+                                            pBitmapData,
+                                            (uint)bitmapData.Length,
+                                            callbacks,
+                                            directComputeAdapter,
+                                            progressCallback);
                     }
                     else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
                     {
-                        hr = DdsIO_ARM64.Save(info, pBitmapData, (uint)bitmapData.Length, callbacks, progressCallback);
+                        hr = DdsIO_ARM64.Save(info,
+                                              pBitmapData,
+                                              (uint)bitmapData.Length,
+                                              callbacks,
+                                              directComputeAdapter,
+                                              progressCallback);
                     }
                     else
                     {

@@ -13,6 +13,7 @@
 using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
+using PaintDotNet.Interop;
 using PaintDotNet.Rendering;
 using System;
 using System.Drawing;
@@ -95,7 +96,6 @@ namespace DdsFileTypePlus
             }
 
             int mipLevels = generateMipmaps ? GetMipCount(width, height) : 1;
-            bool enableHardwareAcceleration = (bool)services.GetService<ISettingsService>().GetSetting(AppSettingPaths.UI.EnableHardwareAcceleration).Value;
 
             using (TextureCollection textures = GetTextures(scratchSurface, cubeMapFaceSize, mipLevels, sampling))
             {
@@ -132,11 +132,46 @@ namespace DdsFileTypePlus
                         format = format,
                         errorMetric = errorMetric,
                         compressionSpeed = compressionSpeed,
-                        cubeMap = cubeMapFaceSize.HasValue,
-                        enableHardwareAcceleration = enableHardwareAcceleration
+                        cubeMap = cubeMapFaceSize.HasValue
                     };
 
-                    DdsNative.Save(info, textures, output, ddsProgress);
+                    if (format == DdsFileFormat.BC6HUnsigned || format == DdsFileFormat.BC7 || format == DdsFileFormat.BC7Srgb)
+                    {
+                        // Try to get the DXGI adapter that Paint.NET uses for rendering.
+                        // This device will be used by the DirectCompute-based BC6H/BC7 compressor, if it supports DirectCompute.
+                        // If the specified device does not support DirectCompute, either WARP or the CPU compressor will be used.
+                        IDxgiAdapterService dxgiAdapterService = services.GetService<IDxgiAdapterService>();
+
+                        using (SafeComObject dxgiAdapterComObject = dxgiAdapterService.GetRenderingAdapter())
+                        {
+                            bool addRefSuccess = false;
+
+                            try
+                            {
+                                dxgiAdapterComObject.DangerousAddRef(ref addRefSuccess);
+
+                                IntPtr directComputeAdapter = IntPtr.Zero;
+
+                                if (addRefSuccess)
+                                {
+                                    directComputeAdapter = dxgiAdapterComObject.DangerousGetHandle();
+                                }
+
+                                DdsNative.Save(info, textures, output, directComputeAdapter, ddsProgress);
+                            }
+                            finally
+                            {
+                                if (addRefSuccess)
+                                {
+                                    dxgiAdapterComObject.DangerousRelease();
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        DdsNative.Save(info, textures, output, directComputeAdapter: IntPtr.Zero, ddsProgress);
+                    }
                 }
             }
         }

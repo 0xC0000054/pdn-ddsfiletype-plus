@@ -13,7 +13,7 @@
 #include "stdafx.h"
 #include "DirectComputeHelper.h"
 
-DirectComputeHelper::DirectComputeHelper(bool enableHardwareAcceleration)
+DirectComputeHelper::DirectComputeHelper(IDXGIAdapter* directComputeAdapter)
 {
     hModD3D11 = LoadLibraryW(L"d3d11.dll");
     computeDevice = nullptr;
@@ -35,12 +35,12 @@ DirectComputeHelper::DirectComputeHelper(bool enableHardwareAcceleration)
 #ifdef _DEBUG
             createDeviceFlags |= D3D11_CREATE_DEVICE_DEBUG;
 #endif
-            if (enableHardwareAcceleration)
+            if (directComputeAdapter != nullptr)
             {
                 D3D_FEATURE_LEVEL featureLevelOut;
 
-                HRESULT hr = dynamicD3D11CreateDevice(nullptr, D3D_DRIVER_TYPE_HARDWARE, nullptr, createDeviceFlags, featureLevels, _countof(featureLevels),
-                    D3D11_SDK_VERSION, &computeDevice, &featureLevelOut, nullptr);
+                HRESULT hr = dynamicD3D11CreateDevice(directComputeAdapter, D3D_DRIVER_TYPE_UNKNOWN, nullptr, createDeviceFlags,
+                      featureLevels, _countof(featureLevels), D3D11_SDK_VERSION, &computeDevice, &featureLevelOut, nullptr);
 
                 if (SUCCEEDED(hr))
                 {

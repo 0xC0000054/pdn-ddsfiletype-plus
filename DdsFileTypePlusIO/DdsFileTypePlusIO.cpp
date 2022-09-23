@@ -411,6 +411,7 @@ HRESULT __stdcall Save(
     const DDSBitmapData* imageData,
     const uint32_t imageDataLength,
     const ImageIOCallbacks* callbacks,
+    IDXGIAdapter* directComputeAdapter,
     ProgressProc progressFn)
 {
     if (input == nullptr || imageData == nullptr || callbacks == nullptr)
@@ -474,7 +475,7 @@ HRESULT __stdcall Save(
                 break;
             }
 
-            dcHelper.reset(new(std::nothrow) DirectComputeHelper(input->enableHardwareAcceleration));
+            dcHelper.reset(new(std::nothrow) DirectComputeHelper(directComputeAdapter));
             if (dcHelper != nullptr)
             {
                 useDirectCompute = dcHelper->ComputeDeviceAvailable();

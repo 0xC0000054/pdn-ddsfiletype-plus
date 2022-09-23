@@ -10,6 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus.Interop
@@ -33,6 +34,7 @@ namespace DdsFileTypePlus.Interop
             [In] DDSBitmapData* bitmapData,
             [In] uint bitmapDataLength,
             [In] IOCallbacks callbacks,
+            [In] IntPtr directComputeAdapter,
             [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
     }
 }

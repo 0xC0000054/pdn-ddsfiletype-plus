@@ -17,7 +17,7 @@
 class DirectComputeHelper
 {
 public:
-    DirectComputeHelper(bool enableHardwareAcceleration);
+    DirectComputeHelper(IDXGIAdapter* directComputeAdapter);
     ~DirectComputeHelper();
 
     DirectComputeHelper(const DirectComputeHelper&) = delete;

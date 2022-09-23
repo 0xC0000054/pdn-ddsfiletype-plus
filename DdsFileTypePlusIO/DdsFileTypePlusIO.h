@@ -13,6 +13,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <d3d11.h>
 
 // Suppress the C26812 'The enum type 'x' is unscoped.Prefer 'enum class' over 'enum' (Enum.3)'
 // warning for the DirectXTex headers.
@@ -104,7 +105,6 @@ extern "C" {
         DdsErrorMetric errorMetric;
         BC7CompressionSpeed compressionSpeed;
         bool cubeMap;
-        bool enableHardwareAcceleration;
     };
 
     struct DDSBitmapData
@@ -122,6 +122,7 @@ extern "C" {
         const DDSBitmapData* imageData,
         const uint32_t imageDataLength,
         const DirectX::ImageIOCallbacks* callbacks,
+        IDXGIAdapter* directComputeAdapter,
         DirectX::ProgressProc progressFn);
 
 #ifdef __cplusplus
