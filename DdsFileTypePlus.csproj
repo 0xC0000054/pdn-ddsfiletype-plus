@@ -1,6 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFrameworks>net60-windows</TargetFrameworks>
+    <TargetFrameworks>net70-windows</TargetFrameworks>
     <OutputType>Library</OutputType>
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -32,11 +32,26 @@
     <Reference Include="PaintDotNet.Base">
       <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Base.dll</HintPath>
     </Reference>
+    <Reference Include="PaintDotNet.ComponentModel">
+      <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.ComponentModel.dll</HintPath>
+    </Reference>
     <Reference Include="PaintDotNet.Core">
       <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Core.dll</HintPath>
     </Reference>
     <Reference Include="PaintDotNet.Data">
       <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Data.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Fundamentals">
+      <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Fundamentals.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Primitives">
+      <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Primitives.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.PropertySystem">
+      <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.PropertySystem.dll</HintPath>
+    </Reference>
+    <Reference Include="PaintDotNet.Windows">
+      <HintPath>..\..\..\..\..\..\Program Files\paint.net\PaintDotNet.Windows.dll</HintPath>
     </Reference>
   </ItemGroup>
   <ItemGroup>
