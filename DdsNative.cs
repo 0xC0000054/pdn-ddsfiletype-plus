@@ -59,10 +59,11 @@ namespace DdsFileTypePlus
                 {
                     switch (hr)
                     {
+                        case HResult.InvalidDdsFileSignature:
                         case HResult.InvalidData:
-                            throw new FormatException("The DDS file is invalid.");
+                            throw new FormatException("The DDS file is invalid.") { HResult = hr };
                         case HResult.NotSupported:
-                            throw new FormatException("The file is not a supported DDS format.");
+                            throw new FormatException("The file is not a supported DDS format.") { HResult = hr };
                         default:
                             Marshal.ThrowExceptionForHR(hr);
                             break;

@@ -23,36 +23,56 @@ namespace DdsFileTypePlus
 {
     internal static class DdsFile
     {
-        public static unsafe Document Load(Stream input)
+        public static unsafe Document Load(Stream input, IServiceProvider services)
         {
             Document doc = null;
 
-            using (DdsImage image = DdsNative.Load(input))
+            try
             {
-                doc = new Document(image.Width, image.Height);
-
-                BitmapLayer layer = Layer.CreateBackgroundLayer(image.Width, image.Height);
-
-                Surface surface = layer.Surface;
-
-                for (int y = 0; y < surface.Height; ++y)
+                using (DdsImage image = DdsNative.Load(input))
                 {
-                    ColorRgba* src = image.GetRowAddressUnchecked(y);
-                    ColorBgra* dst = surface.GetRowPointerUnchecked(y);
+                    doc = new Document(image.Width, image.Height);
 
-                    for (int x = 0; x < surface.Width; ++x)
+                    BitmapLayer layer = Layer.CreateBackgroundLayer(image.Width, image.Height);
+
+                    Surface surface = layer.Surface;
+
+                    for (int y = 0; y < surface.Height; ++y)
                     {
-                        dst->R = src->R;
-                        dst->G = src->G;
-                        dst->B = src->B;
-                        dst->A = src->A;
+                        ColorRgba* src = image.GetRowAddressUnchecked(y);
+                        ColorBgra* dst = surface.GetRowPointerUnchecked(y);
 
-                        ++src;
-                        ++dst;
+                        for (int x = 0; x < surface.Width; ++x)
+                        {
+                            dst->R = src->R;
+                            dst->G = src->G;
+                            dst->B = src->B;
+                            dst->A = src->A;
+
+                            ++src;
+                            ++dst;
+                        }
                     }
-                }
 
-                doc.Layers.Add(layer);
+                    doc.Layers.Add(layer);
+                }
+            }
+            catch (FormatException ex) when (ex.HResult == HResult.InvalidDdsFileSignature)
+            {
+                IFileTypeInfo fileTypeInfo = FormatDetection.TryGetFileTypeInfo(input, services);
+
+                if (fileTypeInfo != null)
+                {
+                    FileType fileType = fileTypeInfo.GetInstance();
+
+                    input.Position = 0;
+
+                    doc = fileType.Load(input);
+                }
+                else
+                {
+                    throw;
+                }
             }
 
             return doc;

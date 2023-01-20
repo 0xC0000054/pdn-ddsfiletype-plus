@@ -205,7 +205,7 @@ namespace DdsFileTypePlus
 
         protected override Document OnLoad(Stream input)
         {
-            return DdsFile.Load(input);
+            return DdsFile.Load(input, this.services);
         }
 
         protected override void OnSaveT(Document input, Stream output, PropertyBasedSaveConfigToken token, Surface scratchSurface, ProgressEventHandler progressCallback)
