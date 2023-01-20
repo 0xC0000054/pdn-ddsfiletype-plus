@@ -65,7 +65,7 @@ namespace
         return mipLevels;
     }
 
-#ifdef WIN32
+#ifdef _WIN32
     HRESULT EnsureWicBitmapPixelFormat(
         _In_ IWICImagingFactory* pWIC,
         _In_ IWICBitmap* src,
@@ -264,13 +264,13 @@ namespace
                 XMVECTOR r1 = XMVectorSplatW(*pRow1);
 
                 XMVECTOR v1 = XMVectorSaturate(XMVectorMultiply(r0, scale));
-                XMVECTOR v2 = XMVectorSaturate(XMVectorMultiply(r1, scale));
+                const XMVECTOR v2 = XMVectorSaturate(XMVectorMultiply(r1, scale));
 
                 r0 = XMVectorSplatW(*(++pRow0));
                 r1 = XMVectorSplatW(*(++pRow1));
 
                 XMVECTOR v3 = XMVectorSaturate(XMVectorMultiply(XMVectorSplatW(r0), scale));
-                XMVECTOR v4 = XMVectorSaturate(XMVectorMultiply(XMVectorSplatW(r1), scale));
+                const XMVECTOR v4 = XMVectorSaturate(XMVectorMultiply(XMVectorSplatW(r1), scale));
 
                 v1 = XMVectorMergeXY(v1, v2); // [v1.x v2.x --- ---]
                 v3 = XMVectorMergeXY(v3, v4); // [v3.x v4.x --- ---]
@@ -399,7 +399,7 @@ bool DirectX::Internal::CalculateMipLevels3D(
     return true;
 }
 
-#ifdef WIN32
+#ifdef _WIN32
 //--- Resizing color and alpha channels separately using WIC ---
 _Use_decl_annotations_
 HRESULT DirectX::Internal::ResizeSeparateColorAndAlpha(
@@ -543,7 +543,7 @@ HRESULT DirectX::Internal::ResizeSeparateColorAndAlpha(
 
         if (SUCCEEDED(hr))
         {
-            WICInProcPointer colorWithAlphaData = nullptr;
+            BYTE* colorWithAlphaData = nullptr;
             UINT colorWithAlphaSizeInBytes = 0;
             UINT colorWithAlphaStride = 0;
 
@@ -560,7 +560,7 @@ HRESULT DirectX::Internal::ResizeSeparateColorAndAlpha(
                 }
             }
 
-            WICInProcPointer colorData = nullptr;
+            BYTE* colorData = nullptr;
             UINT colorSizeInBytes = 0;
             UINT colorStride = 0;
             if (SUCCEEDED(hr))
@@ -620,7 +620,7 @@ HRESULT DirectX::Internal::ResizeSeparateColorAndAlpha(
 
 namespace
 {
-#ifdef WIN32
+#ifdef _WIN32
     //--- determine when to use WIC vs. non-WIC paths ---
     bool UseWICFiltering(_In_ DXGI_FORMAT format, _In_ TEX_FILTER_FLAGS filter) noexcept
     {
@@ -2836,7 +2836,7 @@ HRESULT DirectX::GenerateMipMaps(
 
     static_assert(TEX_FILTER_POINT == 0x100000, "TEX_FILTER_ flag values don't match TEX_FILTER_MODE_MASK");
 
-#ifdef WIN32
+#ifdef _WIN32
     bool usewic = UseWICFiltering(baseImage.format, filter);
 
     WICPixelFormatGUID pfGUID = {};
@@ -3051,7 +3051,7 @@ HRESULT DirectX::GenerateMipMaps(
 
     static_assert(TEX_FILTER_POINT == 0x100000, "TEX_FILTER_ flag values don't match TEX_FILTER_MODE_MASK");
 
-#ifdef WIN32
+#ifdef _WIN32
     bool usewic = !metadata.IsPMAlpha() && UseWICFiltering(metadata.format, filter);
 
     WICPixelFormatGUID pfGUID = {};

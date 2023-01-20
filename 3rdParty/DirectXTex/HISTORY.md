@@ -6,6 +6,44 @@ Release available for download on [GitHub](https://github.com/microsoft/DirectXT
 
 ## Release History
 
+### December 15, 2022
+* ARM/ARM64 platform fix for 16bpp pixel conversion
+* Updated D3DX12 internal copy with latest changes from DirectX-Headers GitHub
+* CMake project updated to require 3.20 or later
+* CMake and MSBuild project updates
+* Added Azure Dev Ops Pipeline YAML files
+* ``Auxiliary`` folder added with DirectXEXR.h/.cpp optional module
+* Test suite updated with CTest support
+* Spectre-mitigated libraries added to NuGet packages
+* texassemble: added commands *v-cross-fnz*, *h-tee*, and *cube-from-\**
+* texconv: Fixed minor printf output issue
+
+### October 17, 2022
+* Minor fix for ``CompileShaders.cmd`` to address additional 'paths with spaces' issues
+* Minor CMake and CMakePresets updates
+* Code review
+
+### July 29, 2022
+* Added ``MakeLinear`` DXGI_FORMAT utility function.
+* *breaking change* ``CreateTextureEx`` and ``CreateShaderResourceViewEx`` functions now use ``CREATETEX_FLAGS`` instead of a ``bool forceSRGB`` parameter.
+* Updates for MinGW ABI fixes for DirectX12 in the latest DirectX-Headers.
+* CMake and MSBuild project updates
+* Code review
+* `DDSTextureLoader11` and ``DDSTextureLoader12`` sync'd up with *DirectX Tool Kit* July 2022 changes.
+
+### May 9, 2022
+* TGA reader updated to support 24-bit paletted uncompressed color-mapped images (used by a DCC application)
+* Added `IsBGR` utility method
+* Workaround for driver issue on some systems using DirectX 11 `Capture` method
+* Fix for problem with resizing/mipmaps generation for HDR content using box/fant filter which should avoid going through WIC code paths
+* Minor updates for VS 2022 (17.2)
+* CMake project updates (now supports MSVC, clang/LLVM, and MinGW)
+* Updated D3DX12 internal copy with latest changes from DirectX-Headers GitHub
+* Retired VS 2017 projects
+* Code cleanup
+* Reformat source using updated .editorconfig settings
+* texconv: Improve `-nmap` handling for 16-bit sources going to BC formats
+
 ### March 24, 2022
 * Fixed end-point bounds issue with BC6H CPU compressor if none of the pixels are in 0-1 range
 * Fixed bug in alpha-to-coverage computation

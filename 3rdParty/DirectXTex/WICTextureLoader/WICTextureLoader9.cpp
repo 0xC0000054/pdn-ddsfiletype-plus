@@ -26,6 +26,8 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cfloat>
+#include <cmath>
 #include <cstring>
 #include <iterator>
 #include <memory>
@@ -156,8 +158,6 @@ namespace
         // We don't support n-channel formats
     };
 
-    bool g_WIC2 = false;
-
     //--------------------------------------------------------------------------------------
     BOOL WINAPI InitializeWICFactory(PINIT_ONCE, PVOID, PVOID* ifactory) noexcept
     {
@@ -173,7 +173,6 @@ namespace
         if (SUCCEEDED(hr))
         {
             // WIC2 is available on Windows 10, Windows 8.x, and Windows 7 SP1 with KB 2670838 installed
-            g_WIC2 = true;
             return TRUE;
         }
         else

@@ -17,7 +17,7 @@
 #include <utility>
 #include <vector>
 
-#if defined(WIN32) || defined(_WIN32)
+#ifdef _WIN32
 #if !defined(__d3d11_h__) && !defined(__d3d11_x_h__) && !defined(__d3d12_h__) && !defined(__d3d12_x_h__) && !defined(__XBOX_D3D12_X__)
 #ifdef _GAMING_XBOX_SCARLETT
 #include <d3d12_xs.h>
@@ -36,8 +36,8 @@
 
 #include <DirectXMath.h>
 
-#ifdef WIN32
-#ifdef NTDDI_WIN10_FE
+#ifdef _WIN32
+#if defined(NTDDI_WIN10_FE) || defined(__MINGW32__)
 #include <ocidl.h>
 #else
 #include <OCIdl.h>
@@ -47,7 +47,7 @@ struct IWICImagingFactory;
 struct IWICMetadataQueryReader;
 #endif
 
-#define DIRECTX_TEX_VERSION 195
+#define DIRECTX_TEX_VERSION 196
 
 
 namespace DirectX
@@ -63,6 +63,7 @@ namespace DirectX
     bool __cdecl IsPalettized(_In_ DXGI_FORMAT fmt) noexcept;
     bool __cdecl IsDepthStencil(_In_ DXGI_FORMAT fmt) noexcept;
     bool __cdecl IsSRGB(_In_ DXGI_FORMAT fmt) noexcept;
+    bool __cdecl IsBGR(_In_ DXGI_FORMAT fmt) noexcept;
     bool __cdecl IsTypeless(_In_ DXGI_FORMAT fmt, _In_ bool partialTypeless = true) noexcept;
 
     bool __cdecl HasAlpha(_In_ DXGI_FORMAT fmt) noexcept;
@@ -123,6 +124,7 @@ namespace DirectX
     size_t __cdecl ComputeScanlines(_In_ DXGI_FORMAT fmt, _In_ size_t height) noexcept;
 
     DXGI_FORMAT __cdecl MakeSRGB(_In_ DXGI_FORMAT fmt) noexcept;
+    DXGI_FORMAT __cdecl MakeLinear(_In_ DXGI_FORMAT fmt) noexcept;
     DXGI_FORMAT __cdecl MakeTypeless(_In_ DXGI_FORMAT fmt) noexcept;
     DXGI_FORMAT __cdecl MakeTypelessUNORM(_In_ DXGI_FORMAT fmt) noexcept;
     DXGI_FORMAT __cdecl MakeTypelessFLOAT(_In_ DXGI_FORMAT fmt) noexcept;
@@ -315,7 +317,7 @@ namespace DirectX
         _In_ TGA_FLAGS flags,
         _Out_ TexMetadata& metadata) noexcept;
 
-#ifdef WIN32
+#ifdef _WIN32
     HRESULT __cdecl GetMetadataFromWICMemory(
         _In_reads_bytes_(size) const void* pSource, _In_ size_t size,
         _In_ WIC_FLAGS flags,
@@ -506,7 +508,7 @@ namespace DirectX
         _In_z_ const wchar_t* szFile, _In_opt_ const TexMetadata* metadata = nullptr) noexcept;
 
     // WIC operations
-#ifdef WIN32
+#ifdef _WIN32
     HRESULT __cdecl LoadFromWICMemory(
         _In_reads_bytes_(size) const void* pSource, _In_ size_t size,
         _In_ WIC_FLAGS flags,
@@ -562,7 +564,7 @@ namespace DirectX
         TEX_FR_FLIP_VERTICAL = 0x10,
     };
 
-#ifdef WIN32
+#ifdef _WIN32
     HRESULT __cdecl FlipRotate(_In_ const Image& srcImage, _In_ TEX_FR_FLAGS flags, _Out_ ScratchImage& image) noexcept;
     HRESULT __cdecl FlipRotate(
         _In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
@@ -848,7 +850,7 @@ namespace DirectX
 
     //---------------------------------------------------------------------------------
     // WIC utility code
-#ifdef WIN32
+#ifdef _WIN32
     enum WICCodecs
     {
         WIC_CODEC_BMP = 1,          // Windows Bitmap (.bmp)
@@ -875,6 +877,15 @@ namespace DirectX
         _Out_ size_t& required) noexcept;
 
     //---------------------------------------------------------------------------------
+    // Direct3D interop
+
+    enum CREATETEX_FLAGS : uint32_t
+    {
+        CREATETEX_DEFAULT = 0,
+        CREATETEX_FORCE_SRGB = 0x1,
+        CREATETEX_IGNORE_SRGB = 0x2,
+    };
+
     // Direct3D 11 functions
 #if defined(__d3d11_h__) || defined(__d3d11_x_h__)
     bool __cdecl IsSupportedTexture(_In_ ID3D11Device* pDevice, _In_ const TexMetadata& metadata) noexcept;
@@ -889,18 +900,17 @@ namespace DirectX
 
     HRESULT __cdecl CreateTextureEx(
         _In_ ID3D11Device* pDevice, _In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-        _In_ D3D11_USAGE usage, _In_ unsigned int bindFlags, _In_ unsigned int cpuAccessFlags, _In_ unsigned int miscFlags, _In_ bool forceSRGB,
+        _In_ D3D11_USAGE usage, _In_ unsigned int bindFlags, _In_ unsigned int cpuAccessFlags, _In_ unsigned int miscFlags, _In_ CREATETEX_FLAGS flags,
         _Outptr_ ID3D11Resource** ppResource) noexcept;
 
     HRESULT __cdecl CreateShaderResourceViewEx(
         _In_ ID3D11Device* pDevice, _In_reads_(nimages) const Image* srcImages, _In_ size_t nimages, _In_ const TexMetadata& metadata,
-        _In_ D3D11_USAGE usage, _In_ unsigned int bindFlags, _In_ unsigned int cpuAccessFlags, _In_ unsigned int miscFlags, _In_ bool forceSRGB,
+        _In_ D3D11_USAGE usage, _In_ unsigned int bindFlags, _In_ unsigned int cpuAccessFlags, _In_ unsigned int miscFlags, _In_ CREATETEX_FLAGS flags,
         _Outptr_ ID3D11ShaderResourceView** ppSRV) noexcept;
 
     HRESULT __cdecl CaptureTexture(_In_ ID3D11Device* pDevice, _In_ ID3D11DeviceContext* pContext, _In_ ID3D11Resource* pSource, _Out_ ScratchImage& result) noexcept;
 #endif
 
-    //---------------------------------------------------------------------------------
     // Direct3D 12 functions
 #if defined(__d3d12_h__) || defined(__d3d12_x_h__) || defined(__XBOX_D3D12_X__)
     bool __cdecl IsSupportedTexture(_In_ ID3D12Device* pDevice, _In_ const TexMetadata& metadata) noexcept;
@@ -911,7 +921,7 @@ namespace DirectX
 
     HRESULT __cdecl CreateTextureEx(
         _In_ ID3D12Device* pDevice, _In_ const TexMetadata& metadata,
-        _In_ D3D12_RESOURCE_FLAGS resFlags, _In_ bool forceSRGB,
+        _In_ D3D12_RESOURCE_FLAGS resFlags, _In_ CREATETEX_FLAGS flags,
         _Outptr_ ID3D12Resource** ppResource) noexcept;
 
     HRESULT __cdecl PrepareUpload(

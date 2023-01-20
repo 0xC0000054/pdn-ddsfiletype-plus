@@ -32,7 +32,7 @@ using Microsoft::WRL::ComPtr;
 
 namespace
 {
-#ifdef WIN32
+#ifdef _WIN32
     //-------------------------------------------------------------------------------------
     // WIC Pixel Format Translation Data
     //-------------------------------------------------------------------------------------
@@ -127,7 +127,7 @@ namespace
 }
 
 
-#ifdef WIN32
+#ifdef _WIN32
 //=====================================================================================
 // WIC Utilities
 //=====================================================================================
@@ -270,9 +270,11 @@ REFGUID DirectX::GetWICCodec(WICCodecs codec) noexcept
     case WIC_CODEC_ICO:
         return GUID_ContainerFormatIco;
 
+#ifdef NTDDI_WIN10_RS4
     case WIC_CODEC_HEIF:
         // This requires installing https://aka.ms/heif
         return GUID_ContainerFormatHeif;
+#endif
 
     default:
         return GUID_NULL;
@@ -1174,6 +1176,41 @@ DXGI_FORMAT DirectX::MakeSRGB(DXGI_FORMAT fmt) noexcept
 
     case DXGI_FORMAT_BC7_UNORM:
         return DXGI_FORMAT_BC7_UNORM_SRGB;
+
+    default:
+        return fmt;
+    }
+}
+
+
+//-------------------------------------------------------------------------------------
+// Converts to an non-SRGB equivalent type
+//-------------------------------------------------------------------------------------
+_Use_decl_annotations_
+DXGI_FORMAT DirectX::MakeLinear(DXGI_FORMAT fmt) noexcept
+{
+    switch (fmt)
+    {
+    case DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+        return DXGI_FORMAT_R8G8B8A8_UNORM;
+
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+        return DXGI_FORMAT_BC1_UNORM;
+
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+        return DXGI_FORMAT_BC2_UNORM;
+
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+        return DXGI_FORMAT_BC3_UNORM;
+
+    case DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8A8_UNORM;
+
+    case DXGI_FORMAT_B8G8R8X8_UNORM_SRGB:
+        return DXGI_FORMAT_B8G8R8X8_UNORM;
+
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        return DXGI_FORMAT_BC7_UNORM;
 
     default:
         return fmt;

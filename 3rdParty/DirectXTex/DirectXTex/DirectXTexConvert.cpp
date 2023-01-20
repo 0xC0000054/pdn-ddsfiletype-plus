@@ -2068,7 +2068,11 @@ bool DirectX::Internal::StoreScanline(
             {
                 if (sPtr >= ePtr) break;
                 XMVECTOR v = XMVectorSwizzle<2, 1, 0, 3>(*sPtr++);
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
+                v = XMVectorMultiplyAdd(v, s_Scale, g_XMOneHalf);
+#else
                 v = XMVectorMultiply(v, s_Scale);
+#endif
                 XMStoreU565(dPtr++, v);
             }
             return true;
@@ -2079,12 +2083,19 @@ bool DirectX::Internal::StoreScanline(
         if (size >= sizeof(XMU555))
         {
             static const XMVECTORF32 s_Scale = { { { 31.f, 31.f, 31.f, 1.f } } };
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
+            static const XMVECTORF32 s_OneHalfXYZ = { { { 0.5f, 0.5f, 0.5f, 0.f } } };
+#endif
             XMU555 * __restrict dPtr = static_cast<XMU555*>(pDestination);
             for (size_t icount = 0; icount < (size - sizeof(XMU555) + 1); icount += sizeof(XMU555))
             {
                 if (sPtr >= ePtr) break;
                 XMVECTOR v = XMVectorSwizzle<2, 1, 0, 3>(*sPtr++);
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
+                v = XMVectorMultiplyAdd(v, s_Scale, s_OneHalfXYZ);
+#else
                 v = XMVectorMultiply(v, s_Scale);
+#endif
                 XMStoreU555(dPtr, v);
                 dPtr->w = (XMVectorGetW(v) > threshold) ? 1u : 0u;
                 ++dPtr;
@@ -2242,14 +2253,10 @@ bool DirectX::Internal::StoreScanline(
                 const int u0 = ((-38 * rgb1.x - 74 * rgb1.y + 112 * rgb1.z + 128) >> 8) + 128;
                 const int v0 = ((112 * rgb1.x - 94 * rgb1.y - 18 * rgb1.z + 128) >> 8) + 128;
 
-                XMUBYTEN4 rgb2;
+                XMUBYTEN4 rgb2 = {};
                 if (sPtr < ePtr)
                 {
                     XMStoreUByteN4(&rgb2, *sPtr++);
-                }
-                else
-                {
-                    rgb2.x = rgb2.y = rgb2.z = rgb2.w = 0;
                 }
 
                 const int y1 = ((66 * rgb2.x + 129 * rgb2.y + 25 * rgb2.z + 128) >> 8) + 16;
@@ -2287,14 +2294,10 @@ bool DirectX::Internal::StoreScanline(
                 const int u0 = static_cast<int>((-9683 * r - 19017 * g + 28700 * b + 32768) >> 16) + 512;
                 const int v0 = static_cast<int>((28700 * r - 24033 * g - 4667 * b + 32768) >> 16) + 512;
 
-                XMUDECN4 rgb2;
+                XMUDECN4 rgb2 = {};
                 if (sPtr < ePtr)
                 {
                     XMStoreUDecN4(&rgb2, *sPtr++);
-                }
-                else
-                {
-                    rgb2.x = rgb2.y = rgb2.z = rgb2.w = 0;
                 }
 
                 r = rgb2.x;
@@ -2335,14 +2338,10 @@ bool DirectX::Internal::StoreScanline(
                 const int u0 = static_cast<int>((-9674 * r - 18998 * g + 28672 * b + 32768) >> 16) + 32768;
                 const int v0 = static_cast<int>((28672 * r - 24010 * g - 4662 * b + 32768) >> 16) + 32768;
 
-                XMUSHORTN4 rgb2;
+                XMUSHORTN4 rgb2 = {};
                 if (sPtr < ePtr)
                 {
                     XMStoreUShortN4(&rgb2, *sPtr++);
-                }
-                else
-                {
-                    rgb2.x = rgb2.y = rgb2.z = rgb2.w = 0;
                 }
 
                 r = int64_t(rgb2.x);
@@ -2372,7 +2371,11 @@ bool DirectX::Internal::StoreScanline(
             {
                 if (sPtr >= ePtr) break;
                 XMVECTOR v = XMVectorSwizzle<2, 1, 0, 3>(*sPtr++);
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
+                v = XMVectorMultiplyAdd(v, s_Scale, g_XMOneHalf);
+#else
                 v = XMVectorMultiply(v, s_Scale);
+#endif
                 XMStoreUNibble4(dPtr++, v);
             }
             return true;
@@ -2448,8 +2451,11 @@ bool DirectX::Internal::StoreScanline(
             for (size_t icount = 0; icount < (size - sizeof(uint8_t) + 1); icount += sizeof(uint8_t))
             {
                 if (sPtr >= ePtr) break;
+#if defined(_M_ARM) || defined(_M_ARM64) || defined(_M_HYBRID_X86_ARM64) || defined(_M_ARM64EC) || __arm__ || __aarch64__
+                const XMVECTOR v = XMVectorMultiplyAdd(*sPtr++, s_Scale, g_XMOneHalf);
+#else
                 const XMVECTOR v = XMVectorMultiply(*sPtr++, s_Scale);
-
+#endif
                 XMUNIBBLE4 nibble;
                 XMStoreUNibble4(&nibble, v);
                 *dPtr = static_cast<uint8_t>(nibble.v);
@@ -4394,7 +4400,7 @@ namespace
         _Out_ WICPixelFormatGUID& pfGUID,
         _Out_ WICPixelFormatGUID& targetGUID) noexcept
     {
-    #ifndef WIN32
+    #ifndef _WIN32
         UNREFERENCED_PARAMETER(filter);
         UNREFERENCED_PARAMETER(sformat);
         UNREFERENCED_PARAMETER(tformat);
@@ -4557,7 +4563,7 @@ namespace
         _In_ float threshold,
         _In_ const Image& destImage)
     {
-    #ifndef WIN32
+    #ifndef _WIN32
         UNREFERENCED_PARAMETER(srcImage);
         UNREFERENCED_PARAMETER(pfGUID);
         UNREFERENCED_PARAMETER(targetGUID);

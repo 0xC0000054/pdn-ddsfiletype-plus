@@ -16,13 +16,21 @@
 
 #pragma once
 
-#if defined(WIN32) || defined(_WIN32)
-#include <d3d12.h>
-#pragma comment(lib,"dxguid.lib")
-#else
+#ifdef __MINGW32__
+#include <unknwn.h>
+#endif
+
+#ifndef _WIN32
 #include <wsl/winadapter.h>
 #include <wsl/wrladapter.h>
+#endif
+
+#if !defined(_WIN32) || defined(USING_DIRECTX_HEADERS)
 #include <directx/d3d12.h>
+#include <dxguids/dxguids.h>
+#else
+#include <d3d12.h>
+#pragma comment(lib,"dxguid.lib")
 #endif
 
 #include <cstddef>
@@ -53,6 +61,7 @@ namespace DirectX
     {
         DDS_LOADER_DEFAULT = 0,
         DDS_LOADER_FORCE_SRGB = 0x1,
+        DDS_LOADER_IGNORE_SRGB = 0x2,
         DDS_LOADER_MIP_RESERVE = 0x8,
     };
 

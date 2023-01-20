@@ -19,17 +19,15 @@
 
 #define D3DX12_NO_STATE_OBJECT_HELPERS
 #define D3DX12_NO_CHECK_FEATURE_SUPPORT_CLASS
-#ifdef WIN32
 #ifdef _GAMING_XBOX_SCARLETT
 #include <d3dx12_xs.h>
 #elif (defined(_XBOX_ONE) && defined(_TITLE)) || defined(_GAMING_XBOX)
 #include "d3dx12_x.h"
-#else
-#include "d3dx12.h"
-#endif
-#else
+#elif !defined(_WIN32) || defined(USING_DIRECTX_HEADERS)
 #include "directx/d3dx12.h"
 #include "dxguids/dxguids.h"
+#else
+#include "d3dx12.h"
 #endif
 
 #ifdef __clang__
@@ -304,7 +302,7 @@ namespace
         // Block until the copy is complete
         while (fence->GetCompletedValue() < 1)
         {
-        #ifdef WIN32
+        #ifdef _WIN32
             SwitchToThread();
         #else
             std::this_thread::yield();
@@ -442,7 +440,7 @@ HRESULT DirectX::CreateTexture(
 {
     return CreateTextureEx(
         pDevice, metadata,
-        D3D12_RESOURCE_FLAG_NONE, false,
+        D3D12_RESOURCE_FLAG_NONE, CREATETEX_DEFAULT,
         ppResource);
 }
 
@@ -451,7 +449,7 @@ HRESULT DirectX::CreateTextureEx(
     ID3D12Device* pDevice,
     const TexMetadata& metadata,
     D3D12_RESOURCE_FLAGS resFlags,
-    bool forceSRGB,
+    CREATETEX_FLAGS flags,
     ID3D12Resource** ppResource) noexcept
 {
     if (!pDevice || !ppResource)
@@ -467,9 +465,13 @@ HRESULT DirectX::CreateTextureEx(
         return E_INVALIDARG;
 
     DXGI_FORMAT format = metadata.format;
-    if (forceSRGB)
+    if (flags & CREATETEX_FORCE_SRGB)
     {
         format = MakeSRGB(format);
+    }
+    else if (flags & CREATETEX_IGNORE_SRGB)
+    {
+        format = MakeLinear(format);
     }
 
     D3D12_RESOURCE_DESC desc = {};
@@ -664,7 +666,12 @@ HRESULT DirectX::CaptureTexture(
     ComPtr<ID3D12Device> device;
     pCommandQueue->GetDevice(IID_GRAPHICS_PPV_ARGS(device.GetAddressOf()));
 
+#if defined(_MSC_VER) || !defined(_WIN32)
     auto const desc = pSource->GetDesc();
+#else
+    D3D12_RESOURCE_DESC tmpDesc;
+    auto const& desc = *pSource->GetDesc(&tmpDesc);
+#endif
 
     ComPtr<ID3D12Resource> pStaging;
     std::unique_ptr<uint8_t[]> layoutBuff;

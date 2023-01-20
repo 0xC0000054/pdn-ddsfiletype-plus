@@ -12,7 +12,7 @@
 #pragma once
 
 // Off by default warnings
-#pragma warning(disable : 4619 4616 4061 4265 4365 4571 4623 4625 4626 4628 4668 4710 4711 4746 4774 4820 4987 5026 5027 5031 5032 5039 5045 5219 26812)
+#pragma warning(disable : 4619 4616 4061 4265 4365 4571 4623 4625 4626 4628 4668 4710 4711 4746 4774 4820 4987 5026 5027 5031 5032 5039 5045 5219 5246 5264 26812)
 // C4619/4616 #pragma warning warnings
 // C4061 enumerator 'X' in switch of enum 'X' is not explicitly handled by a case label
 // C4265 class has virtual functions, but destructor is not virtual
@@ -35,6 +35,8 @@
 // C5039 pointer or reference to potentially throwing function passed to extern C function under - EHc
 // C5045 Spectre mitigation warning
 // C5219 implicit conversion from 'int' to 'float', possible loss of data
+// C5246 the initialization of a subobject should be wrapped in braces
+// C5264 'const' variable is not used
 // 26812: The enum type 'x' is unscoped. Prefer 'enum class' over 'enum' (Enum.3).
 
 // Windows 8.1 SDK related Off by default warnings
@@ -68,16 +70,17 @@
 #pragma clang diagnostic ignored "-Wswitch-enum"
 #pragma clang diagnostic ignored "-Wtautological-type-limit-compare"
 #pragma clang diagnostic ignored "-Wunknown-pragmas"
+#pragma clang diagnostic ignored "-Wundef"
 #endif
 
-#if defined(WIN32) || defined(_WIN32)
+#ifdef _WIN32
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 
 #pragma warning(push)
 #pragma warning(disable : 4005)
-#define NOMINMAX
+#define NOMINMAX 1
 #define NODRAWTEXT
 #define NOGDI
 #define NOBITMAP
@@ -87,6 +90,10 @@
 #pragma warning(pop)
 
 #include <Windows.h>
+
+#ifdef __MINGW32__
+#include <unknwn.h>
+#endif
 
 #ifndef _WIN32_WINNT_WIN10
 #define _WIN32_WINNT_WIN10 0x0A00
@@ -132,7 +139,7 @@
 #include <new>
 #include <tuple>
 
-#ifndef WIN32
+#ifndef _WIN32
 #include <fstream>
 #include <filesystem>
 #include <thread>
@@ -148,10 +155,10 @@
 
 #include "DirectXTex.h"
 
+#ifdef _WIN32
 #include <malloc.h>
 
-#ifdef WIN32
-#ifdef NTDDI_WIN10_FE
+#if defined(NTDDI_WIN10_FE) || defined(__MINGW32__)
 #include <ole2.h>
 #else
 #include <Ole2.h>
@@ -179,6 +186,10 @@ using WICPixelFormatGUID = GUID;
 #endif
 
 #define XBOX_DXGI_FORMAT_R4G4_UNORM DXGI_FORMAT(190)
+
+#if defined(__MINGW32__) && !defined(E_BOUNDS)
+#define E_BOUNDS static_cast<HRESULT>(0x8000000BL)
+#endif
 
 // HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW)
 #define HRESULT_E_ARITHMETIC_OVERFLOW static_cast<HRESULT>(0x80070216L)
@@ -210,7 +221,7 @@ namespace DirectX
     {
         //-----------------------------------------------------------------------------
         // WIC helper functions
-    #ifdef WIN32
+    #ifdef _WIN32
         DXGI_FORMAT __cdecl WICToDXGI(_In_ const GUID& guid) noexcept;
         bool __cdecl DXGIToWIC(_In_ DXGI_FORMAT format, _Out_ GUID& guid, _In_ bool ignoreRGBvsBGR = false) noexcept;
 
@@ -417,7 +428,7 @@ namespace DirectX
         bool __cdecl CalculateMipLevels3D(_In_ size_t width, _In_ size_t height, _In_ size_t depth,
             _Inout_ size_t& mipLevels) noexcept;
 
-    #ifdef WIN32
+    #ifdef _WIN32
         HRESULT __cdecl ResizeSeparateColorAndAlpha(_In_ IWICImagingFactory* pWIC,
             _In_ bool iswic2,
             _In_ IWICBitmap* original,
