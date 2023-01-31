@@ -1301,8 +1301,9 @@ namespace
         }
 
         size_t pixelSize, nimages;
-        if (!DetermineImageArray(metadata, cpFlags, nimages, pixelSize))
-            return HRESULT_E_ARITHMETIC_OVERFLOW;
+        HRESULT hr = DetermineImageArray(metadata, cpFlags, nimages, pixelSize);
+        if (FAILED(hr))
+            return hr;
 
         if ((nimages == 0) || (nimages != image.GetImageCount()))
         {
