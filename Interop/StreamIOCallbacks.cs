@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 using System;
+using System.Buffers;
 using System.IO;
 using System.Runtime.ExceptionServices;
 using System.Runtime.InteropServices;
@@ -20,7 +21,6 @@ namespace DdsFileTypePlus.Interop
     internal sealed class StreamIOCallbacks
     {
         private readonly Stream stream;
-        private readonly byte[] streamBuffer;
 
         // 81920 is the largest multiple of 4096 that is below the large object heap threshold.
         private const int MaxBufferSize = 81920;
@@ -28,7 +28,6 @@ namespace DdsFileTypePlus.Interop
         public StreamIOCallbacks(Stream stream)
         {
             this.stream = stream;
-            this.streamBuffer = new byte[MaxBufferSize];
             this.CallbackExceptionInfo = null;
         }
 
@@ -54,22 +53,30 @@ namespace DdsFileTypePlus.Interop
             {
                 long totalBytesRead = 0;
                 long remaining = count;
+                byte[] streamBuffer = ArrayPool<byte>.Shared.Rent(MaxBufferSize);
 
-                do
+                try
                 {
-                    int streamBytesRead = this.stream.Read(this.streamBuffer, 0, (int)Math.Min(MaxBufferSize, remaining));
-
-                    if (streamBytesRead == 0)
+                    do
                     {
-                        break;
-                    }
+                        int streamBytesRead = this.stream.Read(streamBuffer, 0, (int)Math.Min(streamBuffer.Length, remaining));
 
-                    Marshal.Copy(this.streamBuffer, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), streamBytesRead);
+                        if (streamBytesRead == 0)
+                        {
+                            break;
+                        }
 
-                    totalBytesRead += streamBytesRead;
-                    remaining -= streamBytesRead;
+                        Marshal.Copy(streamBuffer, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), streamBytesRead);
 
-                } while (remaining > 0);
+                        totalBytesRead += streamBytesRead;
+                        remaining -= streamBytesRead;
+
+                    } while (remaining > 0);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(streamBuffer);
+                }
 
                 if (bytesRead != null)
                 {
@@ -98,21 +105,29 @@ namespace DdsFileTypePlus.Interop
 
             try
             {
-                long offset = 0;
-                long remaining = count;
-
-                do
+                byte[] streamBuffer = ArrayPool<byte>.Shared.Rent(MaxBufferSize);
+                try
                 {
-                    int copySize = (int)Math.Min(MaxBufferSize, remaining);
+                    long offset = 0;
+                    long remaining = count;
 
-                    Marshal.Copy(new IntPtr(buffer.ToInt64() + offset), this.streamBuffer, 0, copySize);
+                    do
+                    {
+                        int copySize = (int)Math.Min(streamBuffer.Length, remaining);
 
-                    this.stream.Write(this.streamBuffer, 0, copySize);
+                        Marshal.Copy(new IntPtr(buffer.ToInt64() + offset), streamBuffer, 0, copySize);
 
-                    offset += copySize;
-                    remaining -= copySize;
+                        this.stream.Write(streamBuffer, 0, copySize);
 
-                } while (remaining > 0);
+                        offset += copySize;
+                        remaining -= copySize;
+
+                    } while (remaining > 0);
+                }
+                finally
+                {
+                    ArrayPool<byte>.Shared.Return(streamBuffer);
+                }
 
                 if (bytesWritten != null)
                 {
