@@ -15,7 +15,7 @@
 
 DirectComputeHelper::DirectComputeHelper(IDXGIAdapter* directComputeAdapter)
 {
-    hModD3D11 = LoadLibraryW(L"d3d11.dll");
+    hModD3D11 = LoadLibraryExW(L"d3d11.dll", nullptr, LOAD_LIBRARY_SEARCH_SYSTEM32);
     computeDevice = nullptr;
 
     if (hModD3D11 != nullptr)
