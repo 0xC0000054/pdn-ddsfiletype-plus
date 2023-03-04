@@ -481,6 +481,13 @@ HRESULT __stdcall Save(
                 useDirectCompute = dcHelper->ComputeDeviceAvailable();
             }
         }
+        else
+        {
+            if (input->ditherDXTFormats)
+            {
+                compressFlags |= TEX_COMPRESS_DITHER;
+            }
+        }
 
         if (useDirectCompute)
         {

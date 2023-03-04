@@ -105,6 +105,7 @@ extern "C" {
         DdsErrorMetric errorMetric;
         BC7CompressionSpeed compressionSpeed;
         bool cubeMap;
+        bool ditherDXTFormats;
     };
 
     struct DDSBitmapData

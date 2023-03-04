@@ -349,6 +349,15 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to BC 1-3 compression dithering.
+        /// </summary>
+        internal static string DitherDXT_Description {
+            get {
+                return ResourceManager.GetString("DitherDXT_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Error Metric.
         /// </summary>
         internal static string ErrorMetric_DisplayName {
