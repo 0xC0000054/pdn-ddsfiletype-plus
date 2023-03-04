@@ -49,14 +49,7 @@ namespace DdsFileTypePlus
 
         private static string GetFileTypeName(IDdsFileTypePlusStrings strings)
         {
-            string name = strings?.TryGetString(DdsFileTypePlusStringName.FileType_Name);
-
-            if (name is null)
-            {
-                name = Properties.Resources.FileType_Name;
-            }
-
-            return name;
+            return strings?.TryGetString(DdsFileTypePlusStringName.FileType_Name) ?? Properties.Resources.FileType_Name;
         }
 
         public override PropertyCollection OnCreateSavePropertyCollection()
