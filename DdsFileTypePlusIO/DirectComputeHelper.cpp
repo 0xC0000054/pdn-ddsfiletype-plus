@@ -73,8 +73,6 @@ DirectComputeHelper::DirectComputeHelper(IDXGIAdapter* directComputeAdapter)
                 }
             }
         }
-
-        FreeLibrary(hModD3D11);
     }
 }
 
