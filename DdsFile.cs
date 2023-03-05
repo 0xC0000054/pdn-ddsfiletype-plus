@@ -339,10 +339,7 @@ namespace DdsFileTypePlus
             }
             finally
             {
-                if (tempTextures != null)
-                {
-                    tempTextures.Dispose();
-                }
+                tempTextures?.Dispose();
             }
 
             return textures;
@@ -398,10 +395,7 @@ namespace DdsFileTypePlus
             }
             finally
             {
-                if (mipSurface != null)
-                {
-                    mipSurface.Dispose();
-                }
+                mipSurface?.Dispose();
             }
 
             return mipTexture;
