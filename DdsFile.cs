@@ -83,7 +83,7 @@ namespace DdsFileTypePlus
             Document input,
             Stream output,
             DdsFileFormat format,
-            bool ditherDXTFormats,
+            bool errorDiffusionDithering,
             BC7CompressionSpeed compressionSpeed,
             DdsErrorMetric errorMetric,
             bool cubeMap,
@@ -154,7 +154,7 @@ namespace DdsFileTypePlus
                         errorMetric = errorMetric,
                         compressionSpeed = compressionSpeed,
                         cubeMap = cubeMapFaceSize.HasValue,
-                        ditherDXTFormats = ditherDXTFormats
+                        errorDiffusionDithering = errorDiffusionDithering
                     };
 
                     if (format == DdsFileFormat.BC6HUnsigned || format == DdsFileFormat.BC7 || format == DdsFileFormat.BC7Srgb)

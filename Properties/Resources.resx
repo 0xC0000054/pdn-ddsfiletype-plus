@@ -213,8 +213,8 @@
   <data name="DdsFileFormat_R8Unsigned" xml:space="preserve">
     <value>R8 (Linear, Unsigned, L8)</value>
   </data>
-  <data name="DitherDXT_Description" xml:space="preserve">
-    <value>BC 1-3 compression dithering</value>
+  <data name="ErrorDiffusionDithering_Description" xml:space="preserve">
+    <value>Error diffusion dithering</value>
   </data>
   <data name="ErrorMetric_DisplayName" xml:space="preserve">
     <value>Error Metric</value>

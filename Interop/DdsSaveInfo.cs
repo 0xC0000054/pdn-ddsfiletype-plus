@@ -27,6 +27,6 @@ namespace DdsFileTypePlus.Interop
         [MarshalAs(UnmanagedType.U1)]
         public bool cubeMap;
         [MarshalAs(UnmanagedType.U1)]
-        public bool ditherDXTFormats;
+        public bool errorDiffusionDithering;
     }
 }

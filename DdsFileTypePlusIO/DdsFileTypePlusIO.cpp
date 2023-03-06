@@ -483,7 +483,7 @@ HRESULT __stdcall Save(
         }
         else
         {
-            if (input->ditherDXTFormats)
+            if (input->errorDiffusionDithering)
             {
                 compressFlags |= TEX_COMPRESS_DITHER;
             }
@@ -519,6 +519,11 @@ HRESULT __stdcall Save(
         }
 
         TEX_FILTER_FLAGS filter = TEX_FILTER_DEFAULT | TEX_FILTER_SEPARATE_ALPHA;
+
+        if (input->errorDiffusionDithering)
+        {
+            filter |= TEX_FILTER_DITHER_DIFFUSION;
+        }
 
         hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, filter,
             TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);

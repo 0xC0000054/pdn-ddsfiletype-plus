@@ -57,7 +57,7 @@ namespace DdsFileTypePlus
             List<Property> props = new()
             {
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.FileFormat, DdsFileFormat.BC1, false),
-                new BooleanProperty(PropertyNames.DitherDXTFormats, true),
+                new BooleanProperty(PropertyNames.ErrorDiffusionDithering, true),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.BC7CompressionSpeed, BC7CompressionSpeed.Medium, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
                 new BooleanProperty(PropertyNames.CubeMap, false),
@@ -70,7 +70,7 @@ namespace DdsFileTypePlus
             List<PropertyCollectionRule> rules = new()
             {
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
-                    PropertyNames.DitherDXTFormats,
+                    PropertyNames.ErrorDiffusionDithering,
                     PropertyNames.FileFormat,
                     new object[]
                     {
@@ -79,7 +79,10 @@ namespace DdsFileTypePlus
                         DdsFileFormat.BC2,
                         DdsFileFormat.BC2Srgb,
                         DdsFileFormat.BC3,
-                        DdsFileFormat.BC3Srgb
+                        DdsFileFormat.BC3Srgb,
+                        DdsFileFormat.B4G4R4A4,
+                        DdsFileFormat.B5G5R5A1,
+                        DdsFileFormat.B5G6R5
                     },
                     true),
                 new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
@@ -169,9 +172,9 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.R8G8Signed, this.strings.GetString("DdsFileFormat_R8G8Signed"));
             formatPCI.SetValueDisplayName(DdsFileFormat.R32Float, this.strings.GetString("DdsFileFormat_R32Float"));
 
-            PropertyControlInfo ditherDXTPCI = configUI.FindControlForPropertyName(PropertyNames.DitherDXTFormats);
-            ditherDXTPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            ditherDXTPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("DitherDXT_Description");
+            PropertyControlInfo ditheringPCI = configUI.FindControlForPropertyName(PropertyNames.ErrorDiffusionDithering);
+            ditheringPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            ditheringPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("ErrorDiffusionDithering_Description");
 
             PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionSpeed);
             compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionSpeed_DisplayName");
@@ -222,7 +225,7 @@ namespace DdsFileTypePlus
         protected override void OnSaveT(Document input, Stream output, PropertyBasedSaveConfigToken token, Surface scratchSurface, ProgressEventHandler progressCallback)
         {
             DdsFileFormat fileFormat = (DdsFileFormat)token.GetProperty(PropertyNames.FileFormat).Value;
-            bool ditherDXT = token.GetProperty<BooleanProperty>(PropertyNames.DitherDXTFormats).Value;
+            bool errorDiffusionDithering = token.GetProperty<BooleanProperty>(PropertyNames.ErrorDiffusionDithering).Value;
             BC7CompressionSpeed compressionSpeed = (BC7CompressionSpeed)token.GetProperty(PropertyNames.BC7CompressionSpeed).Value;
             DdsErrorMetric errorMetric = (DdsErrorMetric)token.GetProperty(PropertyNames.ErrorMetric).Value;
             bool cubeMap = token.GetProperty<BooleanProperty>(PropertyNames.CubeMap).Value;
@@ -233,7 +236,7 @@ namespace DdsFileTypePlus
                          input,
                          output,
                          fileFormat,
-                         ditherDXT,
+                         errorDiffusionDithering,
                          compressionSpeed,
                          errorMetric,
                          cubeMap,
@@ -253,7 +256,7 @@ namespace DdsFileTypePlus
             MipMapResamplingAlgorithm,
             ForumLink,
             GitHubLink,
-            DitherDXTFormats
+            ErrorDiffusionDithering
         }
     }
 }
