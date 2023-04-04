@@ -41,6 +41,9 @@ dotnet_style_qualification_for_event                  = true : suggestion
 # IDE0056: Use index operator
 csharp_style_prefer_index_operator = false
 
+# IDE0057: Use range operator
+csharp_style_prefer_range_operator = false
+
 [*.{cpp,h}]
 indent_size              = 4
 indent_style             = space
