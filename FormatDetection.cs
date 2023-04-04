@@ -106,7 +106,7 @@ namespace DdsFileTypePlus
         }
 
         private static bool FileSignatureMatches(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)
-                    => data.Length >= signature.Length && data.Slice(0, signature.Length).SequenceEqual(signature);
+            => data.Length >= signature.Length && data.Slice(0, signature.Length).SequenceEqual(signature);
 
         private static bool IsGifFileSignature(ReadOnlySpan<byte> data)
         {
