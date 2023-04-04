@@ -26,8 +26,6 @@ namespace DdsFileTypePlus
         private readonly DdsFileFormat format;
         private readonly byte[] pixelBuffer;
 
-        private const uint DdsMagic = 0x20534444; // "DDS "
-
         internal DX9DdsWriter(int width, int height, int arraySize, int mipLevels, DdsFileFormat format)
         {
             this.width = width;
@@ -49,11 +47,13 @@ namespace DdsFileTypePlus
             }
         }
 
+        private static ReadOnlySpan<byte> DdsMagic => "DDS "u8;
+
         internal void Save(TextureCollection textures, Stream output, ProgressEventHandler progressCallback)
         {
             DdsHeader header = new(this.width, this.height, this.arraySize, this.mipLevels, this.format);
 
-            output.WriteUInt32(DdsMagic);
+            output.Write(DdsMagic);
             header.Write(output);
 
             double progressTotal = this.arraySize * this.mipLevels;
