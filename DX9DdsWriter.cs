@@ -33,18 +33,12 @@ namespace DdsFileTypePlus
             this.arraySize = arraySize;
             this.mipLevels = mipLevels;
             this.format = format;
-
-            switch (format)
+            this.pixelBuffer = format switch
             {
-                case DdsFileFormat.R8G8B8X8:
-                    this.pixelBuffer = new byte[4];
-                    break;
-                case DdsFileFormat.B8G8R8:
-                    this.pixelBuffer = new byte[3];
-                    break;
-                default:
-                    throw new InvalidOperationException(GetUnsupportedFormatMessage(format));
-            }
+                DdsFileFormat.R8G8B8X8 => new byte[4],
+                DdsFileFormat.B8G8R8 => new byte[3],
+                _ => throw new InvalidOperationException(GetUnsupportedFormatMessage(format)),
+            };
         }
 
         private static ReadOnlySpan<byte> DdsMagic => "DDS "u8;
