@@ -421,11 +421,11 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Adaptive (Best Quality).
+        ///   Looks up a localized string similar to Adaptive.
         /// </summary>
-        internal static string ResamplingAlgorithm_AdaptiveBestQuality {
+        internal static string ResamplingAlgorithm_AdaptiveHighQuality {
             get {
-                return ResourceManager.GetString("ResamplingAlgorithm_AdaptiveBestQuality", resourceCulture);
+                return ResourceManager.GetString("ResamplingAlgorithm_AdaptiveHighQuality", resourceCulture);
             }
         }
         
@@ -435,6 +435,15 @@ namespace DdsFileTypePlus.Properties {
         internal static string ResamplingAlgorithm_Cubic {
             get {
                 return ResourceManager.GetString("ResamplingAlgorithm_Cubic", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bicubic (Smooth).
+        /// </summary>
+        internal static string ResamplingAlgorithm_CubicSmooth {
+            get {
+                return ResourceManager.GetString("ResamplingAlgorithm_CubicSmooth", resourceCulture);
             }
         }
         

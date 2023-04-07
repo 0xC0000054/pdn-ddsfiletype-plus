@@ -237,11 +237,14 @@
   <data name="GenerateMipMaps_Description" xml:space="preserve">
     <value>Generate Mip Maps</value>
   </data>
-  <data name="ResamplingAlgorithm_AdaptiveBestQuality" xml:space="preserve">
-    <value>Adaptive (Best Quality)</value>
+  <data name="ResamplingAlgorithm_AdaptiveHighQuality" xml:space="preserve">
+    <value>Adaptive</value>
   </data>
   <data name="ResamplingAlgorithm_Cubic" xml:space="preserve">
     <value>Bicubic</value>
+  </data>
+  <data name="ResamplingAlgorithm_CubicSmooth" xml:space="preserve">
+    <value>Bicubic (Smooth)</value>
   </data>
   <data name="ResamplingAlgorithm_Fant" xml:space="preserve">
     <value>Fant</value>
