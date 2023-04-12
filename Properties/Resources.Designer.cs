@@ -421,7 +421,7 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Adaptive.
+        ///   Looks up a localized string similar to Adaptive (Sharp).
         /// </summary>
         internal static string ResamplingAlgorithm_AdaptiveHighQuality {
             get {

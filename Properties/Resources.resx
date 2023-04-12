@@ -238,7 +238,7 @@
     <value>Generate Mip Maps</value>
   </data>
   <data name="ResamplingAlgorithm_AdaptiveHighQuality" xml:space="preserve">
-    <value>Adaptive</value>
+    <value>Adaptive (Sharp)</value>
   </data>
   <data name="ResamplingAlgorithm_Cubic" xml:space="preserve">
     <value>Bicubic</value>

@@ -123,17 +123,17 @@ namespace DdsFileTypePlus
             {
                 object[] values = new object[]
                 {
-                    ResamplingAlgorithm.AdaptiveHighQuality,
                     ResamplingAlgorithm.Cubic,
                     ResamplingAlgorithm.CubicSmooth,
                     ResamplingAlgorithm.Linear,
                     ResamplingAlgorithm.LinearLowQuality,
+                    ResamplingAlgorithm.AdaptiveHighQuality,
                     ResamplingAlgorithm.Lanczos3,
-                    ResamplingAlgorithm.NearestNeighbor,
                     ResamplingAlgorithm.Fant,
+                    ResamplingAlgorithm.NearestNeighbor,
                 };
 
-                int defaultChoiceIndex = Array.IndexOf(values, ResamplingAlgorithm.AdaptiveHighQuality);
+                int defaultChoiceIndex = Array.IndexOf(values, ResamplingAlgorithm.Cubic);
 
                 return new StaticListChoiceProperty(PropertyNames.MipMapResamplingAlgorithm, values, defaultChoiceIndex, false);
             }
@@ -199,14 +199,14 @@ namespace DdsFileTypePlus
 
             PropertyControlInfo mipResamplingPCI = configUI.FindControlForPropertyName(PropertyNames.MipMapResamplingAlgorithm);
             mipResamplingPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.AdaptiveHighQuality, this.strings.GetString("ResamplingAlgorithm_AdaptiveHighQuality"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Cubic, this.strings.GetString("ResamplingAlgorithm_Cubic"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.CubicSmooth, this.strings.GetString("ResamplingAlgorithm_CubicSmooth"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Linear, this.strings.GetString("ResamplingAlgorithm_Linear"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.LinearLowQuality, this.strings.GetString("ResamplingAlgorithm_LinearLowQuality"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.AdaptiveHighQuality, this.strings.GetString("ResamplingAlgorithm_AdaptiveHighQuality"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Lanczos3, this.strings.GetString("ResamplingAlgorithm_Lanczos3"));
-            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, this.strings.GetString("ResamplingAlgorithm_NearestNeighbor"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, this.strings.GetString("ResamplingAlgorithm_Fant"));
+            mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, this.strings.GetString("ResamplingAlgorithm_NearestNeighbor"));
 
             PropertyControlInfo forumLinkPCI = configUI.FindControlForPropertyName(PropertyNames.ForumLink);
             forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ForumLink_DisplayName");
