@@ -89,6 +89,7 @@ namespace DdsFileTypePlus
             bool cubeMap,
             bool generateMipmaps,
             ResamplingAlgorithm sampling,
+            bool useGammaCorrection,
             Surface scratchSurface,
             ProgressEventHandler progressCallback)
         {
@@ -118,7 +119,7 @@ namespace DdsFileTypePlus
 
             int mipLevels = generateMipmaps ? GetMipCount(width, height) : 1;
 
-            using (TextureCollection textures = GetTextures(scratchSurface, cubeMapFaceSize, mipLevels, sampling))
+            using (TextureCollection textures = GetTextures(scratchSurface, cubeMapFaceSize, mipLevels, sampling, useGammaCorrection))
             {
                 if (format == DdsFileFormat.R8G8B8X8 || format == DdsFileFormat.B8G8R8)
                 {
@@ -239,7 +240,11 @@ namespace DdsFileTypePlus
             return mipCount;
         }
 
-        private static TextureCollection GetTextures(Surface scratchSurface, Size? cubeMapFaceSize, int mipLevels, ResamplingAlgorithm algorithm)
+        private static TextureCollection GetTextures(Surface scratchSurface,
+                                                     Size? cubeMapFaceSize,
+                                                     int mipLevels,
+                                                     ResamplingAlgorithm algorithm,
+                                                     bool useGammaCorrection)
         {
             TextureCollection textures = null;
             TextureCollection tempTextures = null;
@@ -313,7 +318,7 @@ namespace DdsFileTypePlus
                                 int mipWidth = Math.Max(1, cubeMapSurface.Width >> j);
                                 int mipHeight = Math.Max(1, cubeMapSurface.Height >> j);
 
-                                tempTextures.Add(CreateMipTexture(cubeMapSurface, mipWidth, mipHeight, algorithm));
+                                tempTextures.Add(CreateMipTexture(cubeMapSurface, mipWidth, mipHeight, algorithm, useGammaCorrection));
                             }
                         }
                     }
@@ -329,7 +334,7 @@ namespace DdsFileTypePlus
                             int mipWidth = Math.Max(1, scratchSurface.Width >> j);
                             int mipHeight = Math.Max(1, scratchSurface.Height >> j);
 
-                            tempTextures.Add(CreateMipTexture(scratchSurface, mipWidth, mipHeight, algorithm));
+                            tempTextures.Add(CreateMipTexture(scratchSurface, mipWidth, mipHeight, algorithm, useGammaCorrection));
                         }
                     }
                 }
@@ -345,15 +350,21 @@ namespace DdsFileTypePlus
             return textures;
         }
 
-        private static unsafe Texture CreateMipTexture(Surface fullSize, int mipWidth, int mipHeight, ResamplingAlgorithm algorithm)
+        private static unsafe Texture CreateMipTexture(Surface fullSize,
+                                                       int mipWidth,
+                                                       int mipHeight,
+                                                       ResamplingAlgorithm algorithm,
+                                                       bool useGammaCorrection)
         {
             Texture mipTexture = null;
             Surface mipSurface = null;
 
             try
             {
+                FitSurfaceOptions options = useGammaCorrection ? FitSurfaceOptions.UseGammaCorrection : FitSurfaceOptions.Default;
+
                 mipSurface = new Surface(mipWidth, mipHeight);
-                mipSurface.FitSurface(algorithm, fullSize);
+                mipSurface.FitSurface(algorithm, fullSize, options);
 
                 if (HasTransparency(fullSize))
                 {

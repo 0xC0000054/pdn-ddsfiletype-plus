@@ -261,4 +261,7 @@
   <data name="ResamplingAlgorithm_NearestNeighbor" xml:space="preserve">
     <value>Nearest Neighbor</value>
   </data>
+  <data name="UseGammaCorrection_Description" xml:space="preserve">
+    <value>Use gamma correction</value>
+  </data>
 </root>

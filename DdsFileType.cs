@@ -63,6 +63,7 @@ namespace DdsFileTypePlus
                 new BooleanProperty(PropertyNames.CubeMap, false),
                 new BooleanProperty(PropertyNames.GenerateMipMaps, false),
                 CreateMipMapResamplingAlgorithm(),
+                new BooleanProperty(PropertyNames.UseGammaCorrection, true),
                 new UriProperty(PropertyNames.ForumLink, new Uri("https://forums.getpaint.net/topic/111731-dds-filetype-plus")),
                 new UriProperty(PropertyNames.GitHubLink, new Uri("https://github.com/0xC0000054/pdn-ddsfiletype-plus"))
             };
@@ -114,7 +115,16 @@ namespace DdsFileTypePlus
                         DdsFileFormat.BC7Srgb
                     },
                     true),
-                new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true)
+                new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true),
+                new ReadOnlyBoundToBooleanRule(PropertyNames.UseGammaCorrection, PropertyNames.GenerateMipMaps, true),
+                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
+                    PropertyNames.UseGammaCorrection,
+                    PropertyNames.MipMapResamplingAlgorithm,
+                    new object[]
+                    {
+                        ResamplingAlgorithm.NearestNeighbor
+                    },
+                    false)
             };
 
             return new PropertyCollection(props, rules);
@@ -208,6 +218,10 @@ namespace DdsFileTypePlus
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.Fant, this.strings.GetString("ResamplingAlgorithm_Fant"));
             mipResamplingPCI.SetValueDisplayName(ResamplingAlgorithm.NearestNeighbor, this.strings.GetString("ResamplingAlgorithm_NearestNeighbor"));
 
+            PropertyControlInfo gammaCorrectionPCI = configUI.FindControlForPropertyName(PropertyNames.UseGammaCorrection);
+            gammaCorrectionPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            gammaCorrectionPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("UseGammaCorrection_Description");
+
             PropertyControlInfo forumLinkPCI = configUI.FindControlForPropertyName(PropertyNames.ForumLink);
             forumLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ForumLink_DisplayName");
             forumLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("ForumLink_Description");
@@ -233,6 +247,7 @@ namespace DdsFileTypePlus
             bool cubeMap = token.GetProperty<BooleanProperty>(PropertyNames.CubeMap).Value;
             bool generateMipmaps = token.GetProperty<BooleanProperty>(PropertyNames.GenerateMipMaps).Value;
             ResamplingAlgorithm mipSampling = (ResamplingAlgorithm)token.GetProperty(PropertyNames.MipMapResamplingAlgorithm).Value;
+            bool useGammaCorrection = token.GetProperty<BooleanProperty>(PropertyNames.UseGammaCorrection).Value;
 
             DdsFile.Save(this.services,
                          input,
@@ -244,6 +259,7 @@ namespace DdsFileTypePlus
                          cubeMap,
                          generateMipmaps,
                          mipSampling,
+                         useGammaCorrection,
                          scratchSurface,
                          progressCallback);
         }
@@ -258,7 +274,8 @@ namespace DdsFileTypePlus
             MipMapResamplingAlgorithm,
             ForumLink,
             GitHubLink,
-            ErrorDiffusionDithering
+            ErrorDiffusionDithering,
+            UseGammaCorrection
         }
     }
 }

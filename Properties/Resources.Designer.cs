@@ -491,5 +491,14 @@ namespace DdsFileTypePlus.Properties {
                 return ResourceManager.GetString("ResamplingAlgorithm_NearestNeighbor", resourceCulture);
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Use gamma correction.
+        /// </summary>
+        internal static string UseGammaCorrection_Description {
+            get {
+                return ResourceManager.GetString("UseGammaCorrection_Description", resourceCulture);
+            }
+        }
     }
 }
