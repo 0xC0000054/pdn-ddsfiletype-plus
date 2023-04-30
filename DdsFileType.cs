@@ -116,15 +116,7 @@ namespace DdsFileTypePlus
                     },
                     true),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true),
-                new ReadOnlyBoundToBooleanRule(PropertyNames.UseGammaCorrection, PropertyNames.GenerateMipMaps, true),
-                new ReadOnlyBoundToValueRule<object, StaticListChoiceProperty>(
-                    PropertyNames.UseGammaCorrection,
-                    PropertyNames.MipMapResamplingAlgorithm,
-                    new object[]
-                    {
-                        ResamplingAlgorithm.NearestNeighbor
-                    },
-                    false)
+                new ReadOnlyBoundToBooleanRule(PropertyNames.UseGammaCorrection, PropertyNames.GenerateMipMaps, true)
             };
 
             return new PropertyCollection(props, rules);
