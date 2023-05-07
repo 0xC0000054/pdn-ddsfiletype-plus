@@ -378,7 +378,7 @@ namespace DdsFileTypePlus
                             // Set the alpha channel to fully opaque to prevent Windows Imaging Component
                             // from discarding the color information of completely transparent pixels.
                             new UnaryPixelOps.SetAlphaChannelTo255().Apply(opaqueClone, opaqueClone.Bounds);
-                            color.FitSurface(algorithm, opaqueClone);
+                            color.FitSurface(algorithm, opaqueClone, options);
                         }
 
                         for (int y = 0; y < mipHeight; ++y)
