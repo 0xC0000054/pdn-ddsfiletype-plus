@@ -6,6 +6,9 @@ root = true
 [*]
 end_of_line = crlf
 
+vsspell_section_id = 30a86b75973f41d3b6fe30b8f7950859
+vsspell_ignored_words_30a86b75973f41d3b6fe30b8f7950859 = File:IgnoredWords.dic
+
 [*.cs]
 indent_style                                          = space
 indent_size                                           = 4
