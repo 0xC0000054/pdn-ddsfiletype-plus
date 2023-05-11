@@ -179,11 +179,11 @@ namespace DdsFileTypePlus
             ditheringPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
             ditheringPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = this.strings.GetString("ErrorDiffusionDithering_Description");
 
-            PropertyControlInfo compresionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionSpeed);
-            compresionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionSpeed_DisplayName");
-            compresionModePCI.SetValueDisplayName(BC7CompressionSpeed.Fast, this.strings.GetString("BC7CompressionSpeed_Fast"));
-            compresionModePCI.SetValueDisplayName(BC7CompressionSpeed.Medium, this.strings.GetString("BC7CompressionSpeed_Medium"));
-            compresionModePCI.SetValueDisplayName(BC7CompressionSpeed.Slow, this.strings.GetString("BC7CompressionSpeed_Slow"));
+            PropertyControlInfo compressionModePCI = configUI.FindControlForPropertyName(PropertyNames.BC7CompressionSpeed);
+            compressionModePCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("BC7CompressionSpeed_DisplayName");
+            compressionModePCI.SetValueDisplayName(BC7CompressionSpeed.Fast, this.strings.GetString("BC7CompressionSpeed_Fast"));
+            compressionModePCI.SetValueDisplayName(BC7CompressionSpeed.Medium, this.strings.GetString("BC7CompressionSpeed_Medium"));
+            compressionModePCI.SetValueDisplayName(BC7CompressionSpeed.Slow, this.strings.GetString("BC7CompressionSpeed_Slow"));
 
             PropertyControlInfo errorMetricPCI = configUI.FindControlForPropertyName(PropertyNames.ErrorMetric);
             errorMetricPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = this.strings.GetString("ErrorMetric_DisplayName");
