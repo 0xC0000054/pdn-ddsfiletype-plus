@@ -39,7 +39,7 @@ namespace DdsFileTypePlus
 
                     for (int y = 0; y < surface.Height; ++y)
                     {
-                        ColorRgba* src = image.GetRowAddressUnchecked(y);
+                        ColorRgba* src = image.GetRowPointerUnchecked(y);
                         ColorBgra* dst = surface.GetRowPointerUnchecked(y);
 
                         for (int x = 0; x < surface.Width; ++x)

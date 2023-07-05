@@ -47,7 +47,7 @@ namespace DdsFileTypePlus.Interop
             base.Dispose(disposing);
         }
 
-        public unsafe ColorRgba* GetRowAddressUnchecked(int y)
+        public unsafe ColorRgba* GetRowPointerUnchecked(int y)
         {
             return (ColorRgba*)((byte*)this.info.scan0 + (y * this.info.stride));
         }
