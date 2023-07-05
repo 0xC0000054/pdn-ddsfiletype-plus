@@ -23,6 +23,8 @@ namespace DdsFileTypePlus
     [PluginSupportInfo(typeof(PluginSupportInfo))]
     public sealed class DdsFileType : PropertyBasedFileType
     {
+        private static readonly IReadOnlyList<string> FileExtensions = new string[] { ".dds" };
+
         private readonly IServiceProvider services;
         private readonly IDdsStringResourceManager strings;
 
@@ -30,8 +32,8 @@ namespace DdsFileTypePlus
             base(GetFileTypeName(services.GetService<IDdsFileTypePlusStrings>()),
                  new FileTypeOptions()
                  {
-                     LoadExtensions = new string[] { ".dds" },
-                     SaveExtensions = new string[] { ".dds" }
+                     LoadExtensions = FileExtensions,
+                     SaveExtensions = FileExtensions
                  })
         {
             this.services = services;
