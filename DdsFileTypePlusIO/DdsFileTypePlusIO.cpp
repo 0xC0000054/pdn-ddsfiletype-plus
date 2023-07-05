@@ -290,7 +290,6 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         info = targetImage->GetMetadata();
     }
 
-
     if (HasAlpha(info.format) && info.format != DXGI_FORMAT_A8_UNORM)
     {
         // Convert the premultiplied alpha to straight alpha.
