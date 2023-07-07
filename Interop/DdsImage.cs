@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
+using PaintDotNet.Imaging;
 using System;
 using System.Runtime.InteropServices;
 
@@ -29,6 +30,14 @@ namespace DdsFileTypePlus.Interop
             this.info = info;
         }
 
+        public unsafe RegionPtr<ColorBgra32> AsRegionPtr()
+        {
+            return new RegionPtr<ColorBgra32>((ColorBgra32*)this.info.scan0,
+                                              this.info.width,
+                                              this.info.height,
+                                              this.info.stride);
+        }
+
         protected override void Dispose(bool disposing)
         {
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
@@ -45,11 +54,6 @@ namespace DdsFileTypePlus.Interop
             }
 
             base.Dispose(disposing);
-        }
-
-        public unsafe ColorRgba* GetRowPointerUnchecked(int y)
-        {
-            return (ColorRgba*)((byte*)this.info.scan0 + (y * this.info.stride));
         }
     }
 }

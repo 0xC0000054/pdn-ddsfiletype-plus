@@ -79,22 +79,6 @@ namespace
         }
     }
 
-    struct ColorBgra32
-    {
-        uint8_t b;
-        uint8_t g;
-        uint8_t r;
-        uint8_t a;
-    };
-
-    struct ColorRgba32
-    {
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-        uint8_t a;
-    };
-
     HRESULT InitializeFromSaveInfo(
         const DDSSaveInfo* info,
         const DDSBitmapData* sourceImageData,
@@ -123,10 +107,10 @@ namespace
         case DdsFileFormat::BC3_SRGB:
         case DdsFileFormat::BC7_SRGB:
         case DdsFileFormat::R8G8B8A8_SRGB:
-            metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            metadata.format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
             break;
         default:
-            metadata.format = DXGI_FORMAT_R8G8B8A8_UNORM;
+            metadata.format = DXGI_FORMAT_B8G8R8A8_UNORM;
             break;
         }
 
@@ -171,20 +155,25 @@ namespace
                     return E_FAIL;
                 }
 
-                for (size_t y = 0; y < srcImage.height; ++y)
+                if (srcImage.stride == destImage.rowPitch)
                 {
-                    const ColorBgra32* src = reinterpret_cast<const ColorBgra32*>(srcImage.scan0 + (y * srcImage.stride));
-                    ColorRgba32* dst = reinterpret_cast<ColorRgba32*>(destImage.pixels + (y * destImage.rowPitch));
+                    // If both images have the same stride, we can copy the entire image at once.
+                    memcpy_s(destImage.pixels, destImage.slicePitch, srcImage.scan0, destImage.slicePitch);
+                }
+                else
+                {
+                    // If the images have different stride values, we copy the image one row at a time.
 
-                    for (size_t x = 0; x < srcImage.width; ++x)
+                    // Paint.NET's native format is 8-bits-per-channel BGRA, for a total of 32-bits-per-pixel.
+                    constexpr size_t bytesPerPixel = 4;
+                    const size_t bytesPerRow = static_cast<size_t>(srcImage.width) * bytesPerPixel;
+
+                    for (size_t y = 0; y < srcImage.height; ++y)
                     {
-                        dst->r = src->r;
-                        dst->g = src->g;
-                        dst->b = src->b;
-                        dst->a = src->a;
+                        const uint8_t* src = srcImage.scan0 + (y * srcImage.stride);
+                        uint8_t* dst = destImage.pixels + (y * destImage.rowPitch);
 
-                        ++src;
-                        ++dst;
+                        memcpy_s(destImage.pixels, bytesPerRow, srcImage.scan0, bytesPerRow);
                     }
                 }
             }
@@ -258,7 +247,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         ddsImage.swap(interleavedImage);
     }
 
-    const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+    const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
     std::unique_ptr<ScratchImage> targetImage(new(std::nothrow) ScratchImage);
 
     if (targetImage == nullptr)

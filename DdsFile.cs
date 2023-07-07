@@ -13,6 +13,7 @@
 using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
+using PaintDotNet.Imaging;
 using PaintDotNet.Interop;
 using PaintDotNet.Rendering;
 using System;
@@ -37,22 +38,10 @@ namespace DdsFileTypePlus
 
                     Surface surface = layer.Surface;
 
-                    for (int y = 0; y < surface.Height; ++y)
-                    {
-                        ColorRgba* src = image.GetRowPointerUnchecked(y);
-                        ColorBgra* dst = surface.GetRowPointerUnchecked(y);
+                    RegionPtr<ColorBgra32> source = image.AsRegionPtr();
+                    RegionPtr<ColorBgra32> destination = surface.AsRegionPtr().Cast<ColorBgra32>();
 
-                        for (int x = 0; x < surface.Width; ++x)
-                        {
-                            dst->R = src->R;
-                            dst->G = src->G;
-                            dst->B = src->B;
-                            dst->A = src->A;
-
-                            ++src;
-                            ++dst;
-                        }
-                    }
+                    source.CopyTo(destination);
 
                     doc.Layers.Add(layer);
                 }
