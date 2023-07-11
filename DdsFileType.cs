@@ -109,12 +109,6 @@ namespace DdsFileTypePlus
                         DdsFileFormat.BC2Srgb,
                         DdsFileFormat.BC3,
                         DdsFileFormat.BC3Srgb,
-                        DdsFileFormat.BC4Unsigned,
-                        DdsFileFormat.BC5Signed,
-                        DdsFileFormat.BC5Unsigned,
-                        DdsFileFormat.BC6HUnsigned,
-                        DdsFileFormat.BC7,
-                        DdsFileFormat.BC7Srgb
                     },
                     true),
                 new ReadOnlyBoundToBooleanRule(PropertyNames.MipMapResamplingAlgorithm, PropertyNames.GenerateMipMaps, true),
