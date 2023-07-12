@@ -19,7 +19,9 @@ namespace DdsFileTypePlus.Interop
     {
         public nuint width;
         public nuint height;
+        [MarshalAs(UnmanagedType.U1)]
         public bool cubeMap;
+        [MarshalAs(UnmanagedType.U1)]
         public bool premultipliedAlpha;
     }
 }
