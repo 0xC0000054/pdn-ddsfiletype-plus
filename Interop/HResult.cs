@@ -18,9 +18,14 @@ namespace DdsFileTypePlus.Interop
         public const int E_POINTER = unchecked((int)0x80004003);
         public const int CanceledError = unchecked((int)0x800704C7); // HRESULT_FROM_WIN32(ERROR_CANCELLED)
         public const int SeekError = unchecked((int)0x80070019); // HRESULT_FROM_WIN32(ERROR_SEEK)
+        public const int InvalidArgument = unchecked((int)0x80070057); // HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER)
+        public const int NotFound = unchecked((int)0x80070490); // HRESULT_FROM_WIN32(ERROR_NOT_FOUND)
+        public const int OutOfMemory = unchecked((int)0x8007000E); // HRESULT_FROM_WIN32(ERROR_OUTOFMEMORY)
         public const int NotSupported = unchecked((int)0x80070032); // HRESULT_FROM_WIN32(ERROR_NOT_SUPPORTED)
         public const int InvalidData = unchecked((int)0x8007000D); // HRESULT_FROM_WIN32(ERROR_INVALID_DATA)
         public const int InvalidDdsFileSignature = unchecked((int)0x8007000B); // HRESULT_FROM_WIN32(ERROR_BAD_FORMAT)
         public const int UnknownDdsSaveFormat = unchecked((int)0xA00707D0);
+
+        public static bool Failed(int hr) => hr < 0;
     }
 }

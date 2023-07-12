@@ -182,23 +182,96 @@ namespace
         return S_OK;
     }
 
-    struct Point
-    {
-        size_t x;
-        size_t y;
-    };
-
     // This value sets the HRESULT customer bit to ensure that it cannot overlap with any Microsoft-defined
     // HRESULT values.
     constexpr HRESULT UnknownDdsSaveFormat = 0xA0000000 | (FACILITY_WIN32 << 16) | ERROR_INVALID_PIXEL_FORMAT;
 }
 
-HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
+HRESULT __stdcall CreateScratchImage(
+    int32_t width,
+    int32_t height,
+    DXGI_FORMAT format,
+    int32_t arraySize,
+    int32_t mipLevels,
+    DirectX::ScratchImage** image)
 {
-    if (callbacks == nullptr || loadInfo == nullptr)
+    *image = nullptr;
+
+    std::unique_ptr<ScratchImage> scratchImage(new(std::nothrow) ScratchImage);
+
+    if (scratchImage == nullptr)
+    {
+        return E_OUTOFMEMORY;
+    }
+
+    TexMetadata metadata = {};
+
+    metadata.width = width;
+    metadata.height = height;
+    metadata.depth = 1;
+    metadata.arraySize = arraySize;
+    metadata.mipLevels = mipLevels;
+    metadata.format = format;
+    metadata.dimension = TEX_DIMENSION_TEXTURE2D;
+
+    HRESULT hr = scratchImage->Initialize(metadata);
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    *image = scratchImage.release();
+    return S_OK;
+}
+
+void __stdcall DestroyScratchImage(DirectX::ScratchImage* image)
+{
+    if (image)
+    {
+        delete image;
+    }
+}
+
+HRESULT __stdcall GetScratchImageData(
+    DirectX::ScratchImage* image,
+    size_t mip,
+    size_t item,
+    size_t slice,
+    ScratchImageData* data)
+{
+    if (image == nullptr || data == nullptr)
     {
         return E_INVALIDARG;
     }
+
+    const Image* requestedImage = image->GetImage(mip, item, slice);
+
+    if (requestedImage == nullptr)
+    {
+        return HRESULT_FROM_WIN32(ERROR_NOT_FOUND);
+    }
+
+    data->pixels = requestedImage->pixels;
+    data->width = requestedImage->width;
+    data->height = requestedImage->height;
+    data->stride = requestedImage->rowPitch;
+    data->totalImageDataSize = requestedImage->slicePitch;
+    data->format = requestedImage->format;
+
+    return S_OK;
+}
+
+HRESULT __stdcall Load(
+    const ImageIOCallbacks* callbacks,
+    DDSLoadInfo* loadInfo,
+    DirectX::ScratchImage** image)
+{
+    if (callbacks == nullptr || loadInfo == nullptr || image == nullptr)
+    {
+        return E_INVALIDARG;
+    }
+
+    *image = nullptr;
 
     TexMetadata info;
     std::unique_ptr<ScratchImage> ddsImage(new(std::nothrow) ScratchImage);
@@ -247,7 +320,7 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         ddsImage.swap(interleavedImage);
     }
 
-    const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_B8G8R8A8_UNORM_SRGB : DXGI_FORMAT_B8G8R8A8_UNORM;
+    const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
     std::unique_ptr<ScratchImage> targetImage(new(std::nothrow) ScratchImage);
 
     if (targetImage == nullptr)
@@ -279,120 +352,15 @@ HRESULT __stdcall Load(const ImageIOCallbacks* callbacks, DDSLoadInfo* loadInfo)
         info = targetImage->GetMetadata();
     }
 
-    if (HasAlpha(info.format) && info.format != DXGI_FORMAT_A8_UNORM)
-    {
-        // Convert the premultiplied alpha to straight alpha.
-        if (info.IsPMAlpha())
-        {
-            std::unique_ptr<ScratchImage> unmultipliedImage(new(std::nothrow) ScratchImage);
+    loadInfo->width = info.width;
+    loadInfo->height = info.height;
+    loadInfo->cubeMap = info.IsCubemap();
+    loadInfo->premultipliedAlpha = HasAlpha(info.format) && info.format != DXGI_FORMAT_A8_UNORM && info.IsPMAlpha();
 
-            if (unmultipliedImage == nullptr)
-            {
-                return E_OUTOFMEMORY;
-            }
-
-            hr = PremultiplyAlpha(targetImage->GetImages(), targetImage->GetImageCount(), info, TEX_PMALPHA_REVERSE, *unmultipliedImage);
-
-            if (FAILED(hr))
-            {
-                return hr;
-            }
-
-            info = unmultipliedImage->GetMetadata();
-            targetImage.swap(unmultipliedImage);
-        }
-    }
-
-    if (info.IsCubemap())
-    {
-        size_t width = info.width;
-        size_t height = info.height;
-
-        // The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
-        // Setup the offsets used to convert the cube map faces to a horizontal crossed image.
-        // A horizontal crossed image uses the following layout:
-        //
-        //		  [ +Y ]
-        //	[ -X ][ +Z ][ +X ][ -Z ]
-        //		  [ -Y ]
-        //
-
-        const Point cubeMapOffsets[6] =
-        {
-            { width * 2, height },	// +X
-            { 0, height },			// -X
-            { width, 0 },			// +Y
-            { width, height * 2 },	// -Y
-            { width, height },		// +Z
-            { width * 3, height }	// -Z
-        };
-
-        std::unique_ptr<ScratchImage> flattenedCubeMap(new(std::nothrow) ScratchImage);
-
-        if (flattenedCubeMap == nullptr)
-        {
-            return E_OUTOFMEMORY;
-        }
-        hr = flattenedCubeMap->Initialize2D(targetFormat, width * 4, height * 3, 1, 1, CP_FLAGS_NONE);
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        const Rect srcRect = { 0, 0, width, height };
-        const Image* destinationImage = flattenedCubeMap->GetImage(0, 0, 0);
-
-        // Initialize the image as completely transparent.
-        memset(destinationImage->pixels, 0, destinationImage->slicePitch);
-
-        for (size_t i = 0; i < 6; ++i)
-        {
-            const Image* face = targetImage->GetImage(0, i, 0);
-            const Point& offset = cubeMapOffsets[i];
-
-            CopyRectangle(*face, srcRect, *destinationImage, TEX_FILTER_DEFAULT, offset.x, offset.y);
-        }
-
-        info = flattenedCubeMap->GetMetadata();
-        targetImage.swap(flattenedCubeMap);
-    }
-
-    const Image* firstImage = targetImage->GetImage(0, 0, 0);
-
-    const size_t outBufferSize = firstImage->slicePitch;
-
-    void* outData = HeapAlloc(GetProcessHeap(), 0, outBufferSize);
-
-    if (outData == nullptr)
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    memcpy_s(outData, outBufferSize, firstImage->pixels, outBufferSize);
-
-    loadInfo->width = static_cast<int32_t>(firstImage->width);
-    loadInfo->height = static_cast<int32_t>(firstImage->height);
-    loadInfo->stride = static_cast<int32_t>(firstImage->rowPitch);
-    loadInfo->scan0 = outData;
-
+    *image = targetImage.release();
     return S_OK;
 }
 
-void __stdcall FreeLoadInfo(DDSLoadInfo* info)
-{
-    if (info != nullptr)
-    {
-        info->width = 0;
-        info->height = 0;
-        info->stride = 0;
-
-        if (info->scan0 != nullptr)
-        {
-            HeapFree(GetProcessHeap(), 0, info->scan0);
-            info->scan0 = nullptr;
-        }
-    }
-}
 
 HRESULT __stdcall Save(
     const DDSSaveInfo* input,

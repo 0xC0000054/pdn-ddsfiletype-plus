@@ -10,50 +10,33 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using PaintDotNet;
-using PaintDotNet.Imaging;
+using Microsoft.Win32.SafeHandles;
 using System;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus.Interop
 {
-    internal sealed class DdsImage : Disposable
+    internal sealed class SafeDirectXTexScratchImage : SafeHandleZeroOrMinusOneIsInvalid
     {
-        private DDSLoadInfo info;
-
-        public int Width => this.info.width;
-
-        public int Height => this.info.height;
-
-        internal DdsImage(DDSLoadInfo info)
+        public SafeDirectXTexScratchImage() : base(true)
         {
-            this.info = info;
         }
 
-        public unsafe RegionPtr<ColorBgra32> AsRegionPtr()
-        {
-            return new RegionPtr<ColorBgra32>((ColorBgra32*)this.info.scan0,
-                                              this.info.width,
-                                              this.info.height,
-                                              this.info.stride);
-        }
-
-        protected override void Dispose(bool disposing)
+        protected override bool ReleaseHandle()
         {
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                DdsIO_x64.FreeLoadInfo(this.info);
+                DdsIO_x64.DestroyScratchImage(this.handle);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                DdsIO_ARM64.FreeLoadInfo(this.info);
+                DdsIO_ARM64.DestroyScratchImage(this.handle);
             }
             else
             {
                 throw new PlatformNotSupportedException();
             }
-
-            base.Dispose(disposing);
+            return true;
         }
     }
 }

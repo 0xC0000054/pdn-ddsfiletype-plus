@@ -10,16 +10,25 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+using PaintDotNet;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus.Interop
 {
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class DDSLoadInfo
+    internal unsafe sealed class DirectXTexScratchImageData
     {
+        public byte* pixels;
         public nuint width;
         public nuint height;
-        public bool cubeMap;
-        public bool premultipliedAlpha;
+        public nuint stride;
+        public nuint totalImageDataSize;
+        public DXGI_FORMAT format;
+
+        public unsafe RegionPtr<T> AsRegionPtr<T>() where T : unmanaged
+            => new((T*)this.pixels,
+                   checked((int)this.width),
+                   checked((int)this.height),
+                   checked((int)this.stride));
     }
 }

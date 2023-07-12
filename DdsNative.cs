@@ -19,7 +19,7 @@ namespace DdsFileTypePlus
 {
     internal static class DdsNative
     {
-        public static unsafe DdsImage Load(Stream stream)
+        public static unsafe DirectXTexScratchImage Load(Stream stream, out DDSLoadInfo info)
         {
             StreamIOCallbacks streamIO = new(stream);
             IOCallbacks callbacks = new()
@@ -31,15 +31,17 @@ namespace DdsFileTypePlus
             };
 
             int hr;
-            DDSLoadInfo info = new();
+            info = new DDSLoadInfo();
+
+            SafeDirectXTexScratchImage scratchImageHandle = null;
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                hr = DdsIO_x64.Load(callbacks, info);
+                hr = DdsIO_x64.Load(callbacks, info, out scratchImageHandle);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                hr = DdsIO_ARM64.Load(callbacks, info);
+                hr = DdsIO_ARM64.Load(callbacks, info, out scratchImageHandle);
             }
             else
             {
@@ -71,7 +73,18 @@ namespace DdsFileTypePlus
                 }
             }
 
-            return new DdsImage(info);
+            DirectXTexScratchImage scratchImage;
+            try
+            {
+                scratchImage = new DirectXTexScratchImage(scratchImageHandle);
+                scratchImageHandle = null;
+            }
+            finally
+            {
+                scratchImageHandle?.Dispose();
+            }
+
+            return scratchImage;
         }
 
         public static unsafe void Save(

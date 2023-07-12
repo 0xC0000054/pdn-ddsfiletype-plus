@@ -13,7 +13,6 @@
 using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
-using PaintDotNet.Imaging;
 using PaintDotNet.Interop;
 using PaintDotNet.Rendering;
 using System;
@@ -22,51 +21,8 @@ using System.IO;
 
 namespace DdsFileTypePlus
 {
-    internal static class DdsFile
+    internal static class DdsWriter
     {
-        public static unsafe Document Load(Stream input, IServiceProvider services)
-        {
-            Document doc = null;
-
-            try
-            {
-                using (DdsImage image = DdsNative.Load(input))
-                {
-                    doc = new Document(image.Width, image.Height);
-
-                    BitmapLayer layer = Layer.CreateBackgroundLayer(image.Width, image.Height);
-
-                    Surface surface = layer.Surface;
-
-                    RegionPtr<ColorBgra32> source = image.AsRegionPtr();
-                    RegionPtr<ColorBgra32> destination = surface.AsRegionPtr().Cast<ColorBgra32>();
-
-                    source.CopyTo(destination);
-
-                    doc.Layers.Add(layer);
-                }
-            }
-            catch (FormatException ex) when (ex.HResult == HResult.InvalidDdsFileSignature)
-            {
-                IFileTypeInfo fileTypeInfo = FormatDetection.TryGetFileTypeInfo(input, services);
-
-                if (fileTypeInfo != null)
-                {
-                    FileType fileType = fileTypeInfo.GetInstance();
-
-                    input.Position = 0;
-
-                    doc = fileType.Load(input);
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return doc;
-        }
-
         public static void Save(
             IServiceProvider services,
             Document input,

@@ -28,14 +28,6 @@
 extern "C" {
 #endif // __cplusplus
 
-    struct DDSLoadInfo
-    {
-        void* scan0;
-        int32_t width;
-        int32_t height;
-        int32_t stride;
-    };
-
     // This must be kept in sync with DdsFileFormat.cs
     enum class DdsFileFormat : int32_t
     {
@@ -95,6 +87,14 @@ extern "C" {
         Slow
     };
 
+    struct DDSLoadInfo
+    {
+        size_t width;
+        size_t height;
+        bool cubeMap;
+        bool premultipliedAlpha;
+    };
+
     struct DDSSaveInfo
     {
         int32_t width;
@@ -116,8 +116,38 @@ extern "C" {
         uint32_t stride;
     };
 
-    __declspec(dllexport) HRESULT __stdcall Load(const DirectX::ImageIOCallbacks* callbacks, DDSLoadInfo* info);
-    __declspec(dllexport) void __stdcall FreeLoadInfo(DDSLoadInfo* info);
+    // This is based on DirectX::Image.
+    struct ScratchImageData
+    {
+        uint8_t*    pixels;
+        size_t      width;
+        size_t      height;
+        size_t      stride;
+        size_t      totalImageDataSize;
+        DXGI_FORMAT format;
+    };
+
+    __declspec(dllexport) HRESULT __stdcall CreateScratchImage(
+        int32_t width,
+        int32_t height,
+        DXGI_FORMAT format,
+        int32_t arraySize,
+        int32_t mipLevels,
+        DirectX::ScratchImage** image);
+
+    __declspec(dllexport) void __stdcall DestroyScratchImage(DirectX::ScratchImage* image);
+
+    __declspec(dllexport) HRESULT __stdcall GetScratchImageData(
+        DirectX::ScratchImage* image,
+        size_t mip,
+        size_t item,
+        size_t slice,
+        ScratchImageData* data);
+
+    __declspec(dllexport) HRESULT __stdcall Load(
+        const DirectX::ImageIOCallbacks* callbacks,
+        DDSLoadInfo* info,
+        DirectX::ScratchImage** image);
     __declspec(dllexport) HRESULT __stdcall Save(
         const DDSSaveInfo* input,
         const DDSBitmapData* imageData,

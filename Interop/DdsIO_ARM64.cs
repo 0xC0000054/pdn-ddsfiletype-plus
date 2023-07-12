@@ -19,15 +19,29 @@ namespace DdsFileTypePlus.Interop
     {
         private const string DllName = "DdsFileTypePlusIO_ARM64.dll";
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        internal static extern int Load([In] IOCallbacks callbacks, [In, Out] DDSLoadInfo info);
+        internal static extern int CreateScratchImage([In] int width,
+                                                      [In] int height,
+                                                      [In] DXGI_FORMAT format,
+                                                      [In] int arraySize,
+                                                      [In] int mipLevels,
+                                                      [Out] out SafeDirectXTexScratchImage image);
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
-        internal static extern void FreeLoadInfo([In, Out] DDSLoadInfo info);
+        internal static extern void DestroyScratchImage([In] IntPtr handle);
 
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("Microsoft.Design", "CA1060:MovePInvokesToNativeMethodsClass")]
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        internal static extern int GetScratchImageData([In] SafeDirectXTexScratchImage image,
+                                                       [In] nuint mip,
+                                                       [In] nuint item,
+                                                       [In] nuint slice,
+                                                       [In, Out] DirectXTexScratchImageData data);
+
+        [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
+        internal static extern int Load([In] IOCallbacks callbacks,
+                                        [In, Out] DDSLoadInfo info,
+                                        [Out] out SafeDirectXTexScratchImage image);
+
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         internal static extern unsafe int Save(
             [In] DDSSaveInfo input,
