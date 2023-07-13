@@ -17,6 +17,7 @@ using PaintDotNet.Imaging;
 using PaintDotNet.Interop;
 using PaintDotNet.Rendering;
 using System;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 
@@ -353,12 +354,15 @@ namespace DdsFileTypePlus
 
                             if (mipLevels > 1)
                             {
-                                for (uint mip = 1; mip < mipLevels; ++mip)
+                                using (MipSourceSurface mipSource = new(cubeMapSurface))
                                 {
-                                    RenderMipMap(cubeMapSurface,
-                                                 tempImage.GetImageData(mip, item, 0),
-                                                 algorithm,
-                                                 useGammaCorrection);
+                                    for (uint mip = 1; mip < mipLevels; ++mip)
+                                    {
+                                        RenderMipMap(mipSource,
+                                                     tempImage.GetImageData(mip, item, 0),
+                                                     algorithm,
+                                                     useGammaCorrection);
+                                    }
                                 }
                             }
                         }
@@ -370,12 +374,15 @@ namespace DdsFileTypePlus
 
                     if (mipLevels > 1)
                     {
-                        for (uint mip = 1; mip < mipLevels; ++mip)
+                        using (MipSourceSurface mipSource = new(scratchSurface))
                         {
-                            RenderMipMap(scratchSurface,
-                                         tempImage.GetImageData(mip, 0, 0),
-                                         algorithm,
-                                         useGammaCorrection);
+                            for (uint mip = 1; mip < mipLevels; ++mip)
+                            {
+                                RenderMipMap(mipSource,
+                                             tempImage.GetImageData(mip, 0, 0),
+                                             algorithm,
+                                             useGammaCorrection);
+                            }
                         }
                     }
                 }
@@ -391,7 +398,7 @@ namespace DdsFileTypePlus
             return image;
         }
 
-        private static unsafe void RenderMipMap(Surface fullSize,
+        private static unsafe void RenderMipMap(MipSourceSurface source,
                                                 DirectXTexScratchImageData mipData,
                                                 ResamplingAlgorithm algorithm,
                                                 bool useGammaCorrection)
@@ -400,22 +407,17 @@ namespace DdsFileTypePlus
 
             using (Surface mipSurface = new((int)mipData.width, (int)mipData.height))
             {
-                mipSurface.FitSurface(algorithm, fullSize, options);
+                mipSurface.FitSurface(algorithm, source.Surface, options);
 
-                if (HasTransparency(fullSize))
+                if (source.HasTransparency)
                 {
                     // Downscaling images with transparency is done in a way that allows the completely transparent areas
                     // to retain their RGB color values, this behavior is required by some programs that use DDS files.
-
                     using (Surface color = new(mipSurface.Width, mipSurface.Height))
                     {
-                        using (Surface opaqueClone = fullSize.Clone())
-                        {
-                            // Set the alpha channel to fully opaque to prevent Windows Imaging Component
-                            // from discarding the color information of completely transparent pixels.
-                            new UnaryPixelOps.SetAlphaChannelTo255().Apply(opaqueClone, opaqueClone.Bounds);
-                            color.FitSurface(algorithm, opaqueClone, options);
-                        }
+                        // An opaque copy of the source surface is used to prevent Windows Imaging Component
+                        // from discarding the color information of completely transparent pixels.
+                        color.FitSurface(algorithm, source.OpaqueSurface, options);
 
                         for (int y = 0; y < mipSurface.Height; ++y)
                         {
@@ -441,27 +443,6 @@ namespace DdsFileTypePlus
             }
         }
 
-        private static unsafe bool HasTransparency(Surface surface)
-        {
-            for (int y = 0; y < surface.Height; ++y)
-            {
-                ColorBgra* ptr = surface.GetRowPointerUnchecked(y);
-                ColorBgra* ptrEnd = ptr + surface.Width;
-
-                while (ptr < ptrEnd)
-                {
-                    if (ptr->A < 255)
-                    {
-                        return true;
-                    }
-
-                    ++ptr;
-                }
-            }
-
-            return false;
-        }
-
         private static unsafe void RenderToDirectXTexScratchImage(Surface surface, DirectXTexScratchImageData scratchImage)
         {
             RegionPtr<ColorBgra32> source = surface.AsRegionPtr().Cast<ColorBgra32>();
@@ -478,6 +459,86 @@ namespace DdsFileTypePlus
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {scratchImage.format}.");
+            }
+        }
+
+        private sealed class MipSourceSurface : Disposable
+        {
+            private readonly Lazy<bool> hasTransparency;
+            private Surface opaqueSurface;
+
+            public MipSourceSurface(Surface surface)
+            {
+                this.Surface = surface;
+                this.opaqueSurface = null;
+                this.hasTransparency = new Lazy<bool>(SurfaceHasTransparency);
+            }
+
+            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            public bool HasTransparency => this.hasTransparency.Value;
+
+            [DebuggerBrowsable(DebuggerBrowsableState.Never)]
+            public Surface OpaqueSurface
+            {
+                get
+                {
+                    if (this.IsDisposed)
+                    {
+                        ExceptionUtil.ThrowObjectDisposedException(nameof(MipSourceSurface));
+                    }
+
+                    this.opaqueSurface ??= CreateOpaqueSurface();
+
+                    return this.opaqueSurface;
+                }
+            }
+
+            public Surface Surface { get; }
+
+            protected override void Dispose(bool disposing)
+            {
+                if (disposing)
+                {
+                    if (this.opaqueSurface != null)
+                    {
+                        this.opaqueSurface.Dispose();
+                        this.opaqueSurface = null;
+                    }
+                }
+
+                base.Dispose(disposing);
+            }
+
+            private Surface CreateOpaqueSurface()
+            {
+                Surface opaqueClone = this.Surface.Clone();
+
+                PixelKernels.SetAlphaChannel(opaqueClone.AsRegionPtr().Cast<ColorBgra32>(), ColorAlpha8.Opaque);
+
+                return opaqueClone;
+            }
+
+            private unsafe bool SurfaceHasTransparency()
+            {
+                Surface surface = this.Surface;
+
+                for (int y = 0; y < surface.Height; ++y)
+                {
+                    ColorBgra* ptr = surface.GetRowPointerUnchecked(y);
+                    ColorBgra* ptrEnd = ptr + surface.Width;
+
+                    while (ptr < ptrEnd)
+                    {
+                        if (ptr->A < 255)
+                        {
+                            return true;
+                        }
+
+                        ++ptr;
+                    }
+                }
+
+                return false;
             }
         }
     }
