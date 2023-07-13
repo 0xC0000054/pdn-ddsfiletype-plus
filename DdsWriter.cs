@@ -451,11 +451,11 @@ namespace DdsFileTypePlus
             {
                 case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
                 case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
-                    source.CopyTo(scratchImage.AsRegionPtr<ColorBgra32>());
+                    source.CopyTo(scratchImage.AsRegionPtr<ColorBgra32>(checkPixelType: false));
                     break;
                 case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
                 case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                    PixelKernels.ConvertBgra32ToRgba32(scratchImage.AsRegionPtr<ColorRgba32>(), source);
+                    PixelKernels.ConvertBgra32ToRgba32(scratchImage.AsRegionPtr<ColorRgba32>(checkPixelType: false), source);
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {scratchImage.format}.");

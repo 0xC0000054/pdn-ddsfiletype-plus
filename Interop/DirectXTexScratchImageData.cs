@@ -11,6 +11,8 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
+using PaintDotNet.Imaging;
+using System;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus.Interop
@@ -25,10 +27,43 @@ namespace DdsFileTypePlus.Interop
         public nuint totalImageDataSize;
         public DXGI_FORMAT format;
 
-        public unsafe RegionPtr<T> AsRegionPtr<T>() where T : unmanaged
-            => new((T*)this.pixels,
-                   checked((int)this.width),
-                   checked((int)this.height),
-                   checked((int)this.stride));
+        public unsafe RegionPtr<T> AsRegionPtr<T>(bool checkPixelType = true) where T : unmanaged
+        {
+            if (checkPixelType)
+            {
+                EnsureCompatiblePixelType(typeof(T));
+            }
+
+            return new((T*)this.pixels,
+                       checked((int)this.width),
+                       checked((int)this.height),
+                       checked((int)this.stride));
+        }
+
+        private void EnsureCompatiblePixelType(Type pixelType)
+        {
+            switch (this.format)
+            {
+            case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
+            case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+                VerifyPixelTypeMatches(pixelType, typeof(ColorBgra32));
+                break;
+            case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
+            case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+                VerifyPixelTypeMatches(pixelType, typeof(ColorRgba32));
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {this.format}.");
+            }
+
+            void VerifyPixelTypeMatches(Type pixelType, Type expectedType)
+            {
+                if (pixelType != expectedType)
+                {
+                    string message = $"Unexpected pixel type for {this.format}, pixelType={pixelType} expectedType={expectedType}.";
+                    ExceptionUtil.ThrowInvalidOperationException(message);
+                }
+            }
+        }
     }
 }
