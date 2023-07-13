@@ -17,15 +17,9 @@ namespace DdsFileTypePlus.Interop
     [StructLayout(LayoutKind.Sequential)]
     internal sealed class DDSSaveInfo
     {
-        public int width;
-        public int height;
-        public int arraySize;
-        public int mipLevels;
-        public DdsFileFormat format;
+        public DXGI_FORMAT format;
         public DdsErrorMetric errorMetric;
         public BC7CompressionSpeed compressionSpeed;
-        [MarshalAs(UnmanagedType.U1)]
-        public bool cubeMap;
         [MarshalAs(UnmanagedType.U1)]
         public bool errorDiffusionDithering;
     }

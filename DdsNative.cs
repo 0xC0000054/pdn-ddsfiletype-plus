@@ -51,7 +51,7 @@ namespace DdsFileTypePlus
             GC.KeepAlive(streamIO);
             GC.KeepAlive(callbacks);
 
-            if (FAILED(hr))
+            if (HResult.Failed(hr))
             {
                 if (streamIO.CallbackExceptionInfo != null)
                 {
@@ -89,7 +89,7 @@ namespace DdsFileTypePlus
 
         public static unsafe void Save(
             DDSSaveInfo info,
-            TextureCollection textures,
+            DirectXTexScratchImage image,
             Stream output,
             IntPtr directComputeAdapter,
             DdsProgressCallback progressCallback)
@@ -103,44 +103,34 @@ namespace DdsFileTypePlus
                 GetSize = streamIO.GetSize
             };
 
-            DDSBitmapData[] bitmapData = CreateBitmapDataArray(textures, info.arraySize, info.mipLevels);
-
             int hr;
 
-            unsafe
+            if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                fixed (DDSBitmapData* pBitmapData = bitmapData)
-                {
-                    if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
-                    {
-                        hr = DdsIO_x64.Save(info,
-                                            pBitmapData,
-                                            (uint)bitmapData.Length,
-                                            callbacks,
-                                            directComputeAdapter,
-                                            progressCallback);
-                    }
-                    else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
-                    {
-                        hr = DdsIO_ARM64.Save(info,
-                                              pBitmapData,
-                                              (uint)bitmapData.Length,
-                                              callbacks,
-                                              directComputeAdapter,
-                                              progressCallback);
-                    }
-                    else
-                    {
-                        throw new PlatformNotSupportedException();
-                    }
-                }
+                hr = DdsIO_x64.Save(info,
+                                    image.SafeDirectXTexScratchImage,
+                                    callbacks,
+                                    directComputeAdapter,
+                                    progressCallback);
+            }
+            else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
+            {
+                hr = DdsIO_ARM64.Save(info,
+                                      image.SafeDirectXTexScratchImage,
+                                      callbacks,
+                                      directComputeAdapter,
+                                      progressCallback);
+            }
+            else
+            {
+                throw new PlatformNotSupportedException();
             }
 
             GC.KeepAlive(streamIO);
             GC.KeepAlive(callbacks);
             GC.KeepAlive(progressCallback);
 
-            if (FAILED(hr))
+            if (HResult.Failed(hr))
             {
                 if (streamIO.CallbackExceptionInfo != null)
                 {
@@ -152,38 +142,12 @@ namespace DdsFileTypePlus
                     {
                         case HResult.CanceledError:
                             throw new OperationCanceledException();
-                        case HResult.UnknownDdsSaveFormat:
-                            throw new InvalidOperationException("The DDSFileFormat value does not map to a DXGI format.");
                         default:
                             Marshal.ThrowExceptionForHR(hr);
                             break;
                     }
                 }
             }
-        }
-
-        private static DDSBitmapData[] CreateBitmapDataArray(TextureCollection textures, int arraySize, int mipLevels)
-        {
-            DDSBitmapData[] array = new DDSBitmapData[textures.Count];
-
-            for (int i = 0; i < arraySize; ++i)
-            {
-                int startIndex = i * mipLevels;
-
-                for (int j = 0; j < mipLevels; ++j)
-                {
-                    int index = startIndex + j;
-
-                    array[index] = new DDSBitmapData(textures[index].Surface);
-                }
-            }
-
-            return array;
-        }
-
-        private static bool FAILED(int hr)
-        {
-            return hr < 0;
         }
     }
 }

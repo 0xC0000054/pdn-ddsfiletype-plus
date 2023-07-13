@@ -13,6 +13,7 @@
 using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
+using PaintDotNet.Imaging;
 using PaintDotNet.Interop;
 using PaintDotNet.Rendering;
 using System;
@@ -31,7 +32,7 @@ namespace DdsFileTypePlus
             bool errorDiffusionDithering,
             BC7CompressionSpeed compressionSpeed,
             DdsErrorMetric errorMetric,
-            bool cubeMap,
+            bool cubeMapFromCrossedImage,
             bool generateMipmaps,
             ResamplingAlgorithm sampling,
             bool useGammaCorrection,
@@ -44,9 +45,8 @@ namespace DdsFileTypePlus
             int width = scratchSurface.Width;
             int height = scratchSurface.Height;
             int arraySize = 1;
-            Size? cubeMapFaceSize = null;
 
-            if (cubeMap && IsCrossedCubeMapSize(scratchSurface))
+            if (cubeMapFromCrossedImage && IsCrossedCubeMapSize(scratchSurface))
             {
                 if (width > height)
                 {
@@ -59,12 +59,23 @@ namespace DdsFileTypePlus
                     height /= 4;
                 }
                 arraySize = 6;
-                cubeMapFaceSize = new Size(width, height);
+            }
+            else
+            {
+                cubeMapFromCrossedImage = false;
             }
 
             int mipLevels = generateMipmaps ? GetMipCount(width, height) : 1;
 
-            using (TextureCollection textures = GetTextures(scratchSurface, cubeMapFaceSize, mipLevels, sampling, useGammaCorrection))
+            using (DirectXTexScratchImage textures = GetTextures(scratchSurface,
+                                                                 cubeMapFromCrossedImage,
+                                                                 width,
+                                                                 height,
+                                                                 arraySize,
+                                                                 mipLevels,
+                                                                 format,
+                                                                 sampling,
+                                                                 useGammaCorrection))
             {
                 if (format == DdsFileFormat.R8G8B8X8 || format == DdsFileFormat.B8G8R8)
                 {
@@ -77,7 +88,7 @@ namespace DdsFileTypePlus
                     {
                         ddsProgress = (UIntPtr done, UIntPtr total) =>
                         {
-                            double progress = (double)done.ToUInt64() / (double)total.ToUInt64();
+                            double progress = (double)done.ToUInt64() / total.ToUInt64();
                             try
                             {
                                 progressCallback(null, new ProgressEventArgs(progress * 100.0, true));
@@ -92,14 +103,9 @@ namespace DdsFileTypePlus
 
                     DDSSaveInfo info = new()
                     {
-                        width = width,
-                        height = height,
-                        arraySize = arraySize,
-                        mipLevels = mipLevels,
-                        format = format,
+                        format = GetSaveFormat(format),
                         errorMetric = errorMetric,
                         compressionSpeed = compressionSpeed,
-                        cubeMap = cubeMapFaceSize.HasValue,
                         errorDiffusionDithering = errorDiffusionDithering
                     };
 
@@ -164,6 +170,39 @@ namespace DdsFileTypePlus
             return false;
         }
 
+        private static DXGI_FORMAT GetSaveFormat(DdsFileFormat format)
+        {
+            return format switch
+            {
+                DdsFileFormat.BC1 => DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM,
+                DdsFileFormat.BC1Srgb => DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM_SRGB,
+                DdsFileFormat.BC2 => DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM,
+                DdsFileFormat.BC2Srgb => DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM_SRGB,
+                DdsFileFormat.BC3 => DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM,
+                DdsFileFormat.BC3Srgb => DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM_SRGB,
+                DdsFileFormat.BC4Unsigned => DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM,
+                DdsFileFormat.BC5Unsigned => DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM,
+                DdsFileFormat.BC5Signed => DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM,
+                DdsFileFormat.BC6HUnsigned => DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16,
+                DdsFileFormat.BC7 => DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM,
+                DdsFileFormat.BC7Srgb => DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM_SRGB,
+                DdsFileFormat.B8G8R8A8 => DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
+                DdsFileFormat.B8G8R8A8Srgb => DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
+                DdsFileFormat.B8G8R8X8 => DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM,
+                DdsFileFormat.B8G8R8X8Srgb => DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM_SRGB,
+                DdsFileFormat.R8G8B8A8 => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM,
+                DdsFileFormat.R8G8B8A8Srgb => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
+                DdsFileFormat.B5G5R5A1 => DXGI_FORMAT.DXGI_FORMAT_B5G5R5A1_UNORM,
+                DdsFileFormat.B4G4R4A4 => DXGI_FORMAT.DXGI_FORMAT_B4G4R4A4_UNORM,
+                DdsFileFormat.B5G6R5 => DXGI_FORMAT.DXGI_FORMAT_B5G6R5_UNORM,
+                DdsFileFormat.R8Unsigned => DXGI_FORMAT.DXGI_FORMAT_R8_UNORM,
+                DdsFileFormat.R8G8Unsigned => DXGI_FORMAT.DXGI_FORMAT_R8G8_UNORM,
+                DdsFileFormat.R8G8Signed => DXGI_FORMAT.DXGI_FORMAT_R8G8_SNORM,
+                DdsFileFormat.R32Float => DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT,
+                _ => throw new InvalidOperationException($"{nameof(DdsFileFormat)}.{format} does not map to a DXGI format."),
+            };
+        }
+
         private static int GetMipCount(int width, int height)
         {
             int mipCount = 1;
@@ -185,25 +224,76 @@ namespace DdsFileTypePlus
             return mipCount;
         }
 
-        private static TextureCollection GetTextures(Surface scratchSurface,
-                                                     Size? cubeMapFaceSize,
-                                                     int mipLevels,
-                                                     ResamplingAlgorithm algorithm,
-                                                     bool useGammaCorrection)
+        private static DirectXTexScratchImage GetTextures(Surface scratchSurface,
+                                                          bool cubeMapFromCrossedImage,
+                                                          int width,
+                                                          int height,
+                                                          int arraySize,
+                                                          int mipLevels,
+                                                          DdsFileFormat format,
+                                                          ResamplingAlgorithm algorithm,
+                                                          bool useGammaCorrection)
         {
-            TextureCollection textures = null;
-            TextureCollection tempTextures = null;
+            DirectXTexScratchImage image = null;
+            DirectXTexScratchImage tempImage = null;
 
             try
             {
-                tempTextures = new TextureCollection(mipLevels);
-
-                if (cubeMapFaceSize.HasValue)
+                DXGI_FORMAT dxgiFormat;
+#pragma warning disable IDE0066 // Convert switch statement to expression
+                switch (format)
                 {
-                    // DirectX 10+ requires DDS cube maps to have all 6 faces.
-                    tempTextures.Capacity *= 6;
+                    case DdsFileFormat.B8G8R8X8Srgb:
+                    case DdsFileFormat.BC1Srgb:
+                    case DdsFileFormat.BC2Srgb:
+                    case DdsFileFormat.BC3Srgb:
+                    case DdsFileFormat.BC7Srgb:
+                    case DdsFileFormat.R8G8B8A8Srgb:
+                        dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+                        break;
+                    case DdsFileFormat.B8G8R8A8:
+                    // R8G8B8X8 and B8G8R8 are legacy DirectX 9 formats that DXGI does not support.
+                    // See DX9DdsWriter for the writer implementation.
+                    case DdsFileFormat.R8G8B8X8:
+                    case DdsFileFormat.B8G8R8:
+                        dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM;
+                        break;
+                    case DdsFileFormat.B8G8R8A8Srgb:
+                        dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+                        break;
+                    case DdsFileFormat.BC1:
+                    case DdsFileFormat.BC2:
+                    case DdsFileFormat.BC3:
+                    case DdsFileFormat.BC4Unsigned:
+                    case DdsFileFormat.BC5Unsigned:
+                    case DdsFileFormat.BC5Signed:
+                    case DdsFileFormat.BC6HUnsigned:
+                    case DdsFileFormat.BC7:
+                    case DdsFileFormat.B8G8R8X8:
+                    case DdsFileFormat.R8G8B8A8:
+                    case DdsFileFormat.B5G5R5A1:
+                    case DdsFileFormat.B4G4R4A4:
+                    case DdsFileFormat.B5G6R5:
+                    case DdsFileFormat.R8Unsigned:
+                    case DdsFileFormat.R8G8Unsigned:
+                    case DdsFileFormat.R8G8Signed:
+                    case DdsFileFormat.R32Float:
+                        dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM;
+                        break;
+                    default:
+                        throw new InvalidOperationException($"{nameof(DdsFileFormat)}.{format} does not map to a DXGI format.");
+                }
+#pragma warning restore IDE0066 // Convert switch statement to expression
 
-                    Size faceSize = cubeMapFaceSize.Value;
+                tempImage = new DirectXTexScratchImage(width,
+                                                       height,
+                                                       arraySize,
+                                                       mipLevels,
+                                                       dxgiFormat,
+                                                       cubeMapFromCrossedImage);
+
+                if (cubeMapFromCrossedImage)
+                {
                     Point[] cubeMapOffsets = new Point[6];
 
                     // Split the crossed image into the individual cube map faces.
@@ -224,12 +314,12 @@ namespace DdsFileTypePlus
                         //	[ -X ][ +Z ][ +X ][ -Z ]
                         //		  [ -Y ]
                         //
-                        cubeMapOffsets[0] = new Point(faceSize.Width * 2, faceSize.Height);  // +X
-                        cubeMapOffsets[1] = new Point(0, faceSize.Height);                   // -X
-                        cubeMapOffsets[2] = new Point(faceSize.Width, 0);                    // +Y
-                        cubeMapOffsets[3] = new Point(faceSize.Width, faceSize.Height * 2);  // -Y
-                        cubeMapOffsets[4] = new Point(faceSize.Width, faceSize.Height);      // +Z
-                        cubeMapOffsets[5] = new Point(faceSize.Width * 3, faceSize.Height);  // -Z
+                        cubeMapOffsets[0] = new Point(width * 2, height);  // +X
+                        cubeMapOffsets[1] = new Point(0, height);          // -X
+                        cubeMapOffsets[2] = new Point(width, 0);           // +Y
+                        cubeMapOffsets[3] = new Point(width, height * 2);  // -Y
+                        cubeMapOffsets[4] = new Point(width, height);      // +Z
+                        cubeMapOffsets[5] = new Point(width * 3, height);  // -Z
                     }
                     else
                     {
@@ -240,75 +330,76 @@ namespace DdsFileTypePlus
                         //		  [ -Y ]
                         //		  [ -Z ]
                         //
-                        cubeMapOffsets[0] = new Point(faceSize.Width * 2, faceSize.Height);  // +X
-                        cubeMapOffsets[1] = new Point(0, faceSize.Height);                   // -X
-                        cubeMapOffsets[2] = new Point(faceSize.Width, 0);                    // +Y
-                        cubeMapOffsets[3] = new Point(faceSize.Width, faceSize.Height * 2);  // -Y
-                        cubeMapOffsets[4] = new Point(faceSize.Width, faceSize.Height);      // +Z
-                        cubeMapOffsets[5] = new Point(faceSize.Width, faceSize.Height * 3);  // -Z
+                        cubeMapOffsets[0] = new Point(width * 2, height);  // +X
+                        cubeMapOffsets[1] = new Point(0, height);          // -X
+                        cubeMapOffsets[2] = new Point(width, 0);           // +Y
+                        cubeMapOffsets[3] = new Point(width, height * 2);  // -Y
+                        cubeMapOffsets[4] = new Point(width, height);      // +Z
+                        cubeMapOffsets[5] = new Point(width, height * 3);  // -Z
                     }
 
                     for (int i = 0; i < 6; ++i)
                     {
                         Point srcStartOffset = cubeMapOffsets[i];
 
-                        tempTextures.Add(new Texture(scratchSurface.CreateWindow(srcStartOffset.X, srcStartOffset.Y, faceSize.Width, faceSize.Height), true));
-
-                        if (mipLevels > 1)
+                        using (Surface cubeMapSurface = scratchSurface.CreateWindow(srcStartOffset.X,
+                                                                                    srcStartOffset.Y,
+                                                                                    width,
+                                                                                    height))
                         {
-                            Surface cubeMapSurface = tempTextures[tempTextures.Count - 1].Surface;
+                            uint item = (uint)i;
 
-                            for (int j = 1; j < mipLevels; ++j)
+                            RenderToDirectXTexScratchImage(cubeMapSurface, tempImage.GetImageData(0, item, 0));
+
+                            if (mipLevels > 1)
                             {
-                                int mipWidth = Math.Max(1, cubeMapSurface.Width >> j);
-                                int mipHeight = Math.Max(1, cubeMapSurface.Height >> j);
-
-                                tempTextures.Add(CreateMipTexture(cubeMapSurface, mipWidth, mipHeight, algorithm, useGammaCorrection));
+                                for (uint mip = 1; mip < mipLevels; ++mip)
+                                {
+                                    RenderMipMap(cubeMapSurface,
+                                                 tempImage.GetImageData(mip, item, 0),
+                                                 algorithm,
+                                                 useGammaCorrection);
+                                }
                             }
                         }
                     }
                 }
                 else
                 {
-                    tempTextures.Add(new Texture(scratchSurface, false));
+                    RenderToDirectXTexScratchImage(scratchSurface, tempImage.GetImageData(0, 0, 0));
 
                     if (mipLevels > 1)
                     {
-                        for (int j = 1; j < mipLevels; ++j)
+                        for (uint mip = 1; mip < mipLevels; ++mip)
                         {
-                            int mipWidth = Math.Max(1, scratchSurface.Width >> j);
-                            int mipHeight = Math.Max(1, scratchSurface.Height >> j);
-
-                            tempTextures.Add(CreateMipTexture(scratchSurface, mipWidth, mipHeight, algorithm, useGammaCorrection));
+                            RenderMipMap(scratchSurface,
+                                         tempImage.GetImageData(mip, 0, 0),
+                                         algorithm,
+                                         useGammaCorrection);
                         }
                     }
                 }
 
-                textures = tempTextures;
-                tempTextures = null;
+                image = tempImage;
+                tempImage = null;
             }
             finally
             {
-                tempTextures?.Dispose();
+                tempImage?.Dispose();
             }
 
-            return textures;
+            return image;
         }
 
-        private static unsafe Texture CreateMipTexture(Surface fullSize,
-                                                       int mipWidth,
-                                                       int mipHeight,
-                                                       ResamplingAlgorithm algorithm,
-                                                       bool useGammaCorrection)
+        private static unsafe void RenderMipMap(Surface fullSize,
+                                                DirectXTexScratchImageData mipData,
+                                                ResamplingAlgorithm algorithm,
+                                                bool useGammaCorrection)
         {
-            Texture mipTexture = null;
-            Surface mipSurface = null;
+            FitSurfaceOptions options = useGammaCorrection ? FitSurfaceOptions.UseGammaCorrection : FitSurfaceOptions.Default;
 
-            try
+            using (Surface mipSurface = new((int)mipData.width, (int)mipData.height))
             {
-                FitSurfaceOptions options = useGammaCorrection ? FitSurfaceOptions.UseGammaCorrection : FitSurfaceOptions.Default;
-
-                mipSurface = new Surface(mipWidth, mipHeight);
                 mipSurface.FitSurface(algorithm, fullSize, options);
 
                 if (HasTransparency(fullSize))
@@ -316,7 +407,7 @@ namespace DdsFileTypePlus
                     // Downscaling images with transparency is done in a way that allows the completely transparent areas
                     // to retain their RGB color values, this behavior is required by some programs that use DDS files.
 
-                    using (Surface color = new(mipWidth, mipHeight))
+                    using (Surface color = new(mipSurface.Width, mipSurface.Height))
                     {
                         using (Surface opaqueClone = fullSize.Clone())
                         {
@@ -326,12 +417,12 @@ namespace DdsFileTypePlus
                             color.FitSurface(algorithm, opaqueClone, options);
                         }
 
-                        for (int y = 0; y < mipHeight; ++y)
+                        for (int y = 0; y < mipSurface.Height; ++y)
                         {
                             ColorBgra* colorPtr = color.GetRowPointerUnchecked(y);
                             ColorBgra* destPtr = mipSurface.GetRowPointerUnchecked(y);
 
-                            for (int x = 0; x < mipWidth; ++x)
+                            for (int x = 0; x < mipSurface.Width; ++x)
                             {
                                 // Copy the color data from the opaque image to create a merged
                                 // image with the transparent pixels retaining their original values.
@@ -346,15 +437,8 @@ namespace DdsFileTypePlus
                     }
                 }
 
-                mipTexture = new Texture(mipSurface, true);
-                mipSurface = null;
+                RenderToDirectXTexScratchImage(mipSurface, mipData);
             }
-            finally
-            {
-                mipSurface?.Dispose();
-            }
-
-            return mipTexture;
         }
 
         private static unsafe bool HasTransparency(Surface surface)
@@ -376,6 +460,25 @@ namespace DdsFileTypePlus
             }
 
             return false;
+        }
+
+        private static unsafe void RenderToDirectXTexScratchImage(Surface surface, DirectXTexScratchImageData scratchImage)
+        {
+            RegionPtr<ColorBgra32> source = surface.AsRegionPtr().Cast<ColorBgra32>();
+
+            switch (scratchImage.format)
+            {
+                case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
+                    source.CopyTo(scratchImage.AsRegionPtr<ColorBgra32>());
+                    break;
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
+                case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
+                    PixelKernels.ConvertBgra32ToRgba32(scratchImage.AsRegionPtr<ColorRgba32>(), source);
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {scratchImage.format}.");
+            }
         }
     }
 }

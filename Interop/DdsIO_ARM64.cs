@@ -25,6 +25,7 @@ namespace DdsFileTypePlus.Interop
                                                       [In] DXGI_FORMAT format,
                                                       [In] int arraySize,
                                                       [In] int mipLevels,
+                                                      [In, MarshalAs(UnmanagedType.U1)] bool cubeMap,
                                                       [Out] out SafeDirectXTexScratchImage image);
 
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
@@ -45,8 +46,7 @@ namespace DdsFileTypePlus.Interop
         [DllImport(DllName, CallingConvention = CallingConvention.StdCall)]
         internal static extern unsafe int Save(
             [In] DDSSaveInfo input,
-            [In] DDSBitmapData* bitmapData,
-            [In] uint bitmapDataLength,
+            [In] SafeDirectXTexScratchImage image,
             [In] IOCallbacks callbacks,
             [In] IntPtr directComputeAdapter,
             [In, MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);

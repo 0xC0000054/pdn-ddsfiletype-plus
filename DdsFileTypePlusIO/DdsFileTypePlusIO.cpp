@@ -20,171 +20,24 @@ using namespace DirectX;
 
 namespace
 {
-    DXGI_FORMAT GetDXGIFormat(const DdsFileFormat format)
+    HRESULT SaveImage(const ImageIOCallbacks* callbacks, const ScratchImage* const image)
     {
-        switch (format)
+        TexMetadata metadata = image->GetMetadata();
+
+        if (HasAlpha(metadata.format) && metadata.format != DXGI_FORMAT_A8_UNORM)
         {
-        case DdsFileFormat::BC1:
-            return DXGI_FORMAT_BC1_UNORM;
-        case DdsFileFormat::BC1_SRGB:
-            return DXGI_FORMAT_BC1_UNORM_SRGB;
-        case DdsFileFormat::BC2:
-            return DXGI_FORMAT_BC2_UNORM;
-        case DdsFileFormat::BC2_SRGB:
-            return DXGI_FORMAT_BC2_UNORM_SRGB;
-        case DdsFileFormat::BC3:
-            return DXGI_FORMAT_BC3_UNORM;
-        case DdsFileFormat::BC3_SRGB:
-            return DXGI_FORMAT_BC3_UNORM_SRGB;
-        case DdsFileFormat::BC4_UNORM:
-            return DXGI_FORMAT_BC4_UNORM;
-        case DdsFileFormat::BC5_UNORM:
-            return DXGI_FORMAT_BC5_UNORM;
-        case DdsFileFormat::BC5_SNORM:
-            return DXGI_FORMAT_BC5_SNORM;
-        case DdsFileFormat::BC6H_UF16:
-            return DXGI_FORMAT_BC6H_UF16;
-        case DdsFileFormat::BC7:
-            return DXGI_FORMAT_BC7_UNORM;
-        case DdsFileFormat::BC7_SRGB:
-            return DXGI_FORMAT_BC7_UNORM_SRGB;
-        case DdsFileFormat::B8G8R8A8:
-            return DXGI_FORMAT_B8G8R8A8_UNORM;
-        case DdsFileFormat::B8G8R8X8:
-            return DXGI_FORMAT_B8G8R8X8_UNORM;
-        case DdsFileFormat::B8G8R8A8_SRGB:
-            return DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-        case DdsFileFormat::B8G8R8X8_SRGB:
-            return DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
-        case DdsFileFormat::B5G5R5A1:
-            return DXGI_FORMAT_B5G5R5A1_UNORM;
-        case DdsFileFormat::B4G4R4A4:
-            return DXGI_FORMAT_B4G4R4A4_UNORM;
-        case DdsFileFormat::B5G6R5:
-            return DXGI_FORMAT_B5G6R5_UNORM;
-        case DdsFileFormat::R8G8B8A8_SRGB:
-            return DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
-        case DdsFileFormat::R8_UNORM:
-            return DXGI_FORMAT_R8_UNORM;
-        case DdsFileFormat::R8G8_UNORM:
-            return DXGI_FORMAT_R8G8_UNORM;
-        case DdsFileFormat::R8G8_SNORM:
-            return DXGI_FORMAT_R8G8_SNORM;
-        case DdsFileFormat::R8G8B8A8:
-            return DXGI_FORMAT_R8G8B8A8_UNORM;
-        case DdsFileFormat::R32_FLOAT:
-            return DXGI_FORMAT_R32_FLOAT;
-        default:
-            return DXGI_FORMAT_UNKNOWN;
-        }
-    }
-
-    HRESULT InitializeFromSaveInfo(
-        const DDSSaveInfo* info,
-        const DDSBitmapData* sourceImageData,
-        const uint32_t sourceImageDataLength,
-        ScratchImage& destination)
-    {
-        if (info == nullptr || sourceImageData == nullptr)
-        {
-            return E_INVALIDARG;
-        }
-
-        TexMetadata metadata = {};
-
-        metadata.width = info->width;
-        metadata.height = info->height;
-        metadata.depth = 1;
-        metadata.arraySize = info->arraySize;
-        metadata.mipLevels = info->mipLevels;
-
-        switch (info->format)
-        {
-        case DdsFileFormat::B8G8R8A8_SRGB:
-        case DdsFileFormat::B8G8R8X8_SRGB:
-        case DdsFileFormat::BC1_SRGB:
-        case DdsFileFormat::BC2_SRGB:
-        case DdsFileFormat::BC3_SRGB:
-        case DdsFileFormat::BC7_SRGB:
-        case DdsFileFormat::R8G8B8A8_SRGB:
-            metadata.format = DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
-            break;
-        default:
-            metadata.format = DXGI_FORMAT_B8G8R8A8_UNORM;
-            break;
-        }
-
-        metadata.dimension = TEX_DIMENSION_TEXTURE2D;
-        if (info->cubeMap)
-        {
-            metadata.miscFlags |= TEX_MISC_TEXTURECUBE;
-        }
-
-        HRESULT hr = destination.Initialize(metadata);
-        if (FAILED(hr))
-        {
-            return hr;
-        }
-
-        const Image* destImages = destination.GetImages();
-        const size_t destImageCount = destination.GetImageCount();
-
-        if (sourceImageDataLength != destImageCount)
-        {
-            destination.Release();
-            return E_FAIL;
-        }
-
-        for (size_t item = 0; item < metadata.arraySize; ++item)
-        {
-            for (size_t mip = 0; mip < metadata.mipLevels; ++mip)
+            if (image->IsAlphaAllOpaque())
             {
-                const size_t index = metadata.ComputeIndex(mip, item, 0);
-                if (index >= destImageCount)
-                {
-                    destination.Release();
-                    return E_FAIL;
-                }
-
-                const DDSBitmapData& srcImage = sourceImageData[index];
-                const Image& destImage = destImages[index];
-
-                if (srcImage.width != destImage.width || srcImage.height != destImage.height)
-                {
-                    destination.Release();
-                    return E_FAIL;
-                }
-
-                if (srcImage.stride == destImage.rowPitch)
-                {
-                    // If both images have the same stride, we can copy the entire image at once.
-                    memcpy_s(destImage.pixels, destImage.slicePitch, srcImage.scan0, destImage.slicePitch);
-                }
-                else
-                {
-                    // If the images have different stride values, we copy the image one row at a time.
-
-                    // Paint.NET's native format is 8-bits-per-channel BGRA, for a total of 32-bits-per-pixel.
-                    constexpr size_t bytesPerPixel = 4;
-                    const size_t bytesPerRow = static_cast<size_t>(srcImage.width) * bytesPerPixel;
-
-                    for (size_t y = 0; y < srcImage.height; ++y)
-                    {
-                        const uint8_t* src = srcImage.scan0 + (y * srcImage.stride);
-                        uint8_t* dst = destImage.pixels + (y * destImage.rowPitch);
-
-                        memcpy_s(destImage.pixels, bytesPerRow, srcImage.scan0, bytesPerRow);
-                    }
-                }
+                metadata.SetAlphaMode(TEX_ALPHA_MODE_OPAQUE);
+            }
+            else if (metadata.GetAlphaMode() == TEX_ALPHA_MODE_UNKNOWN)
+            {
+                metadata.SetAlphaMode(TEX_ALPHA_MODE_CUSTOM);
             }
         }
 
-        return S_OK;
+        return SaveToDDSIOCallbacks(image->GetImages(), image->GetImageCount(), metadata, DDS_FLAGS_NONE, callbacks);
     }
-
-    // This value sets the HRESULT customer bit to ensure that it cannot overlap with any Microsoft-defined
-    // HRESULT values.
-    constexpr HRESULT UnknownDdsSaveFormat = 0xA0000000 | (FACILITY_WIN32 << 16) | ERROR_INVALID_PIXEL_FORMAT;
 }
 
 HRESULT __stdcall CreateScratchImage(
@@ -193,6 +46,7 @@ HRESULT __stdcall CreateScratchImage(
     DXGI_FORMAT format,
     int32_t arraySize,
     int32_t mipLevels,
+    bool cubeMap,
     DirectX::ScratchImage** image)
 {
     *image = nullptr;
@@ -213,6 +67,11 @@ HRESULT __stdcall CreateScratchImage(
     metadata.mipLevels = mipLevels;
     metadata.format = format;
     metadata.dimension = TEX_DIMENSION_TEXTURE2D;
+
+    if (cubeMap)
+    {
+        metadata.miscFlags |= TEX_MISC_TEXTURECUBE;
+    }
 
     HRESULT hr = scratchImage->Initialize(metadata);
     if (FAILED(hr))
@@ -364,37 +223,20 @@ HRESULT __stdcall Load(
 
 HRESULT __stdcall Save(
     const DDSSaveInfo* input,
-    const DDSBitmapData* imageData,
-    const uint32_t imageDataLength,
+    const DirectX::ScratchImage* const originalImage,
     const ImageIOCallbacks* callbacks,
     IDXGIAdapter* directComputeAdapter,
     ProgressProc progressFn)
 {
-    if (input == nullptr || imageData == nullptr || callbacks == nullptr)
+    if (input == nullptr || originalImage == nullptr || callbacks == nullptr)
     {
         return E_INVALIDARG;
     }
 
-    std::unique_ptr<ScratchImage> image(new(std::nothrow) ScratchImage);
+    HRESULT hr = S_OK;
 
-    if (image == nullptr)
-    {
-        return E_OUTOFMEMORY;
-    }
-
-    HRESULT hr = InitializeFromSaveInfo(input, imageData, imageDataLength, *image);
-
-    if (FAILED(hr))
-    {
-        return hr;
-    }
-
-    const DXGI_FORMAT dxgiFormat = GetDXGIFormat(input->format);
-
-    if (dxgiFormat == DXGI_FORMAT_UNKNOWN)
-    {
-        return UnknownDdsSaveFormat;
-    }
+    const DXGI_FORMAT dxgiFormat = input->format;
+    std::unique_ptr<ScratchImage> output;
 
     if (IsCompressed(dxgiFormat))
     {
@@ -449,13 +291,13 @@ HRESULT __stdcall Save(
         {
             const float alphaWeight = 1.0;
 
-            hr = Compress(dcHelper->GetComputeDevice(), image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags,
-                alphaWeight, *compressedImage, progressFn);
+            hr = Compress(dcHelper->GetComputeDevice(), originalImage->GetImages(), originalImage->GetImageCount(),
+                originalImage->GetMetadata(), dxgiFormat, compressFlags, alphaWeight, *compressedImage, progressFn);
         }
         else
         {
-            hr = Compress(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, compressFlags,
-                TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
+            hr = Compress(originalImage->GetImages(), originalImage->GetImageCount(), originalImage->GetMetadata(),
+                dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
         }
 
         if (FAILED(hr))
@@ -463,9 +305,9 @@ HRESULT __stdcall Save(
             return hr;
         }
 
-        image.swap(compressedImage);
+        output.swap(compressedImage);
     }
-    else if (image->GetMetadata().format != dxgiFormat)
+    else if (originalImage->GetMetadata().format != dxgiFormat)
     {
         std::unique_ptr<ScratchImage> convertedImage(new(std::nothrow) ScratchImage);
 
@@ -481,32 +323,16 @@ HRESULT __stdcall Save(
             filter |= TEX_FILTER_DITHER_DIFFUSION;
         }
 
-        hr = Convert(image->GetImages(), image->GetImageCount(), image->GetMetadata(), dxgiFormat, filter,
-            TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
+        hr = Convert(originalImage->GetImages(), originalImage->GetImageCount(), originalImage->GetMetadata(),
+            dxgiFormat, filter, TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
 
         if (FAILED(hr))
         {
             return hr;
         }
 
-        image.swap(convertedImage);
+        output.swap(convertedImage);
     }
 
-    TexMetadata metadata = image->GetMetadata();
-
-    if (HasAlpha(dxgiFormat) && dxgiFormat != DXGI_FORMAT_A8_UNORM)
-    {
-        if (image->IsAlphaAllOpaque())
-        {
-            metadata.SetAlphaMode(TEX_ALPHA_MODE_OPAQUE);
-        }
-        else if (metadata.GetAlphaMode() == TEX_ALPHA_MODE_UNKNOWN)
-        {
-            metadata.SetAlphaMode(TEX_ALPHA_MODE_CUSTOM);
-        }
-    }
-
-    hr = SaveToDDSIOCallbacks(image->GetImages(), image->GetImageCount(), metadata, DDS_FLAGS_NONE, callbacks);
-
-    return hr;
+    return SaveImage(callbacks, output ? output.get() : originalImage);
 }

@@ -10,7 +10,9 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
+using DdsFileTypePlus.Interop;
 using PaintDotNet;
+using PaintDotNet.Imaging;
 using PaintDotNet.IO;
 using System;
 using System.IO;
@@ -43,7 +45,7 @@ namespace DdsFileTypePlus
 
         private static ReadOnlySpan<byte> DdsMagic => "DDS "u8;
 
-        internal void Save(TextureCollection textures, Stream output, ProgressEventHandler progressCallback)
+        internal void Save(DirectXTexScratchImage images, Stream output, ProgressEventHandler progressCallback)
         {
             DdsHeader header = new(this.width, this.height, this.arraySize, this.mipLevels, this.format);
 
@@ -52,27 +54,28 @@ namespace DdsFileTypePlus
 
             double progressTotal = this.arraySize * this.mipLevels;
 
-            for (int i = 0; i < this.arraySize; ++i)
+            for (int item = 0; item < this.arraySize; ++item)
             {
-                int startIndex = i * this.mipLevels;
+                int progressStartIndex = item * this.mipLevels;
 
-                for (int j = 0; j < this.mipLevels; ++j)
+                for (int mip = 0; mip < this.mipLevels; ++mip)
                 {
-                    int index = startIndex + j;
+                    DirectXTexScratchImageData imageData = images.GetImageData((uint)mip, (uint)item, 0);
 
-                    WritePixelData(textures[index].Surface, output);
+                    WritePixelData(imageData.AsRegionPtr<ColorBgra32>(), output);
 
-                    progressCallback?.Invoke(this, new ProgressEventArgs((index / progressTotal) * 100.0, true));
+                    int progressDone = progressStartIndex + mip;
+                    progressCallback?.Invoke(this, new ProgressEventArgs((progressDone / progressTotal) * 100.0, true));
                 }
             }
         }
 
-        private unsafe void WritePixelData(Surface surface, Stream output)
+        private unsafe void WritePixelData(RegionPtr<ColorBgra32> source, Stream output)
         {
-            for (int y = 0; y < surface.Height; ++y)
+            foreach (RegionRowPtr<ColorBgra32> row in source.Rows)
             {
-                ColorBgra* ptr = surface.GetRowPointerUnchecked(y);
-                ColorBgra* ptrEnd = ptr + surface.Width;
+                ColorBgra32* ptr = row.Ptr;
+                ColorBgra32* ptrEnd = row.EndPtr;
 
                 while (ptr < ptrEnd)
                 {

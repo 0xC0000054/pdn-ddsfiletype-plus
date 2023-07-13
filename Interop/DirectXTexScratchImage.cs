@@ -24,9 +24,10 @@ namespace DdsFileTypePlus.Interop
                                       int height,
                                       int arraySize,
                                       int mipLevels,
-                                      DXGI_FORMAT format)
+                                      DXGI_FORMAT format,
+                                      bool cubeMap)
         {
-            this.image = CreateNativeImage(width, height, arraySize, mipLevels, format);
+            this.image = CreateNativeImage(width, height, arraySize, mipLevels, format, cubeMap);
         }
 
         public DirectXTexScratchImage(SafeDirectXTexScratchImage image)
@@ -90,18 +91,19 @@ namespace DdsFileTypePlus.Interop
                                                                     int height,
                                                                     int arraySize,
                                                                     int mipLevels,
-                                                                    DXGI_FORMAT format)
+                                                                    DXGI_FORMAT format,
+                                                                    bool cubeMap)
         {
             SafeDirectXTexScratchImage image;
             int hr;
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                hr = DdsIO_x64.CreateScratchImage(width, height, format, arraySize, mipLevels, out image);
+                hr = DdsIO_x64.CreateScratchImage(width, height, format, arraySize, mipLevels, cubeMap, out image);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                hr = DdsIO_ARM64.CreateScratchImage(width, height, format, arraySize, mipLevels, out image);
+                hr = DdsIO_ARM64.CreateScratchImage(width, height, format, arraySize, mipLevels, cubeMap, out image);
             }
             else
             {
