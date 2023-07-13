@@ -13,12 +13,12 @@
 using PaintDotNet;
 using PaintDotNet.Imaging;
 using System;
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace DdsFileTypePlus.Interop
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal unsafe sealed class DirectXTexScratchImageData
+    [NativeMarshalling(typeof(Marshaller))]
+    internal sealed unsafe partial class DirectXTexScratchImageData
     {
         public byte* pixels;
         public nuint width;

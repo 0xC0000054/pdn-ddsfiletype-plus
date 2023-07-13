@@ -10,18 +10,16 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace DdsFileTypePlus.Interop
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class DDSLoadInfo
+    [NativeMarshalling(typeof(Marshaller))]
+    internal sealed partial class DDSLoadInfo
     {
         public nuint width;
         public nuint height;
-        [MarshalAs(UnmanagedType.U1)]
         public bool cubeMap;
-        [MarshalAs(UnmanagedType.U1)]
         public bool premultipliedAlpha;
     }
 }

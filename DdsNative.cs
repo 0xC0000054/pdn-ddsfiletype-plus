@@ -22,26 +22,18 @@ namespace DdsFileTypePlus
         public static unsafe DirectXTexScratchImage Load(Stream stream, out DDSLoadInfo info)
         {
             StreamIOCallbacks streamIO = new(stream);
-            IOCallbacks callbacks = new()
-            {
-                Read = streamIO.Read,
-                Write = streamIO.Write,
-                Seek = streamIO.Seek,
-                GetSize = streamIO.GetSize
-            };
+            IOCallbacks callbacks = streamIO.GetIOCallbacks();
 
             int hr;
-            info = new DDSLoadInfo();
-
-            SafeDirectXTexScratchImage scratchImageHandle = null;
+            SafeDirectXTexScratchImage scratchImageHandle;
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                hr = DdsIO_x64.Load(callbacks, info, out scratchImageHandle);
+                hr = DdsIO_x64.Load(ref callbacks, out info, out scratchImageHandle);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                hr = DdsIO_ARM64.Load(callbacks, info, out scratchImageHandle);
+                hr = DdsIO_ARM64.Load(ref callbacks, out info, out scratchImageHandle);
             }
             else
             {
@@ -49,7 +41,6 @@ namespace DdsFileTypePlus
             }
 
             GC.KeepAlive(streamIO);
-            GC.KeepAlive(callbacks);
 
             if (HResult.Failed(hr))
             {
@@ -95,13 +86,7 @@ namespace DdsFileTypePlus
             DdsProgressCallback progressCallback)
         {
             StreamIOCallbacks streamIO = new(output);
-            IOCallbacks callbacks = new()
-            {
-                Read = streamIO.Read,
-                Write = streamIO.Write,
-                Seek = streamIO.Seek,
-                GetSize = streamIO.GetSize
-            };
+            IOCallbacks callbacks = streamIO.GetIOCallbacks();
 
             int hr;
 
@@ -109,7 +94,7 @@ namespace DdsFileTypePlus
             {
                 hr = DdsIO_x64.Save(info,
                                     image.SafeDirectXTexScratchImage,
-                                    callbacks,
+                                    ref callbacks,
                                     directComputeAdapter,
                                     progressCallback);
             }
@@ -117,7 +102,7 @@ namespace DdsFileTypePlus
             {
                 hr = DdsIO_ARM64.Save(info,
                                       image.SafeDirectXTexScratchImage,
-                                      callbacks,
+                                      ref callbacks,
                                       directComputeAdapter,
                                       progressCallback);
             }
@@ -127,7 +112,6 @@ namespace DdsFileTypePlus
             }
 
             GC.KeepAlive(streamIO);
-            GC.KeepAlive(callbacks);
             GC.KeepAlive(progressCallback);
 
             if (HResult.Failed(hr))

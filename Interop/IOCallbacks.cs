@@ -28,18 +28,11 @@ namespace DdsFileTypePlus.Interop
     internal unsafe delegate int GetSizeDelegate(long* size);
 
     [StructLayout(LayoutKind.Sequential)]
-    internal sealed class IOCallbacks
+    internal struct IOCallbacks
     {
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public ReadDelegate Read;
-
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public WriteDelegate Write;
-
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public SeekDelegate Seek;
-
-        [MarshalAs(UnmanagedType.FunctionPtr)]
-        public GetSizeDelegate GetSize;
+        public IntPtr Read;
+        public IntPtr Write;
+        public IntPtr Seek;
+        public IntPtr GetSize;
     }
 }

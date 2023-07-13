@@ -21,13 +21,21 @@ namespace DdsFileTypePlus.Interop
     internal sealed class StreamIOCallbacks
     {
         private readonly Stream stream;
+        private readonly ReadDelegate read;
+        private readonly WriteDelegate write;
+        private readonly SeekDelegate seek;
+        private readonly GetSizeDelegate getSize;
 
         // 81920 is the largest multiple of 4096 that is below the large object heap threshold.
         private const int MaxBufferSize = 81920;
 
-        public StreamIOCallbacks(Stream stream)
+        public unsafe StreamIOCallbacks(Stream stream)
         {
             this.stream = stream;
+            this.read = Read;
+            this.write = Write;
+            this.seek = Seek;
+            this.getSize = GetSize;
             this.CallbackExceptionInfo = null;
         }
 
@@ -37,7 +45,18 @@ namespace DdsFileTypePlus.Interop
             private set;
         }
 
-        public unsafe int Read(IntPtr buffer, uint count, uint* bytesRead)
+        public IOCallbacks GetIOCallbacks()
+        {
+            return new IOCallbacks()
+            {
+                Read = Marshal.GetFunctionPointerForDelegate(this.read),
+                Write = Marshal.GetFunctionPointerForDelegate(this.write),
+                Seek = Marshal.GetFunctionPointerForDelegate(this.seek),
+                GetSize = Marshal.GetFunctionPointerForDelegate(this.getSize)
+            };
+        }
+
+        private unsafe int Read(IntPtr buffer, uint count, uint* bytesRead)
         {
             if (bytesRead != null)
             {
@@ -91,7 +110,7 @@ namespace DdsFileTypePlus.Interop
             }
         }
 
-        public unsafe int Write(IntPtr buffer, uint count, uint* bytesWritten)
+        private unsafe int Write(IntPtr buffer, uint count, uint* bytesWritten)
         {
             if (bytesWritten != null)
             {
@@ -143,7 +162,7 @@ namespace DdsFileTypePlus.Interop
             }
         }
 
-        public int Seek(long offset, int origin)
+        private int Seek(long offset, int origin)
         {
             int hr = HResult.S_OK;
 
@@ -165,7 +184,7 @@ namespace DdsFileTypePlus.Interop
             return hr;
         }
 
-        public unsafe int GetSize(long* size)
+        private unsafe int GetSize(long* size)
         {
             if (size != null)
             {

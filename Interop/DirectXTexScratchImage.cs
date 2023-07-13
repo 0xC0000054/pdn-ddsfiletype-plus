@@ -48,16 +48,16 @@ namespace DdsFileTypePlus.Interop
         {
             VerifyNotDisposed();
 
-            DirectXTexScratchImageData imageData = new();
+            DirectXTexScratchImageData imageData;
             int hr;
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                hr = DdsIO_x64.GetScratchImageData(this.image, mip, item, slice, imageData);
+                hr = DdsIO_x64.GetScratchImageData(this.image, mip, item, slice, out imageData);
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                hr = DdsIO_ARM64.GetScratchImageData(this.image, mip, item, slice, imageData);
+                hr = DdsIO_ARM64.GetScratchImageData(this.image, mip, item, slice, out imageData);
             }
             else
             {

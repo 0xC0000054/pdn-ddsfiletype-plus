@@ -10,17 +10,16 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.Marshalling;
 
 namespace DdsFileTypePlus.Interop
 {
-    [StructLayout(LayoutKind.Sequential)]
-    internal sealed class DDSSaveInfo
+    [NativeMarshalling(typeof(Marshaller))]
+    internal sealed partial class DDSSaveInfo
     {
         public DXGI_FORMAT format;
         public DdsErrorMetric errorMetric;
         public BC7CompressionSpeed compressionSpeed;
-        [MarshalAs(UnmanagedType.U1)]
         public bool errorDiffusionDithering;
     }
 }
