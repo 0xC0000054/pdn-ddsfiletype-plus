@@ -57,6 +57,8 @@ extern "C" {
         bool volumeMap;
     };
 
+    // This must be kept in sync with DDSSaveInfo.cs and
+    // the Native structure in DDSSaveInfo.Marshaller.cs
     struct DDSSaveInfo
     {
         DXGI_FORMAT format;
@@ -66,6 +68,8 @@ extern "C" {
     };
 
     // This is based on DirectX::Image.
+    // It must be kept in sync with DirectXTexScratchImageData.cs and
+    // the Native structure in DirectXTexScratchImageData.Marshaller.cs
     struct ScratchImageData
     {
         uint8_t*    pixels;

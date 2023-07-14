@@ -17,6 +17,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace DdsFileTypePlus.Interop
 {
+    // This must be kept in sync with the Native structure in DirectXTexScratchImageData.Marshaller.cs
+    // and the ScratchImageData type in DdsFileTypePlusIO.h
     [NativeMarshalling(typeof(Marshaller))]
     internal sealed unsafe partial class DirectXTexScratchImageData
     {

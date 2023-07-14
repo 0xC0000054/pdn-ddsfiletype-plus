@@ -19,6 +19,8 @@ namespace DdsFileTypePlus.Interop
         [CustomMarshaller(typeof(DDSSaveInfo), MarshalMode.ManagedToUnmanagedIn, typeof(Marshaller))]
         public static class Marshaller
         {
+            // This must be kept in sync with DDSSaveInfo.cs
+            // and the DDSSaveInfo type in DdsFileTypePlusIO.h
             public struct Native
             {
                 public DXGI_FORMAT format;

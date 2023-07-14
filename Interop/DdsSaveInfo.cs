@@ -14,6 +14,8 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace DdsFileTypePlus.Interop
 {
+    // This must be kept in sync with the Native structure in DDSSaveInfo.Marshaller.cs
+    // and the DDSSaveInfo type in DdsFileTypePlusIO.h
     [NativeMarshalling(typeof(Marshaller))]
     internal sealed partial class DDSSaveInfo
     {

@@ -19,6 +19,8 @@ namespace DdsFileTypePlus.Interop
         [CustomMarshaller(typeof(DirectXTexScratchImageData), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
         public static class Marshaller
         {
+            // This must be kept in sync with DirectXTexScratchImageData.cs
+            // and the ScratchImageData type in DdsFileTypePlusIO.h
             public unsafe struct Native
             {
                 public byte* pixels;
