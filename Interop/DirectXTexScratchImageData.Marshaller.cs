@@ -35,12 +35,12 @@ namespace DdsFileTypePlus.Interop
             {
                 return new DirectXTexScratchImageData()
                 {
-                    pixels = unmanaged.pixels,
-                    width = unmanaged.width,
-                    height = unmanaged.height,
-                    stride = unmanaged.stride,
-                    totalImageDataSize = unmanaged.totalImageDataSize,
-                    format = unmanaged.format,
+                    Pixels = unmanaged.pixels,
+                    Width = unmanaged.width,
+                    Height = unmanaged.height,
+                    Stride = unmanaged.stride,
+                    TotalImageDataSize = unmanaged.totalImageDataSize,
+                    Format = unmanaged.format,
                 };
             }
         }

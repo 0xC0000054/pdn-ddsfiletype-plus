@@ -22,12 +22,17 @@ namespace DdsFileTypePlus.Interop
     [NativeMarshalling(typeof(Marshaller))]
     internal sealed unsafe partial class DirectXTexScratchImageData
     {
-        public byte* pixels;
-        public nuint width;
-        public nuint height;
-        public nuint stride;
-        public nuint totalImageDataSize;
-        public DXGI_FORMAT format;
+        public unsafe byte* Pixels { get; init; }
+
+        public nuint Width { get; init; }
+
+        public nuint Height { get; init; }
+
+        public nuint Stride { get; init; }
+
+        public nuint TotalImageDataSize { get; init; }
+
+        public DXGI_FORMAT Format { get; init; }
 
         public unsafe RegionPtr<T> AsRegionPtr<T>(bool checkPixelType = true) where T : unmanaged
         {
@@ -36,15 +41,15 @@ namespace DdsFileTypePlus.Interop
                 EnsureCompatiblePixelType(typeof(T));
             }
 
-            return new((T*)this.pixels,
-                       checked((int)this.width),
-                       checked((int)this.height),
-                       checked((int)this.stride));
+            return new((T*)this.Pixels,
+                       checked((int)this.Width),
+                       checked((int)this.Height),
+                       checked((int)this.Stride));
         }
 
         private void EnsureCompatiblePixelType(Type pixelType)
         {
-            switch (this.format)
+            switch (this.Format)
             {
             case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
             case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
@@ -55,14 +60,14 @@ namespace DdsFileTypePlus.Interop
                 VerifyPixelTypeMatches(pixelType, typeof(ColorRgba32));
                 break;
             default:
-                throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {this.format}.");
+                throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {this.Format}.");
             }
 
             void VerifyPixelTypeMatches(Type pixelType, Type expectedType)
             {
                 if (pixelType != expectedType)
                 {
-                    string message = $"Unexpected pixel type for {this.format}, pixelType={pixelType} expectedType={expectedType}.";
+                    string message = $"Unexpected pixel type for {this.Format}, pixelType={pixelType} expectedType={expectedType}.";
                     ExceptionUtil.ThrowInvalidOperationException(message);
                 }
             }

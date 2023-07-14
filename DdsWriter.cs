@@ -405,7 +405,7 @@ namespace DdsFileTypePlus
         {
             FitSurfaceOptions options = useGammaCorrection ? FitSurfaceOptions.UseGammaCorrection : FitSurfaceOptions.Default;
 
-            using (Surface mipSurface = new((int)mipData.width, (int)mipData.height))
+            using (Surface mipSurface = new((int)mipData.Width, (int)mipData.Height))
             {
                 mipSurface.FitSurface(algorithm, source.Surface, options);
 
@@ -447,7 +447,7 @@ namespace DdsFileTypePlus
         {
             RegionPtr<ColorBgra32> source = surface.AsRegionPtr().Cast<ColorBgra32>();
 
-            switch (scratchImage.format)
+            switch (scratchImage.Format)
             {
                 case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
                 case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB:
@@ -458,7 +458,7 @@ namespace DdsFileTypePlus
                     PixelKernels.ConvertBgra32ToRgba32(scratchImage.AsRegionPtr<ColorRgba32>(checkPixelType: false), source);
                     break;
                 default:
-                    throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {scratchImage.format}.");
+                    throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {scratchImage.Format}.");
             }
         }
 
