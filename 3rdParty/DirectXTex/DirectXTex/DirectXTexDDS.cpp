@@ -191,10 +191,9 @@ namespace
 
         constexpr size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
         size_t index = 0;
-
-        if (ddpf.flags == 0 && ddpf.fourCC != 0)
+        if (ddpf.size == 0 && ddpf.flags == 0 && ddpf.fourCC != 0)
         {
-            // Some writers set the fourCC field without setting DDS_FOURCC in the flags field.
+            // Handle some DDS files where the DDPF_PIXELFORMAT is mostly zero
             for (index = 0; index < MAP_SIZE; ++index)
             {
                 const LegacyDDS* entry = &g_LegacyDDSMap[index];
@@ -202,82 +201,81 @@ namespace
                 if (entry->ddpf.flags & DDS_FOURCC)
                 {
                     if (ddpf.fourCC == entry->ddpf.fourCC)
-                    {
-                        ddpfFlags = entry->ddpf.flags;
                         break;
-                    }
                 }
             }
         }
-
-        for (index = 0; index < MAP_SIZE; ++index)
+        else
         {
-            const LegacyDDS* entry = &g_LegacyDDSMap[index];
+            for (index = 0; index < MAP_SIZE; ++index)
+            {
+                const LegacyDDS* entry = &g_LegacyDDSMap[index];
 
-            if ((ddpfFlags & DDS_FOURCC) && (entry->ddpf.flags & DDS_FOURCC))
-            {
-                // In case of FourCC codes, ignore any other bits in ddpf.flags
-                if (ddpf.fourCC == entry->ddpf.fourCC)
-                    break;
-            }
-            else if (ddpfFlags == entry->ddpf.flags)
-            {
-                if (entry->ddpf.flags & DDS_PAL8)
+                if ((ddpfFlags & DDS_FOURCC) && (entry->ddpf.flags & DDS_FOURCC))
                 {
-                    if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount)
+                    // In case of FourCC codes, ignore any other bits in ddpf.flags
+                    if (ddpf.fourCC == entry->ddpf.fourCC)
                         break;
                 }
-                else if (entry->ddpf.flags & DDS_ALPHA)
+                else if (ddpfFlags == entry->ddpf.flags)
                 {
-                    if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
-                        && ddpf.ABitMask == entry->ddpf.ABitMask)
-                        break;
-                }
-                else if (entry->ddpf.flags & DDS_LUMINANCE)
-                {
-                    if (entry->ddpf.flags & DDS_ALPHAPIXELS)
+                    if (entry->ddpf.flags & DDS_PAL8)
                     {
-                        // LUMINANCEA
+                        if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount)
+                            break;
+                    }
+                    else if (entry->ddpf.flags & DDS_ALPHA)
+                    {
                         if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
-                            && ddpf.RBitMask == entry->ddpf.RBitMask
                             && ddpf.ABitMask == entry->ddpf.ABitMask)
                             break;
                     }
-                    else
+                    else if (entry->ddpf.flags & DDS_LUMINANCE)
                     {
-                        // LUMINANCE
-                        if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
-                            && ddpf.RBitMask == entry->ddpf.RBitMask)
-                            break;
+                        if (entry->ddpf.flags & DDS_ALPHAPIXELS)
+                        {
+                            // LUMINANCEA
+                            if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
+                                && ddpf.RBitMask == entry->ddpf.RBitMask
+                                && ddpf.ABitMask == entry->ddpf.ABitMask)
+                                break;
+                        }
+                        else
+                        {
+                            // LUMINANCE
+                            if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
+                                && ddpf.RBitMask == entry->ddpf.RBitMask)
+                                break;
+                        }
                     }
-                }
-                else if (entry->ddpf.flags & DDS_BUMPDUDV)
-                {
-                    if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
-                        && ddpf.RBitMask == entry->ddpf.RBitMask
-                        && ddpf.GBitMask == entry->ddpf.GBitMask
-                        && ddpf.BBitMask == entry->ddpf.BBitMask
-                        && ddpf.ABitMask == entry->ddpf.ABitMask)
-                        break;
-                }
-                else if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount)
-                {
-                    if (entry->ddpf.flags & DDS_ALPHAPIXELS)
+                    else if (entry->ddpf.flags & DDS_BUMPDUDV)
                     {
-                        // RGBA
-                        if (ddpf.RBitMask == entry->ddpf.RBitMask
+                        if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount
+                            && ddpf.RBitMask == entry->ddpf.RBitMask
                             && ddpf.GBitMask == entry->ddpf.GBitMask
                             && ddpf.BBitMask == entry->ddpf.BBitMask
                             && ddpf.ABitMask == entry->ddpf.ABitMask)
                             break;
                     }
-                    else
+                    else if (ddpf.RGBBitCount == entry->ddpf.RGBBitCount)
                     {
-                        // RGB
-                        if (ddpf.RBitMask == entry->ddpf.RBitMask
-                            && ddpf.GBitMask == entry->ddpf.GBitMask
-                            && ddpf.BBitMask == entry->ddpf.BBitMask)
-                            break;
+                        if (entry->ddpf.flags & DDS_ALPHAPIXELS)
+                        {
+                            // RGBA
+                            if (ddpf.RBitMask == entry->ddpf.RBitMask
+                                && ddpf.GBitMask == entry->ddpf.GBitMask
+                                && ddpf.BBitMask == entry->ddpf.BBitMask
+                                && ddpf.ABitMask == entry->ddpf.ABitMask)
+                                break;
+                        }
+                        else
+                        {
+                            // RGB
+                            if (ddpf.RBitMask == entry->ddpf.RBitMask
+                                && ddpf.GBitMask == entry->ddpf.GBitMask
+                                && ddpf.BBitMask == entry->ddpf.BBitMask)
+                                break;
+                        }
                     }
                 }
             }
@@ -308,33 +306,6 @@ namespace
         return format;
     }
 
-    // Some DDS files contain an incorrectly populated DDS_PIXELFORMAT that
-    // has all fields except the dwFourCC field set to zero.
-    // Detect this case and allow the files to be loaded regardless
-    // of the value of the DDS_PIXELFORMAT dwSize field.
-    bool IsPixelFormatFourCCValid(const DDS_PIXELFORMAT& ddpf)
-    {
-        if (ddpf.flags == 0 && ddpf.fourCC != 0)
-        {
-            const size_t MAP_SIZE = sizeof(g_LegacyDDSMap) / sizeof(LegacyDDS);
-
-            for (size_t index = 0; index < MAP_SIZE; ++index)
-            {
-                const LegacyDDS* entry = &g_LegacyDDSMap[index];
-
-                if (entry->ddpf.flags & DDS_FOURCC)
-                {
-                    if (ddpf.fourCC == entry->ddpf.fourCC)
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-
-        return false;
-    }
-
     //-------------------------------------------------------------------------------------
     // Decodes DDS header including optional DX10 extended header
     //-------------------------------------------------------------------------------------
@@ -343,12 +314,17 @@ namespace
         size_t size,
         DDS_FLAGS flags,
         _Out_ TexMetadata& metadata,
+        _Out_opt_ DDSMetaData* ddPixelFormat,
         _Inout_ uint32_t& convFlags) noexcept
     {
         if (!pSource)
             return E_INVALIDARG;
 
-        memset(&metadata, 0, sizeof(TexMetadata));
+        metadata = {};
+        if (ddPixelFormat)
+        {
+            *ddPixelFormat = {};
+        }
 
         if (size < (sizeof(DDS_HEADER) + sizeof(uint32_t)))
         {
@@ -365,10 +341,14 @@ namespace
         auto pHeader = reinterpret_cast<const DDS_HEADER*>(static_cast<const uint8_t*>(pSource) + sizeof(uint32_t));
 
         // Verify header to validate DDS file
-        if (pHeader->size != sizeof(DDS_HEADER)
-            || pHeader->ddspf.size != sizeof(DDS_PIXELFORMAT) && !IsPixelFormatFourCCValid(pHeader->ddspf))
+        if (pHeader->size != sizeof(DDS_HEADER))
         {
-            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+            return HRESULT_E_INVALID_DATA;
+        }
+
+        if (pHeader->ddspf.size != 0 && pHeader->ddspf.size != sizeof(DDS_PIXELFORMAT))
+        {
+            return HRESULT_E_INVALID_DATA;
         }
 
         metadata.mipLevels = pHeader->mipMapCount;
@@ -382,7 +362,7 @@ namespace
             // Buffer must be big enough for both headers and magic value
             if (size < (sizeof(DDS_HEADER) + sizeof(uint32_t) + sizeof(DDS_HEADER_DXT10)))
             {
-                return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
+                return HRESULT_E_INVALID_DATA;
             }
 
             auto d3d10ext = reinterpret_cast<const DDS_HEADER_DXT10*>(static_cast<const uint8_t*>(pSource) + sizeof(uint32_t) + sizeof(DDS_HEADER));
@@ -617,6 +597,19 @@ namespace
             {
                 return HRESULT_E_NOT_SUPPORTED;
             }
+        }
+
+        // Handle DDS-specific metadata
+        if (ddPixelFormat)
+        {
+            ddPixelFormat->size = pHeader->ddspf.size;
+            ddPixelFormat->flags = pHeader->ddspf.flags;
+            ddPixelFormat->fourCC = pHeader->ddspf.fourCC;
+            ddPixelFormat->RGBBitCount = pHeader->ddspf.RGBBitCount;
+            ddPixelFormat->RBitMask = pHeader->ddspf.RBitMask;
+            ddPixelFormat->GBitMask = pHeader->ddspf.GBitMask;
+            ddPixelFormat->BBitMask = pHeader->ddspf.BBitMask;
+            ddPixelFormat->ABitMask = pHeader->ddspf.ABitMask;
         }
 
         return S_OK;
@@ -1658,11 +1651,22 @@ HRESULT DirectX::GetMetadataFromDDSMemory(
     DDS_FLAGS flags,
     TexMetadata& metadata) noexcept
 {
+    return GetMetadataFromDDSMemoryEx(pSource, size, flags, metadata, nullptr);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::GetMetadataFromDDSMemoryEx(
+    const void* pSource,
+    size_t size,
+    DDS_FLAGS flags,
+    TexMetadata& metadata,
+    DDSMetaData* ddPixelFormat) noexcept
+{
     if (!pSource || size == 0)
         return E_INVALIDARG;
 
     uint32_t convFlags = 0;
-    return DecodeDDSHeader(pSource, size, flags, metadata, convFlags);
+    return DecodeDDSHeader(pSource, size, flags, metadata, ddPixelFormat, convFlags);
 }
 
 _Use_decl_annotations_
@@ -1670,6 +1674,16 @@ HRESULT DirectX::GetMetadataFromDDSFile(
     const wchar_t* szFile,
     DDS_FLAGS flags,
     TexMetadata& metadata) noexcept
+{
+    return GetMetadataFromDDSFileEx(szFile, flags, metadata, nullptr);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::GetMetadataFromDDSFileEx(
+    const wchar_t* szFile,
+    DDS_FLAGS flags,
+    TexMetadata& metadata,
+    DDSMetaData* ddPixelFormat) noexcept
 {
     if (!szFile)
         return E_INVALIDARG;
@@ -1745,7 +1759,7 @@ HRESULT DirectX::GetMetadataFromDDSFile(
 #endif
 
     uint32_t convFlags = 0;
-    return DecodeDDSHeader(header, headerLen, flags, metadata, convFlags);
+    return DecodeDDSHeader(header, headerLen, flags, metadata, ddPixelFormat, convFlags);
 }
 
 
@@ -1760,6 +1774,18 @@ HRESULT DirectX::LoadFromDDSMemory(
     TexMetadata* metadata,
     ScratchImage& image) noexcept
 {
+    return LoadFromDDSMemoryEx(pSource, size, flags, metadata, nullptr, image);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::LoadFromDDSMemoryEx(
+    const void* pSource,
+    size_t size,
+    DDS_FLAGS flags,
+    TexMetadata* metadata,
+    DDSMetaData* ddPixelFormat,
+    ScratchImage& image) noexcept
+{
     if (!pSource || size == 0)
         return E_INVALIDARG;
 
@@ -1767,7 +1793,7 @@ HRESULT DirectX::LoadFromDDSMemory(
 
     uint32_t convFlags = 0;
     TexMetadata mdata;
-    HRESULT hr = DecodeDDSHeader(pSource, size, flags, mdata, convFlags);
+    HRESULT hr = DecodeDDSHeader(pSource, size, flags, mdata, ddPixelFormat, convFlags);
     if (FAILED(hr))
         return hr;
 
@@ -1832,6 +1858,17 @@ HRESULT DirectX::LoadFromDDSFile(
     TexMetadata* metadata,
     ScratchImage& image) noexcept
 {
+    return LoadFromDDSFileEx(szFile, flags, metadata, nullptr, image);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::LoadFromDDSFileEx(
+    const wchar_t* szFile,
+    DDS_FLAGS flags,
+    TexMetadata* metadata,
+    DDSMetaData* ddPixelFormat,
+    ScratchImage& image) noexcept
+{
     if (!szFile)
         return E_INVALIDARG;
 
@@ -1907,7 +1944,7 @@ HRESULT DirectX::LoadFromDDSFile(
 
     uint32_t convFlags = 0;
     TexMetadata mdata;
-    HRESULT hr = DecodeDDSHeader(header, headerLen, flags, mdata, convFlags);
+    HRESULT hr = DecodeDDSHeader(header, headerLen, flags, mdata, ddPixelFormat, convFlags);
     if (FAILED(hr))
         return hr;
 
@@ -2082,6 +2119,7 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
     const ImageIOCallbacks* pIOCallbacks,
     DirectX::DDS_FLAGS flags,
     TexMetadata* metadata,
+    DDSMetaData* ddPixelFormat,
     ScratchImage& image)
 {
     if (!pIOCallbacks)
@@ -2113,19 +2151,25 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
 
     // Read the header in (including extended header if present)
     uint8_t header[MAX_HEADER_SIZE] = {};
+    size_t headerLength = MAX_HEADER_SIZE;
 
-    DWORD bytesRead = 0;
-
-    hr = pIOCallbacks->Read(header, MAX_HEADER_SIZE, &bytesRead);
+    hr = pIOCallbacks->Read(header, MAX_HEADER_SIZE);
 
     if (FAILED(hr))
     {
-        return hr;
+        if (hr == HRESULT_FROM_WIN32(ERROR_HANDLE_EOF))
+        {
+            headerLength = fileSize.LowPart;
+        }
+        else
+        {
+            return hr;
+        }
     }
 
     uint32_t convFlags = 0;
     TexMetadata mdata;
-    hr = DecodeDDSHeader(header, bytesRead, flags, mdata, convFlags);
+    hr = DecodeDDSHeader(header, headerLength, flags, mdata, ddPixelFormat, convFlags);
     if (FAILED(hr))
         return hr;
 
@@ -2153,16 +2197,11 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
             return E_OUTOFMEMORY;
         }
 
-        hr = pIOCallbacks->Read(pal8.get(), 256 * sizeof(uint32_t), &bytesRead);
+        hr = pIOCallbacks->Read(pal8.get(), 256 * sizeof(uint32_t));
 
         if (FAILED(hr))
         {
             return hr;
-        }
-
-        if (bytesRead != (256 * sizeof(uint32_t)))
-        {
-            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
 
         offset += (256 * sizeof(uint32_t));
@@ -2185,18 +2224,12 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
             return E_OUTOFMEMORY;
         }
 
-        hr = pIOCallbacks->Read(temp.get(), remaining, &bytesRead);
+        hr = pIOCallbacks->Read(temp.get(), remaining);
 
         if (FAILED(hr))
         {
             image.Release();
             return hr;
-        }
-
-        if (bytesRead != remaining)
-        {
-            image.Release();
-            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
 
         CP_FLAGS cflags = CP_FLAGS_NONE;
@@ -2238,18 +2271,12 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
 
         const DWORD pixelSize = static_cast<DWORD>(image.GetPixelsSize());
 
-        hr = pIOCallbacks->Read(image.GetPixels(), pixelSize, &bytesRead);
+        hr = pIOCallbacks->Read(image.GetPixels(), pixelSize);
 
         if (FAILED(hr))
         {
             image.Release();
             return hr;
-        }
-
-        if (bytesRead != pixelSize)
-        {
-            image.Release();
-            return HRESULT_FROM_WIN32(ERROR_INVALID_DATA);
         }
 
         if (convFlags & (CONV_FLAGS_SWIZZLE | CONV_FLAGS_NOALPHA))
@@ -2755,18 +2782,11 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
     if (FAILED(hr))
         return hr;
 
-    DWORD bytesWritten = 0;
-
-    hr = pIOCallbacks->Write(header, static_cast<DWORD>(required), &bytesWritten);
+    hr = pIOCallbacks->Write(header, static_cast<DWORD>(required));
 
     if (FAILED(hr))
     {
         return hr;
-    }
-
-    if (bytesWritten != required)
-    {
-        return E_FAIL;
     }
 
     // Write images
@@ -2796,16 +2816,11 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
 
                 if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
                 {
-                    hr = pIOCallbacks->Write(images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten);
+                    hr = pIOCallbacks->Write(images[index].pixels, static_cast<DWORD>(ddsSlicePitch));
 
                     if (FAILED(hr))
                     {
                         return hr;
-                    }
-
-                    if (bytesWritten != ddsSlicePitch)
-                    {
-                        return E_FAIL;
                     }
                 }
                 else
@@ -2825,16 +2840,11 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
                     size_t lines = ComputeScanlines(metadata.format, images[index].height);
                     for (size_t j = 0; j < lines; ++j)
                     {
-                        hr = pIOCallbacks->Write(sPtr, static_cast<DWORD>(ddsRowPitch), &bytesWritten);
+                        hr = pIOCallbacks->Write(sPtr, static_cast<DWORD>(ddsRowPitch));
 
                         if (FAILED(hr))
                         {
                             return hr;
-                        }
-
-                        if (bytesWritten != ddsRowPitch)
-                        {
-                            return E_FAIL;
                         }
 
                         sPtr += rowPitch;
@@ -2873,16 +2883,11 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
 
                 if ((images[index].slicePitch == ddsSlicePitch) && (ddsSlicePitch <= UINT32_MAX))
                 {
-                    hr = pIOCallbacks->Write(images[index].pixels, static_cast<DWORD>(ddsSlicePitch), &bytesWritten);
+                    hr = pIOCallbacks->Write(images[index].pixels, static_cast<DWORD>(ddsSlicePitch));
 
                     if (FAILED(hr))
                     {
                         return hr;
-                    }
-
-                    if (bytesWritten != ddsSlicePitch)
-                    {
-                        return E_FAIL;
                     }
                 }
                 else
@@ -2902,16 +2907,11 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
                     size_t lines = ComputeScanlines(metadata.format, images[index].height);
                     for (size_t j = 0; j < lines; ++j)
                     {
-                        hr = pIOCallbacks->Write(sPtr, static_cast<DWORD>(ddsRowPitch), &bytesWritten);
+                        hr = pIOCallbacks->Write(sPtr, static_cast<DWORD>(ddsRowPitch));
 
                         if (FAILED(hr))
                         {
                             return hr;
-                        }
-
-                        if (bytesWritten != ddsRowPitch)
-                        {
-                            return E_FAIL;
                         }
 
                         sPtr += rowPitch;

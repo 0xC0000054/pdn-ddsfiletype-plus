@@ -56,13 +56,8 @@ namespace DdsFileTypePlus.Interop
             };
         }
 
-        private unsafe int Read(IntPtr buffer, uint count, uint* bytesRead)
+        private unsafe int Read(IntPtr buffer, uint count)
         {
-            if (bytesRead != null)
-            {
-                *bytesRead = 0;
-            }
-
             if (count == 0)
             {
                 return HResult.S_OK;
@@ -82,7 +77,7 @@ namespace DdsFileTypePlus.Interop
 
                         if (streamBytesRead == 0)
                         {
-                            break;
+                            return HResult.EndOfFile;
                         }
 
                         Marshal.Copy(streamBuffer, 0, new IntPtr(buffer.ToInt64() + totalBytesRead), streamBytesRead);
@@ -97,10 +92,6 @@ namespace DdsFileTypePlus.Interop
                     ArrayPool<byte>.Shared.Return(streamBuffer);
                 }
 
-                if (bytesRead != null)
-                {
-                    *bytesRead = (uint)totalBytesRead;
-                }
                 return HResult.S_OK;
             }
             catch (Exception ex)
@@ -110,13 +101,8 @@ namespace DdsFileTypePlus.Interop
             }
         }
 
-        private unsafe int Write(IntPtr buffer, uint count, uint* bytesWritten)
+        private unsafe int Write(IntPtr buffer, uint count)
         {
-            if (bytesWritten != null)
-            {
-                *bytesWritten = 0;
-            }
-
             if (count == 0)
             {
                 return HResult.S_OK;
@@ -146,11 +132,6 @@ namespace DdsFileTypePlus.Interop
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(streamBuffer);
-                }
-
-                if (bytesWritten != null)
-                {
-                    *bytesWritten = count;
                 }
 
                 return HResult.S_OK;

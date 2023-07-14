@@ -18,6 +18,7 @@ namespace DdsFileTypePlus.Interop
         public const int E_POINTER = unchecked((int)0x80004003);
         public const int CanceledError = unchecked((int)0x800704C7); // HRESULT_FROM_WIN32(ERROR_CANCELLED)
         public const int SeekError = unchecked((int)0x80070019); // HRESULT_FROM_WIN32(ERROR_SEEK)
+        public const int EndOfFile = unchecked((int)0x80070026); // HRESULT_FROM_WIN32(ERROR_HANDLE_EOF)
         public const int InvalidArgument = unchecked((int)0x80070057); // HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER)
         public const int NotFound = unchecked((int)0x80070490); // HRESULT_FROM_WIN32(ERROR_NOT_FOUND)
         public const int OutOfMemory = unchecked((int)0x8007000E); // HRESULT_FROM_WIN32(ERROR_OUTOFMEMORY)

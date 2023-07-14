@@ -140,7 +140,7 @@ HRESULT __stdcall Load(
         return E_OUTOFMEMORY;
     }
 
-    HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_ALLOW_LARGE_FILES, &info, *ddsImage);
+    HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_ALLOW_LARGE_FILES, &info, nullptr, *ddsImage);
 
     if (FAILED(hr))
     {

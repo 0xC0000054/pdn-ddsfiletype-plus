@@ -16,10 +16,10 @@ using System.Runtime.InteropServices;
 namespace DdsFileTypePlus.Interop
 {
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    internal unsafe delegate int ReadDelegate(IntPtr buffer, uint count, uint* bytesRead);
+    internal unsafe delegate int ReadDelegate(IntPtr buffer, uint count);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
-    internal unsafe delegate int WriteDelegate(IntPtr buffer, uint count, uint* bytesWritten);
+    internal unsafe delegate int WriteDelegate(IntPtr buffer, uint count);
 
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     internal delegate int SeekDelegate(long offset, int origin);
