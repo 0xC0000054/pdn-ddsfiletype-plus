@@ -29,6 +29,19 @@ namespace DdsFileTypePlus
             {
                 using (DirectXTexScratchImage image = DdsNative.Load(input, out DDSLoadInfo info))
                 {
+                    if (info.IsTextureArray)
+                    {
+                        // Reject files containing a texture array because loading only the first item
+                        // poses a data loss risk when saving.
+                        throw new FormatException("DDS files containing a texture array are not supported.");
+                    }
+                    else if (info.volumeMap && info.depth > 1)
+                    {
+                        // Reject files containing a volume map with multiple slices because loading
+                        // only the first item poses a data loss risk when saving.
+                        throw new FormatException("DDS files containing a volume map are not supported.");
+                    }
+
                     int documentWidth = checked((int)info.width);
                     int documentHeight = checked((int)info.height);
 

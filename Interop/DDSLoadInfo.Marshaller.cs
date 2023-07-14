@@ -19,12 +19,18 @@ namespace DdsFileTypePlus.Interop
         [CustomMarshaller(typeof(DDSLoadInfo), MarshalMode.ManagedToUnmanagedOut, typeof(Marshaller))]
         public static class Marshaller
         {
+            // This must be kept in sync with DDSLoadInfo.cs
+            // and the DDSLoadInfo type in DdsFileTypePlusIO.h
             public unsafe struct Native
             {
                 public nuint width;
                 public nuint height;
+                public nuint depth;
+                public nuint arraySize;
+                public nuint mipLevels;
                 public byte cubeMap;
                 public byte premultipliedAlpha;
+                public byte volumeMap;
             }
 
             public static DDSLoadInfo ConvertToManaged(Native unmanaged)
@@ -33,8 +39,12 @@ namespace DdsFileTypePlus.Interop
                 {
                     width = unmanaged.width,
                     height = unmanaged.height,
+                    depth = unmanaged.depth,
+                    arraySize = unmanaged.arraySize,
+                    mipLevels = unmanaged.mipLevels,
                     cubeMap = unmanaged.cubeMap != 0,
-                    premultipliedAlpha = unmanaged.premultipliedAlpha != 0
+                    premultipliedAlpha = unmanaged.premultipliedAlpha != 0,
+                    volumeMap = unmanaged.volumeMap != 0,
                 };
             }
         }

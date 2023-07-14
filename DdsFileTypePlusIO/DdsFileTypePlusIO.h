@@ -43,12 +43,18 @@ extern "C" {
         Slow
     };
 
+    // This must be kept in sync with DDSLoadInfo.cs and
+    // the Native structure in DDSLoadInfo.Marshaller.cs
     struct DDSLoadInfo
     {
         size_t width;
         size_t height;
+        size_t depth;
+        size_t arraySize;
+        size_t mipLevels;
         bool cubeMap;
         bool premultipliedAlpha;
+        bool volumeMap;
     };
 
     struct DDSSaveInfo

@@ -14,12 +14,21 @@ using System.Runtime.InteropServices.Marshalling;
 
 namespace DdsFileTypePlus.Interop
 {
+    // This must be kept in sync with the Native structure in DDSLoadInfo.Marshaller.cs
+    // and the DDSLoadInfo type in DdsFileTypePlusIO.h
     [NativeMarshalling(typeof(Marshaller))]
     internal sealed partial class DDSLoadInfo
     {
         public nuint width;
         public nuint height;
+        public nuint depth;
+        public nuint arraySize;
+        public nuint mipLevels;
         public bool cubeMap;
         public bool premultipliedAlpha;
+        public bool volumeMap;
+
+        public bool IsTextureArray
+            => this.cubeMap ? this.arraySize > 6 : this.arraySize > 1;
     }
 }

@@ -213,8 +213,12 @@ HRESULT __stdcall Load(
 
     loadInfo->width = info.width;
     loadInfo->height = info.height;
+    loadInfo->depth = info.depth;
+    loadInfo->arraySize = info.arraySize;
+    loadInfo->mipLevels = info.mipLevels;
     loadInfo->cubeMap = info.IsCubemap();
     loadInfo->premultipliedAlpha = HasAlpha(info.format) && info.format != DXGI_FORMAT_A8_UNORM && info.IsPMAlpha();
+    loadInfo->volumeMap = info.IsVolumemap();
 
     *image = targetImage.release();
     return S_OK;
