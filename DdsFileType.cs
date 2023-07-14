@@ -67,7 +67,8 @@ namespace DdsFileTypePlus
                 CreateMipMapResamplingAlgorithm(),
                 new BooleanProperty(PropertyNames.UseGammaCorrection, true),
                 new UriProperty(PropertyNames.ForumLink, new Uri("https://forums.getpaint.net/topic/111731-dds-filetype-plus")),
-                new UriProperty(PropertyNames.GitHubLink, new Uri("https://github.com/0xC0000054/pdn-ddsfiletype-plus"))
+                new UriProperty(PropertyNames.GitHubLink, new Uri("https://github.com/0xC0000054/pdn-ddsfiletype-plus")),
+                new StringProperty(PropertyNames.PluginVersion),
             };
 
             List<PropertyCollectionRule> rules = new()
@@ -218,6 +219,11 @@ namespace DdsFileTypePlus
             githubLinkPCI.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
             githubLinkPCI.ControlProperties[ControlInfoPropertyNames.Description].Value = "GitHub"; // GitHub is a brand name that should not be localized.
 
+            PropertyControlInfo pluginVersionInfo = configUI.FindControlForPropertyName(PropertyNames.PluginVersion);
+            pluginVersionInfo.ControlType.Value = PropertyControlType.Label;
+            pluginVersionInfo.ControlProperties[ControlInfoPropertyNames.DisplayName].Value = string.Empty;
+            pluginVersionInfo.ControlProperties[ControlInfoPropertyNames.Description].Value = "DdsFileTypePlus v" + VersionInfo.PluginVersion;
+
             return configUI;
         }
 
@@ -263,7 +269,8 @@ namespace DdsFileTypePlus
             ForumLink,
             GitHubLink,
             ErrorDiffusionDithering,
-            UseGammaCorrection
+            UseGammaCorrection,
+            PluginVersion
         }
     }
 }
