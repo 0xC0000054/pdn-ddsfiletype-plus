@@ -37,14 +37,14 @@ namespace DdsFileTypePlus.Interop
             {
                 return new DDSLoadInfo()
                 {
-                    width = unmanaged.width,
-                    height = unmanaged.height,
-                    depth = unmanaged.depth,
-                    arraySize = unmanaged.arraySize,
-                    mipLevels = unmanaged.mipLevels,
-                    cubeMap = unmanaged.cubeMap != 0,
-                    premultipliedAlpha = unmanaged.premultipliedAlpha != 0,
-                    volumeMap = unmanaged.volumeMap != 0,
+                    Width = unmanaged.width,
+                    Height = unmanaged.height,
+                    Depth = unmanaged.depth,
+                    ArraySize = unmanaged.arraySize,
+                    MipLevels = unmanaged.mipLevels,
+                    CubeMap = unmanaged.cubeMap != 0,
+                    PremultipliedAlpha = unmanaged.premultipliedAlpha != 0,
+                    VolumeMap = unmanaged.volumeMap != 0,
                 };
             }
         }

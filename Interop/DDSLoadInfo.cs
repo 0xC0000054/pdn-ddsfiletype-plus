@@ -19,16 +19,23 @@ namespace DdsFileTypePlus.Interop
     [NativeMarshalling(typeof(Marshaller))]
     internal sealed partial class DDSLoadInfo
     {
-        public nuint width;
-        public nuint height;
-        public nuint depth;
-        public nuint arraySize;
-        public nuint mipLevels;
-        public bool cubeMap;
-        public bool premultipliedAlpha;
-        public bool volumeMap;
+        public nuint Width { get; init; }
+
+        public nuint Height { get; init; }
+
+        public nuint Depth { get; init; }
+
+        public nuint ArraySize { get; init; }
+
+        public nuint MipLevels { get; init; }
+
+        public bool CubeMap { get; init; }
+
+        public bool PremultipliedAlpha { get; init; }
+
+        public bool VolumeMap { get; init; }
 
         public bool IsTextureArray
-            => this.cubeMap ? this.arraySize > 6 : this.arraySize > 1;
+            => this.CubeMap ? this.ArraySize > 6 : this.ArraySize > 1;
     }
 }
