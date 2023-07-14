@@ -19,9 +19,12 @@ namespace DdsFileTypePlus.Interop
     [NativeMarshalling(typeof(Marshaller))]
     internal sealed partial class DDSSaveInfo
     {
-        public DXGI_FORMAT format;
-        public DdsErrorMetric errorMetric;
-        public BC7CompressionSpeed compressionSpeed;
-        public bool errorDiffusionDithering;
+        public DXGI_FORMAT Format { get; init; }
+
+        public DdsErrorMetric ErrorMetric { get; init; }
+
+        public BC7CompressionSpeed CompressionSpeed { get; init; }
+
+        public bool ErrorDiffusionDithering { get; init; }
     }
 }

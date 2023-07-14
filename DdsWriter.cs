@@ -104,10 +104,10 @@ namespace DdsFileTypePlus
 
                     DDSSaveInfo info = new()
                     {
-                        format = GetSaveFormat(format),
-                        errorMetric = errorMetric,
-                        compressionSpeed = compressionSpeed,
-                        errorDiffusionDithering = errorDiffusionDithering
+                        Format = GetSaveFormat(format),
+                        ErrorMetric = errorMetric,
+                        CompressionSpeed = compressionSpeed,
+                        ErrorDiffusionDithering = errorDiffusionDithering
                     };
 
                     if (format == DdsFileFormat.BC6HUnsigned || format == DdsFileFormat.BC7 || format == DdsFileFormat.BC7Srgb)

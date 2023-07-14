@@ -33,10 +33,10 @@ namespace DdsFileTypePlus.Interop
             {
                 return new Native
                 {
-                    format = managed.format,
-                    errorMetric = managed.errorMetric,
-                    compressionSpeed = managed.compressionSpeed,
-                    errorDiffusionDithering = (byte)(managed.errorDiffusionDithering ? 1 : 0)
+                    format = managed.Format,
+                    errorMetric = managed.ErrorMetric,
+                    compressionSpeed = managed.CompressionSpeed,
+                    errorDiffusionDithering = (byte)(managed.ErrorDiffusionDithering ? 1 : 0)
                 };
             }
         }
