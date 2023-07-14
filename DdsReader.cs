@@ -84,7 +84,7 @@ namespace DdsFileTypePlus
                         // Initialize the layer as completely transparent.
                         destination.Clear();
 
-                        for (int i = 0; i < 6; i++)
+                        for (int i = 0; i < 6; ++i)
                         {
                             DirectXTexScratchImageData data = image.GetImageData(0, (uint)i, 0);
                             Point2Int32 offset = cubeMapOffsets[i];
