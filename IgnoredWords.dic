@@ -1,4 +1,5 @@
 bmp
+Compressonator
 config
 cubemap
 ddsfiletype
@@ -9,15 +10,15 @@ dx
 dxgi
 gif
 github
-jpeg
 interop
+jpeg
 mip
 mipmap
 mipmaps
 pdn
 plugin
-premultiplied
 png
+premultiplied
 ptr
 resampling
 rgb

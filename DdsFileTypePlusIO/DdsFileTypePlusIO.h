@@ -43,6 +43,31 @@ extern "C" {
         Slow
     };
 
+    enum class SwizzledImageFormat : int32_t
+    {
+        // Not a swizzled format or the format is unsupported. It will be loaded as-is.
+        Unknown = 0,
+
+        // The green and alpha channels are swapped. Identical to GRXB.
+        Rxbg,
+
+        // The blue and alpha channels are swapped. Identical to BRGX.
+        Rgxb,
+
+        // The blue channel is swapped with green and the green channel is swapped with alpha.
+        Rbxg,
+
+        // The red and alpha channels are swapped. Identical to RXGB.
+        Xgbr,
+
+        // The red channel is swapped with green and the green channel is swapped with alpha.
+        // Identical to GXRB.
+        Xrbg,
+
+        // A 2 channel RGxx format where the red and alpha channels are swapped.
+        Xgxr
+    };
+
     // This must be kept in sync with DDSLoadInfo.cs and
     // the Native structure in DDSLoadInfo.Marshaller.cs
     struct DDSLoadInfo
@@ -52,6 +77,7 @@ extern "C" {
         size_t depth;
         size_t arraySize;
         size_t mipLevels;
+        SwizzledImageFormat swizzledImageFormat;
         bool cubeMap;
         bool premultipliedAlpha;
         bool volumeMap;

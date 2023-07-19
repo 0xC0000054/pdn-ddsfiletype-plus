@@ -29,6 +29,8 @@ namespace DdsFileTypePlus.Interop
 
         public nuint MipLevels { get; init; }
 
+        public SwizzledImageFormat SwizzledImageFormat { get; init; }
+
         public bool CubeMap { get; init; }
 
         public bool PremultipliedAlpha { get; init; }

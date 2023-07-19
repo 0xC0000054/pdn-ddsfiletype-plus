@@ -28,6 +28,7 @@ namespace DdsFileTypePlus.Interop
                 public nuint depth;
                 public nuint arraySize;
                 public nuint mipLevels;
+                public SwizzledImageFormat swizzledImageFormat;
                 public byte cubeMap;
                 public byte premultipliedAlpha;
                 public byte volumeMap;
@@ -42,6 +43,7 @@ namespace DdsFileTypePlus.Interop
                     Depth = unmanaged.depth,
                     ArraySize = unmanaged.arraySize,
                     MipLevels = unmanaged.mipLevels,
+                    SwizzledImageFormat = unmanaged.swizzledImageFormat,
                     CubeMap = unmanaged.cubeMap != 0,
                     PremultipliedAlpha = unmanaged.premultipliedAlpha != 0,
                     VolumeMap = unmanaged.volumeMap != 0,

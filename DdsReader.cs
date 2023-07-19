@@ -92,7 +92,7 @@ namespace DdsFileTypePlus
                             RegionPtr<ColorRgba32> source = data.AsRegionPtr<ColorRgba32>();
                             RegionPtr<ColorBgra32> target = destination.Slice(offset.X, offset.Y, cubeMapWidth, cubeMapHeight);
 
-                            RenderDdsImage(source, target, info.PremultipliedAlpha);
+                            RenderDdsImage(source, target, info);
                         }
                     }
                     else
@@ -100,7 +100,7 @@ namespace DdsFileTypePlus
                         // For images other than cube maps we only load the first image in the file.
                         DirectXTexScratchImageData data = image.GetImageData(0, 0, 0);
 
-                        RenderDdsImage(data.AsRegionPtr<ColorRgba32>(), destination, info.PremultipliedAlpha);
+                        RenderDdsImage(data.AsRegionPtr<ColorRgba32>(), destination, info);
                     }
 
                     doc.Layers.Add(layer);
@@ -129,13 +129,96 @@ namespace DdsFileTypePlus
 
         private static void RenderDdsImage(RegionPtr<ColorRgba32> source,
                                            RegionPtr<ColorBgra32> destination,
-                                           bool premultipliedAlpha)
+                                           DDSLoadInfo loadInfo)
         {
-            PixelKernels.ConvertRgba32ToBgra32(destination, source);
+            if (loadInfo.SwizzledImageFormat != SwizzledImageFormat.Unknown)
+            {
+                RenderFromSwizzledImage(source, destination, loadInfo.SwizzledImageFormat);
+            }
+            else
+            {
+                PixelKernels.ConvertRgba32ToBgra32(destination, source);
+            }
 
-            if (premultipliedAlpha)
+            if (loadInfo.PremultipliedAlpha)
             {
                 PixelKernels.ConvertPbgra32ToBgra32(destination);
+            }
+        }
+
+        private static unsafe void RenderFromSwizzledImage(RegionPtr<ColorRgba32> source,
+                                                           RegionPtr<ColorBgra32> destination,
+                                                           SwizzledImageFormat format)
+        {
+            int width = source.Width;
+            int height = source.Height;
+            RegionRowPtrCollection<ColorRgba32> sourceRows = source.Rows;
+            RegionRowPtrCollection<ColorBgra32> destinationRows = destination.Rows;
+
+            for (int y = 0; y < height; ++y)
+            {
+                ColorRgba32* src = sourceRows[y].Ptr;
+                ColorBgra32* dest = destinationRows[y].Ptr;
+
+                for (int x = 0; x < width; ++x)
+                {
+                    // None of the formats appear to have transparency data in the swapped alpha channel, it is
+                    // always set to 0 or some other low value.
+                    //
+                    // This makes sense as the swizzled formats are optimized for storing the data that is used in
+                    // a normal map, and take advantage of the fact that BC3/DXT5 compresses the alpha channel
+                    // separately to improve the quality for one or more of those components.
+                    // Most of the formats store 3 channels (X, Y and Z), but some only store 2 channels (X and Y).
+                    //
+                    // Compressonator appears to always set the alpha channel to 255 when it reads an image that is
+                    // stored in one of these formats.
+
+                    switch (format)
+                    {
+                        case SwizzledImageFormat.Rxbg:
+                            dest->R = src->R;
+                            dest->G = src->A;
+                            dest->B = src->B;
+                            dest->A = 255;
+                            break;
+                        case SwizzledImageFormat.Rgxb:
+                            dest->R = src->R;
+                            dest->G = src->G;
+                            dest->B = src->A;
+                            dest->A = 255;
+                            break;
+                        case SwizzledImageFormat.Rbxg:
+                            dest->R = src->R;
+                            dest->G = src->A;
+                            dest->B = src->G;
+                            dest->A = 255;
+                            break;
+                        case SwizzledImageFormat.Xgbr:
+                            dest->R = src->A;
+                            dest->G = src->G;
+                            dest->B = src->B;
+                            dest->A = 255;
+                            break;
+                        case SwizzledImageFormat.Xrbg:
+                            dest->R = src->G;
+                            dest->G = src->A;
+                            dest->B = src->B;
+                            dest->A = 255;
+                            break;
+                        case SwizzledImageFormat.Xgxr:
+                            dest->R = src->A;
+                            dest->G = src->G;
+                            dest->B = src->B;
+                            dest->A = 255;
+                            break;
+                        case SwizzledImageFormat.Unknown:
+                        default:
+                            throw new InvalidOperationException($"Unsupported {nameof(SwizzledImageFormat)}: {format}.");
+                    }
+
+                    ++src;
+                    ++dest;
+                }
             }
         }
     }

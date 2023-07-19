@@ -12,14 +12,50 @@
 
 #include "stdafx.h"
 #include "DdsFileTypePlusIO.h"
-#include <memory>
-
 #include "DirectComputeHelper.h"
+#include "DDS.h"
+#include <memory>
 
 using namespace DirectX;
 
 namespace
 {
+    SwizzledImageFormat GetSwizzledImageFormat(const TexMetadata& metadata, const DDSMetaData& ddsPixelFormat)
+    {
+        SwizzledImageFormat format = SwizzledImageFormat::Unknown;
+
+        if (metadata.format == DXGI_FORMAT_BC3_UNORM)
+        {
+            switch (ddsPixelFormat.fourCC)
+            {
+            case MAKEFOURCC('R', 'x', 'B', 'G'):
+            case MAKEFOURCC('G', 'R', 'X', 'B'):
+                format = SwizzledImageFormat::Rxbg;
+                break;
+            case MAKEFOURCC('R', 'G', 'x', 'B'):
+            case MAKEFOURCC('B', 'R', 'G', 'X'):
+                format = SwizzledImageFormat::Rgxb;
+                break;
+            case MAKEFOURCC('R', 'B', 'x', 'G'):
+                format = SwizzledImageFormat::Rbxg;
+                break;
+            case MAKEFOURCC('x', 'G', 'B', 'R'):
+            case MAKEFOURCC('R', 'X', 'G', 'B'):
+                format = SwizzledImageFormat::Xgbr;
+                break;
+            case MAKEFOURCC('x', 'R', 'B', 'G'):
+            case MAKEFOURCC('G', 'X', 'R', 'B'):
+                format = SwizzledImageFormat::Xrbg;
+                break;
+            case MAKEFOURCC('x', 'G', 'x', 'R'):
+                format = SwizzledImageFormat::Xgxr;
+                break;
+            }
+        }
+
+        return format;
+    }
+
     HRESULT SaveImage(const ImageIOCallbacks* callbacks, const ScratchImage* const image)
     {
         TexMetadata metadata = image->GetMetadata();
@@ -133,6 +169,7 @@ HRESULT __stdcall Load(
     *image = nullptr;
 
     TexMetadata info;
+    DDSMetaData ddsPixelFormat{};
     std::unique_ptr<ScratchImage> ddsImage(new(std::nothrow) ScratchImage);
 
     if (ddsImage == nullptr)
@@ -140,7 +177,7 @@ HRESULT __stdcall Load(
         return E_OUTOFMEMORY;
     }
 
-    HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_ALLOW_LARGE_FILES, &info, nullptr, *ddsImage);
+    HRESULT hr = LoadFromDDSIOCallbacks(callbacks, DDS_FLAGS_ALLOW_LARGE_FILES, &info, &ddsPixelFormat, *ddsImage);
 
     if (FAILED(hr))
     {
@@ -179,6 +216,8 @@ HRESULT __stdcall Load(
         ddsImage.swap(interleavedImage);
     }
 
+    const TexMetadata originalImageMetadata = info;
+
     const DXGI_FORMAT targetFormat = IsSRGB(info.format) ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
     std::unique_ptr<ScratchImage> targetImage(new(std::nothrow) ScratchImage);
 
@@ -216,6 +255,7 @@ HRESULT __stdcall Load(
     loadInfo->depth = info.depth;
     loadInfo->arraySize = info.arraySize;
     loadInfo->mipLevels = info.mipLevels;
+    loadInfo->swizzledImageFormat = GetSwizzledImageFormat(originalImageMetadata, ddsPixelFormat);
     loadInfo->cubeMap = info.IsCubemap();
     loadInfo->premultipliedAlpha = HasAlpha(info.format) && info.format != DXGI_FORMAT_A8_UNORM && info.IsPMAlpha();
     loadInfo->volumeMap = info.IsVolumemap();
