@@ -356,10 +356,10 @@ namespace DdsFileTypePlus
                             {
                                 using (MipSourceSurface mipSource = new(cubeMapSurface))
                                 {
-                                    for (uint mip = 1; mip < mipLevels; ++mip)
+                                    for (int mip = 1; mip < mipLevels; ++mip)
                                     {
                                         RenderMipMap(mipSource,
-                                                     tempImage.GetImageData(mip, item, 0),
+                                                     tempImage.GetImageData((uint)mip, item, 0),
                                                      algorithm,
                                                      useGammaCorrection);
                                     }
@@ -376,10 +376,10 @@ namespace DdsFileTypePlus
                     {
                         using (MipSourceSurface mipSource = new(scratchSurface))
                         {
-                            for (uint mip = 1; mip < mipLevels; ++mip)
+                            for (int mip = 1; mip < mipLevels; ++mip)
                             {
                                 RenderMipMap(mipSource,
-                                             tempImage.GetImageData(mip, 0, 0),
+                                             tempImage.GetImageData((uint)mip, 0, 0),
                                              algorithm,
                                              useGammaCorrection);
                             }
