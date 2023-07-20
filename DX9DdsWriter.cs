@@ -52,20 +52,20 @@ namespace DdsFileTypePlus
             output.Write(DdsMagic);
             header.Write(output);
 
-            double progressTotal = this.arraySize * this.mipLevels;
+            double progressDone = 0.0;
+            double progressTotal = (double)this.arraySize * this.mipLevels;
+            double progressDelta = (1.0 / progressTotal) * 100.0;
 
             for (int item = 0; item < this.arraySize; ++item)
             {
-                int progressStartIndex = item * this.mipLevels;
-
                 for (int mip = 0; mip < this.mipLevels; ++mip)
                 {
                     DirectXTexScratchImageData imageData = images.GetImageData((uint)mip, (uint)item, 0);
 
                     WritePixelData(imageData.AsRegionPtr<ColorBgra32>(), output);
 
-                    int progressDone = progressStartIndex + mip;
-                    progressCallback?.Invoke(this, new ProgressEventArgs((progressDone / progressTotal) * 100.0, true));
+                    progressCallback?.Invoke(this, new ProgressEventArgs(progressDone, true));
+                    progressDone += progressDelta;
                 }
             }
         }
