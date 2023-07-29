@@ -346,7 +346,7 @@ namespace
             return HRESULT_E_INVALID_DATA;
         }
 
-        if (pHeader->ddspf.size != 0 && pHeader->ddspf.size != sizeof(DDS_PIXELFORMAT))
+        if (pHeader->ddspf.size != 0 && pHeader->ddspf.size != sizeof(DDS_PIXELFORMAT) && pHeader->ddspf.size != 24)
         {
             return HRESULT_E_INVALID_DATA;
         }
