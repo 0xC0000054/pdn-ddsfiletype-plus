@@ -87,12 +87,13 @@ namespace DdsFileTypePlus
         {
             StreamIOCallbacks streamIO = new(output);
             IOCallbacks callbacks = streamIO.GetIOCallbacks();
+            NativeDdsSaveInfo nativeDdsSaveInfo = info.ToNative();
 
             int hr;
 
             if (RuntimeInformation.ProcessArchitecture == Architecture.X64)
             {
-                hr = DdsIO_x64.Save(info,
+                hr = DdsIO_x64.Save(ref nativeDdsSaveInfo,
                                     image.SafeDirectXTexScratchImage,
                                     ref callbacks,
                                     directComputeAdapter,
@@ -100,7 +101,7 @@ namespace DdsFileTypePlus
             }
             else if (RuntimeInformation.ProcessArchitecture == Architecture.Arm64)
             {
-                hr = DdsIO_ARM64.Save(info,
+                hr = DdsIO_ARM64.Save(ref nativeDdsSaveInfo,
                                       image.SafeDirectXTexScratchImage,
                                       ref callbacks,
                                       directComputeAdapter,

@@ -49,10 +49,10 @@ namespace DdsFileTypePlus.Interop
 
         [LibraryImport(DllName)]
         [UnmanagedCallConv(CallConvs = new Type[] { typeof(System.Runtime.CompilerServices.CallConvStdcall) })]
-        internal static unsafe partial int Save(DDSSaveInfo input,
-                                                SafeDirectXTexScratchImage image,
-                                                ref IOCallbacks callbacks,
-                                                IntPtr directComputeAdapter,
-                                                [MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
+        internal static partial int Save(ref NativeDdsSaveInfo input,
+                                         SafeDirectXTexScratchImage image,
+                                         ref IOCallbacks callbacks,
+                                         IntPtr directComputeAdapter,
+                                         [MarshalAs(UnmanagedType.FunctionPtr)] DdsProgressCallback progressCallback);
     }
 }

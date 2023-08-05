@@ -10,13 +10,10 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using System.Runtime.InteropServices.Marshalling;
-
 namespace DdsFileTypePlus.Interop
 {
-    // This must be kept in sync with the Native structure in DDSSaveInfo.Marshaller.cs
+    // This must be kept in sync with NativeDdsSaveInfo.cs
     // and the DDSSaveInfo type in DdsFileTypePlusIO.h
-    [NativeMarshalling(typeof(Marshaller))]
     internal sealed partial class DDSSaveInfo
     {
         public DXGI_FORMAT Format { get; init; }
@@ -26,5 +23,13 @@ namespace DdsFileTypePlus.Interop
         public BC7CompressionSpeed CompressionSpeed { get; init; }
 
         public bool ErrorDiffusionDithering { get; init; }
+
+        public NativeDdsSaveInfo ToNative() => new()
+        {
+            format = Format,
+            errorMetric = ErrorMetric,
+            compressionSpeed = CompressionSpeed,
+            errorDiffusionDithering = (byte)(this.ErrorDiffusionDithering ? 1 : 0)
+        };
     }
 }
