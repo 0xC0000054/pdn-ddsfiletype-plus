@@ -4799,7 +4799,7 @@ namespace
         _In_ const Image& destImage,
         _In_ float threshold,
         size_t z,
-        ProgressProc progressProc) noexcept
+        const std::function<bool __cdecl(size_t, size_t)>& statusCallback) noexcept
     {
         assert(srcImage.width == destImage.width);
         assert(srcImage.height == destImage.height);
@@ -4823,11 +4823,11 @@ namespace
 
             for (size_t h = 0; h < srcImage.height; ++h)
             {
-                if (progressProc)
+                if (statusCallback)
                 {
-                    if (!progressProc(h, srcImage.height))
+                    if (!statusCallback(h, srcImage.height))
                     {
-                       return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                       return E_ABORT;
                     }
                 }
 
@@ -4854,11 +4854,11 @@ namespace
                 // Ordered dithering
                 for (size_t h = 0; h < srcImage.height; ++h)
                 {
-                    if (progressProc)
+                    if (statusCallback)
                     {
-                        if (!progressProc(h, srcImage.height))
+                        if (!statusCallback(h, srcImage.height))
                         {
-                            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                            return E_ABORT;
                         }
                     }
 
@@ -4879,11 +4879,11 @@ namespace
                 // No dithering
                 for (size_t h = 0; h < srcImage.height; ++h)
                 {
-                    if (progressProc)
+                    if (statusCallback)
                     {
-                        if (!progressProc(h, srcImage.height))
+                        if (!statusCallback(h, srcImage.height))
                         {
-                            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                            return E_ABORT;
                         }
                     }
 
@@ -5085,8 +5085,22 @@ HRESULT DirectX::Convert(
     DXGI_FORMAT format,
     TEX_FILTER_FLAGS filter,
     float threshold,
+    ScratchImage& image) noexcept
+{
+    ConvertOptions options = {};
+    options.filter = filter;
+    options.threshold = threshold;
+
+    return ConvertEx(srcImage, format, options, image, nullptr);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::ConvertEx(
+    const Image& srcImage,
+    DXGI_FORMAT format,
+    const ConvertOptions& options,
     ScratchImage& image,
-    ProgressProc progressProc) noexcept
+    std::function<bool __cdecl(size_t, size_t)> statusCallback)
 {
     if ((srcImage.format == format) || !IsValid(format))
         return E_INVALIDARG;
@@ -5114,37 +5128,38 @@ HRESULT DirectX::Convert(
         return E_POINTER;
     }
 
-    if (progressProc)
+    if (statusCallback)
     {
-        if (!progressProc(0, rimage->height))
+        if (!statusCallback(0, rimage->height))
         {
             image.Release();
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
     }
 
     WICPixelFormatGUID pfGUID, targetGUID;
-    if (UseWICConversion(filter, srcImage.format, format, pfGUID, targetGUID))
+    if (UseWICConversion(options.filter, srcImage.format, format, pfGUID, targetGUID))
     {
-        hr = ConvertUsingWIC(srcImage, pfGUID, targetGUID, filter, threshold, *rimage);
+        hr = ConvertUsingWIC(srcImage, pfGUID, targetGUID, options.filter, options.threshold, *rimage);
     }
     else
     {
-        hr = ConvertCustom(srcImage, filter, *rimage, threshold, 0, progressProc);
-    }
-
-    if (progressProc && SUCCEEDED(hr))
-    {
-        if (!progressProc(rimage->height, rimage->height))
-        {
-            hr = HRESULT_FROM_WIN32(ERROR_CANCELLED);
-        }
+        hr = ConvertCustom(srcImage, options.filter, *rimage, options.threshold, 0, statusCallback);
     }
 
     if (FAILED(hr))
     {
         image.Release();
         return hr;
+    }
+
+    if (statusCallback)
+    {
+        if (!statusCallback(rimage->height, rimage->height))
+        {
+            image.Release();
+            return E_ABORT;
+        }
     }
 
     return S_OK;
@@ -5162,8 +5177,24 @@ HRESULT DirectX::Convert(
     DXGI_FORMAT format,
     TEX_FILTER_FLAGS filter,
     float threshold,
+    ScratchImage& result) noexcept
+{
+    ConvertOptions options = {};
+    options.filter = filter;
+    options.threshold = threshold;
+
+    return ConvertEx(srcImages, nimages, metadata, format, options, result, nullptr);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::ConvertEx(
+    const Image* srcImages,
+    size_t nimages,
+    const TexMetadata& metadata,
+    DXGI_FORMAT format,
+    const ConvertOptions& options,
     ScratchImage& result,
-    ProgressProc progressProc) noexcept
+    std::function<bool __cdecl(size_t, size_t)> statusCallback)
 {
     if (!srcImages || !nimages || (metadata.format == format) || !IsValid(format))
         return E_INVALIDARG;
@@ -5176,6 +5207,19 @@ HRESULT DirectX::Convert(
 
     if ((metadata.width > UINT32_MAX) || (metadata.height > UINT32_MAX))
         return E_INVALIDARG;
+
+    if (statusCallback
+        && nimages == 1
+        && !metadata.IsVolumemap()
+        && metadata.mipLevels == 1
+        && metadata.arraySize == 1)
+    {
+        // If progress reporting is requested when converting a single 1D or 2D image, call
+        // the ConvertEx overload that takes a single image.
+        // This provides a better user experience as progress will be reported as the image
+        // is being processed, instead of after processing has been completed.
+        return ConvertEx(srcImages[0], format, options, result, statusCallback);
+    }
 
     TexMetadata mdata2 = metadata;
     mdata2.format = format;
@@ -5196,17 +5240,17 @@ HRESULT DirectX::Convert(
         return E_POINTER;
     }
 
-    if (progressProc)
+    if (statusCallback)
     {
-        if (!progressProc(0, nimages))
+        if (!statusCallback(0, nimages))
         {
             result.Release();
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
     }
 
     WICPixelFormatGUID pfGUID, targetGUID;
-    const bool usewic = !metadata.IsPMAlpha() && UseWICConversion(filter, metadata.format, format, pfGUID, targetGUID);
+    const bool usewic = !metadata.IsPMAlpha() && UseWICConversion(options.filter, metadata.format, format, pfGUID, targetGUID);
 
     switch (metadata.dimension)
     {
@@ -5238,17 +5282,26 @@ HRESULT DirectX::Convert(
 
             if (usewic)
             {
-                hr = ConvertUsingWIC(src, pfGUID, targetGUID, filter, threshold, dst);
+                hr = ConvertUsingWIC(src, pfGUID, targetGUID, options.filter, options.threshold, dst);
             }
             else
             {
-                hr = ConvertCustom(src, filter, dst, threshold, 0, progressProc);
+                hr = ConvertCustom(src, options.filter, dst, options.threshold, 0, nullptr);
             }
 
             if (FAILED(hr))
             {
                 result.Release();
                 return hr;
+            }
+
+            if (statusCallback)
+            {
+                if (!statusCallback(index, nimages))
+                {
+                    result.Release();
+                    return E_ABORT;
+                }
             }
         }
         break;
@@ -5291,17 +5344,26 @@ HRESULT DirectX::Convert(
 
                     if (usewic)
                     {
-                        hr = ConvertUsingWIC(src, pfGUID, targetGUID, filter, threshold, dst);
+                        hr = ConvertUsingWIC(src, pfGUID, targetGUID, options.filter, options.threshold, dst);
                     }
                     else
                     {
-                        hr = ConvertCustom(src, filter, dst, threshold, slice, progressProc);
+                        hr = ConvertCustom(src, options.filter, dst, options.threshold, slice, nullptr);
                     }
 
                     if (FAILED(hr))
                     {
                         result.Release();
                         return hr;
+                    }
+
+                    if (statusCallback)
+                    {
+                        if (!statusCallback(index, nimages))
+                        {
+                            result.Release();
+                            return E_ABORT;
+                        }
                     }
                 }
 
@@ -5316,12 +5378,12 @@ HRESULT DirectX::Convert(
         return E_FAIL;
     }
 
-    if (progressProc)
+    if (statusCallback)
     {
-        if (!progressProc(nimages, nimages))
+        if (!statusCallback(nimages, nimages))
         {
             result.Release();
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
     }
 

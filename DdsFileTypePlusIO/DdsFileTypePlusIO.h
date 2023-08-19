@@ -106,6 +106,8 @@ extern "C" {
         DXGI_FORMAT format;
     };
 
+    typedef bool(__stdcall *ProgressProc)(double progressPercentage);
+
     __declspec(dllexport) HRESULT __stdcall CreateScratchImage(
         int32_t width,
         int32_t height,
@@ -133,7 +135,7 @@ extern "C" {
         const DirectX::ScratchImage* const originalImage,
         const DirectX::ImageIOCallbacks* callbacks,
         IDXGIAdapter* directComputeAdapter,
-        DirectX::ProgressProc progressFn);
+        ProgressProc progressFn);
 
 #ifdef __cplusplus
 }

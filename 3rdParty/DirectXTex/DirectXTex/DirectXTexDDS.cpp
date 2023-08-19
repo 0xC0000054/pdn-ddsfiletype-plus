@@ -2150,6 +2150,7 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
     }
 
     // Read the header in (including extended header if present)
+    const size_t MAX_HEADER_SIZE = sizeof(uint32_t) + sizeof(DDS_HEADER) + sizeof(DDS_HEADER_DXT10);
     uint8_t header[MAX_HEADER_SIZE] = {};
     size_t headerLength = MAX_HEADER_SIZE;
 
@@ -2776,6 +2777,7 @@ HRESULT DirectX::SaveToDDSIOCallbacks(
         return E_INVALIDARG;
 
     // Create DDS Header
+    const size_t MAX_HEADER_SIZE = sizeof(uint32_t) + sizeof(DDS_HEADER) + sizeof(DDS_HEADER_DXT10);
     uint8_t header[MAX_HEADER_SIZE];
     size_t required;
     HRESULT hr = EncodeDDSHeader(metadata, flags, header, MAX_HEADER_SIZE, required);

@@ -75,7 +75,7 @@ namespace
         uint32_t bcflags,
         TEX_FILTER_FLAGS srgb,
         float threshold,
-        ProgressProc progressProc) noexcept
+        const std::function<bool __cdecl(size_t, size_t)>& statusCallback) noexcept
     {
         if (!image.pixels || !result.pixels)
             return E_POINTER;
@@ -112,11 +112,11 @@ namespace
         const size_t rowPitch = image.rowPitch;
         for (size_t h = 0; h < image.height; h += 4)
         {
-            if (progressProc)
+            if (statusCallback)
             {
-                if (!progressProc(h, image.height))
+                if (!statusCallback(h, image.height))
                 {
-                    return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+                    return E_ABORT;
                 }
             }
 
@@ -213,7 +213,7 @@ namespace
         uint32_t bcflags,
         TEX_FILTER_FLAGS srgb,
         float threshold,
-        ProgressProc progressProc) noexcept
+        const std::function<bool __cdecl(size_t, size_t)>& statusCallback) noexcept
     {
         if (!image.pixels || !result.pixels)
             return E_POINTER;
@@ -348,12 +348,12 @@ namespace
                 D3DXEncodeBC1(pDest, temp, threshold, bcflags);
 
             // Report progress when a new row is reached.
-            if (x == 0 && progressProc)
+            if (x == 0 && statusCallback)
             {
 #pragma omp atomic
                 progress += 4;
 
-                if (!progressProc(progress, progressTotal))
+                if (!statusCallback(progress, progressTotal))
                 {
                     abort = true;
 #pragma omp flush (abort)
@@ -363,7 +363,7 @@ namespace
 
         if (abort)
         {
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
         else
         {
@@ -634,8 +634,39 @@ HRESULT DirectX::Compress(
     DXGI_FORMAT format,
     TEX_COMPRESS_FLAGS compress,
     float threshold,
+    ScratchImage& image) noexcept
+{
+    CompressOptions options = {};
+    options.flags = compress;
+    options.threshold = threshold;
+
+    return CompressEx(srcImage, format, options, image, nullptr);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::Compress(
+    const Image* srcImages,
+    size_t nimages,
+    const TexMetadata& metadata,
+    DXGI_FORMAT format,
+    TEX_COMPRESS_FLAGS compress,
+    float threshold,
+    ScratchImage& cImages) noexcept
+{
+    CompressOptions options = {};
+    options.flags = compress;
+    options.threshold = threshold;
+
+    return CompressEx(srcImages, nimages, metadata, format, options, cImages, nullptr);
+}
+
+_Use_decl_annotations_
+HRESULT DirectX::CompressEx(
+    const Image& srcImage,
+    DXGI_FORMAT format,
+    const CompressOptions& options,
     ScratchImage& image,
-    ProgressProc progressProc) noexcept
+    std::function<bool __cdecl(size_t, size_t)> statusCallback)
 {
     if (IsCompressed(srcImage.format) || !IsCompressed(format))
         return E_INVALIDARG;
@@ -656,53 +687,56 @@ HRESULT DirectX::Compress(
         return E_POINTER;
     }
 
-    if (progressProc)
+    if (statusCallback)
     {
-        if (!progressProc(0, img->height))
+        if (!statusCallback(0, img->height))
         {
             image.Release();
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
     }
 
     // Compress single image
-    if (compress & TEX_COMPRESS_PARALLEL)
+    if (options.flags & TEX_COMPRESS_PARALLEL)
     {
     #ifndef _OPENMP
-        return E_NOTIMPL;
+        hr = E_NOTIMPL;
     #else
-        hr = CompressBC_Parallel(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
+        hr = CompressBC_Parallel(srcImage, *img, GetBCFlags(options.flags), GetSRGBFlags(options.flags), options.threshold, statusCallback);
     #endif // _OPENMP
     }
     else
     {
-        hr = CompressBC(srcImage, *img, GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
-    }
-
-    if (progressProc && SUCCEEDED(hr))
-    {
-        if (!progressProc(img->height, img->height))
-        {
-            hr = HRESULT_FROM_WIN32(ERROR_CANCELLED);
-        }
+        hr = CompressBC(srcImage, *img, GetBCFlags(options.flags), GetSRGBFlags(options.flags), options.threshold, statusCallback);
     }
 
     if (FAILED(hr))
+    {
         image.Release();
+        return hr;
+    }
 
-    return hr;
+    if (statusCallback)
+    {
+        if (!statusCallback(img->height, img->height))
+        {
+            image.Release();
+            return E_ABORT;
+        }
+    }
+
+    return S_OK;
 }
 
 _Use_decl_annotations_
-HRESULT DirectX::Compress(
+HRESULT DirectX::CompressEx(
     const Image* srcImages,
     size_t nimages,
     const TexMetadata& metadata,
     DXGI_FORMAT format,
-    TEX_COMPRESS_FLAGS compress,
-    float threshold,
+    const CompressOptions& options,
     ScratchImage& cImages,
-    ProgressProc progressProc) noexcept
+    std::function<bool __cdecl(size_t, size_t)> statusCallback)
 {
     if (!srcImages || !nimages)
         return E_INVALIDARG;
@@ -715,6 +749,19 @@ HRESULT DirectX::Compress(
         return HRESULT_E_NOT_SUPPORTED;
 
     cImages.Release();
+
+    if (statusCallback
+        && nimages == 1
+        && !metadata.IsVolumemap()
+        && metadata.mipLevels == 1
+        && metadata.arraySize == 1)
+    {
+        // If progress reporting is requested when compressing a single 1D or 2D image, call
+        // the CompressEx overload that takes a single image.
+        // This provides a better user experience as progress will be reported as the image
+        // is being processed, instead of after processing has been completed.
+        return CompressEx(srcImages[0], format, options, cImages, statusCallback);
+    }
 
     TexMetadata mdata2 = metadata;
     mdata2.format = format;
@@ -735,12 +782,12 @@ HRESULT DirectX::Compress(
         return E_POINTER;
     }
 
-    if (progressProc)
+    if (statusCallback)
     {
-        if (!progressProc(0, nimages))
+        if (!statusCallback(0, nimages))
         {
             cImages.Release();
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
     }
 
@@ -756,39 +803,41 @@ HRESULT DirectX::Compress(
             return E_FAIL;
         }
 
-        if ((compress & TEX_COMPRESS_PARALLEL))
+        if (options.flags & TEX_COMPRESS_PARALLEL)
         {
         #ifndef _OPENMP
-            return E_NOTIMPL;
+            hr = E_NOTIMPL;
         #else
-            if (compress & TEX_COMPRESS_PARALLEL)
-            {
-                hr = CompressBC_Parallel(src, dest[index], GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
-                if (FAILED(hr))
-                {
-                    cImages.Release();
-                    return  hr;
-                }
-            }
+            hr = CompressBC_Parallel(src, dest[index], GetBCFlags(options.flags), GetSRGBFlags(options.flags), options.threshold, nullptr);
         #endif // _OPENMP
         }
         else
         {
-            hr = CompressBC(src, dest[index], GetBCFlags(compress), GetSRGBFlags(compress), threshold, progressProc);
-            if (FAILED(hr))
+            hr = CompressBC(src, dest[index], GetBCFlags(options.flags), GetSRGBFlags(options.flags), options.threshold, nullptr);
+        }
+
+        if (FAILED(hr))
+        {
+            cImages.Release();
+            return hr;
+        }
+
+        if (statusCallback)
+        {
+            if (!statusCallback(index, nimages))
             {
                 cImages.Release();
-                return hr;
+                return E_ABORT;
             }
         }
     }
 
-    if (progressProc)
+    if (statusCallback)
     {
-        if (!progressProc(nimages, nimages))
+        if (!statusCallback(nimages, nimages))
         {
             cImages.Release();
-            return HRESULT_FROM_WIN32(ERROR_CANCELLED);
+            return E_ABORT;
         }
     }
 

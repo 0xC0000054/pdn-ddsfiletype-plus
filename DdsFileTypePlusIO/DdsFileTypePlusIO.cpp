@@ -239,7 +239,7 @@ HRESULT __stdcall Load(
         else
         {
             hr = Convert(ddsImage->GetImages(), ddsImage->GetImageCount(), ddsImage->GetMetadata(), targetFormat,
-                TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *targetImage, nullptr);
+                TEX_FILTER_DEFAULT, TEX_THRESHOLD_DEFAULT, *targetImage);
         }
 
         if (FAILED(hr))
@@ -281,6 +281,18 @@ HRESULT __stdcall Save(
 
     const DXGI_FORMAT dxgiFormat = input->format;
     std::unique_ptr<ScratchImage> output;
+
+    std::function<bool __cdecl(size_t, size_t)> progressCallback = nullptr;
+    if (progressFn != nullptr)
+    {
+        progressCallback = [progressFn](size_t done, size_t total) -> bool
+        {
+            double progress = static_cast<double>(done) / static_cast<double>(total);
+            double progressPercentage = progress * 100.0;
+
+            return progressFn(progressPercentage);
+        };
+    }
 
     if (IsCompressed(dxgiFormat))
     {
@@ -331,17 +343,20 @@ HRESULT __stdcall Save(
             }
         }
 
+        CompressOptions options = {};
+        options.flags = compressFlags;
+        options.threshold = TEX_THRESHOLD_DEFAULT;
+        options.alphaWeight = TEX_ALPHA_WEIGHT_DEFAULT;
+
         if (useDirectCompute)
         {
-            const float alphaWeight = 1.0;
-
-            hr = Compress(dcHelper->GetComputeDevice(), originalImage->GetImages(), originalImage->GetImageCount(),
-                originalImage->GetMetadata(), dxgiFormat, compressFlags, alphaWeight, *compressedImage, progressFn);
+            hr = CompressEx(dcHelper->GetComputeDevice(), originalImage->GetImages(), originalImage->GetImageCount(),
+                originalImage->GetMetadata(), dxgiFormat, options, *compressedImage, progressCallback);
         }
         else
         {
-            hr = Compress(originalImage->GetImages(), originalImage->GetImageCount(), originalImage->GetMetadata(),
-                dxgiFormat, compressFlags, TEX_THRESHOLD_DEFAULT, *compressedImage, progressFn);
+            hr = CompressEx(originalImage->GetImages(), originalImage->GetImageCount(), originalImage->GetMetadata(),
+                dxgiFormat, options, *compressedImage, progressCallback);
         }
 
         if (FAILED(hr))
@@ -367,8 +382,12 @@ HRESULT __stdcall Save(
             filter |= TEX_FILTER_DITHER_DIFFUSION;
         }
 
-        hr = Convert(originalImage->GetImages(), originalImage->GetImageCount(), originalImage->GetMetadata(),
-            dxgiFormat, filter, TEX_THRESHOLD_DEFAULT, *convertedImage, progressFn);
+        ConvertOptions options = {};
+        options.filter = filter;
+        options.threshold = TEX_THRESHOLD_DEFAULT;
+
+        hr = ConvertEx(originalImage->GetImages(), originalImage->GetImageCount(), originalImage->GetMetadata(),
+            dxgiFormat, options, *convertedImage, progressCallback);
 
         if (FAILED(hr))
         {

@@ -371,7 +371,7 @@ HRESULT GPUCompressBC::Prepare(size_t width, size_t height, uint32_t flags, DXGI
 
 
 //-------------------------------------------------------------------------------------
-HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, ProgressProc progressProc)
+HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage)
 {
     if (!srcImage.pixels || !destImage.pixels)
         return E_INVALIDARG;
@@ -380,7 +380,6 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, P
         || srcImage.height != destImage.height
         || srcImage.width != m_width
         || srcImage.height != m_height
-        || srcImage.format != m_srcformat
         || destImage.format != m_bcformat)
     {
         return E_UNEXPECTED;
@@ -610,15 +609,6 @@ HRESULT GPUCompressBC::Compress(const Image& srcImage, const Image& destImage, P
 
         start_block_id += n;
         num_blocks -= n;
-
-        if (progressProc)
-        {
-            if (!progressProc(start_block_id, num_total_blocks))
-            {
-                ResetContext(pContext);
-                return HRESULT_FROM_WIN32(ERROR_CANCELLED);
-            }
-        }
     }
 
     ResetContext(pContext);

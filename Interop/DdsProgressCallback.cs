@@ -10,12 +10,11 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using System;
 using System.Runtime.InteropServices;
 
 namespace DdsFileTypePlus.Interop
 {
     [UnmanagedFunctionPointer(CallingConvention.StdCall)]
     [return: MarshalAs(UnmanagedType.U1)]
-    internal delegate bool DdsProgressCallback(UIntPtr done, UIntPtr total);
+    internal delegate bool DdsProgressCallback(double progressPercentage);
 }
