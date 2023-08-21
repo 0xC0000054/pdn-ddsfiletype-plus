@@ -125,7 +125,7 @@ namespace DdsFileTypePlus
                 {
                     switch (hr)
                     {
-                        case HResult.CanceledError:
+                        case HResult.E_ABORT:
                             throw new OperationCanceledException();
                         default:
                             Marshal.ThrowExceptionForHR(hr);

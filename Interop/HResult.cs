@@ -16,7 +16,7 @@ namespace DdsFileTypePlus.Interop
     {
         public const int S_OK = 0;
         public const int E_POINTER = unchecked((int)0x80004003);
-        public const int CanceledError = unchecked((int)0x800704C7); // HRESULT_FROM_WIN32(ERROR_CANCELLED)
+        public const int E_ABORT = unchecked((int)0x80004004);
         public const int SeekError = unchecked((int)0x80070019); // HRESULT_FROM_WIN32(ERROR_SEEK)
         public const int EndOfFile = unchecked((int)0x80070026); // HRESULT_FROM_WIN32(ERROR_HANDLE_EOF)
         public const int InvalidArgument = unchecked((int)0x80070057); // HRESULT_FROM_WIN32(ERROR_INVALID_PARAMETER)
