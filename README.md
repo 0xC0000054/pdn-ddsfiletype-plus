@@ -53,6 +53,7 @@ The plugin can read most DDS formats, but only the following formats are support
   --------|----------
   Classic | C:\Program Files\Paint.NET\FileTypes    
   Microsoft Store | Documents\paint.net App Files\FileTypes
+  Portable | <Paint.NET folder>\FileTypes
 
 3. Restart Paint.NET.
 
