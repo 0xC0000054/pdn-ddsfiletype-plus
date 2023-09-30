@@ -58,7 +58,7 @@ namespace DdsFileTypePlus
         {
             List<Property> props = new()
             {
-                StaticListChoiceProperty.CreateForEnum(PropertyNames.FileFormat, DdsFileFormat.BC1, false),
+                CreateFileFormat(),
                 new BooleanProperty(PropertyNames.ErrorDiffusionDithering, true),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.BC7CompressionSpeed, BC7CompressionSpeed.Medium, false),
                 StaticListChoiceProperty.CreateForEnum(PropertyNames.ErrorMetric, DdsErrorMetric.Perceptual, false),
@@ -118,6 +118,46 @@ namespace DdsFileTypePlus
 
             return new PropertyCollection(props, rules);
 
+            static StaticListChoiceProperty CreateFileFormat()
+            {
+                object[] values = new object[]
+                {
+                    DdsFileFormat.BC1,
+                    DdsFileFormat.BC1Srgb,
+                    DdsFileFormat.BC2,
+                    DdsFileFormat.BC2Srgb,
+                    DdsFileFormat.BC3,
+                    DdsFileFormat.BC3Srgb,
+                    DdsFileFormat.BC3Rxgb,
+                    DdsFileFormat.BC4Unsigned,
+                    DdsFileFormat.BC4Ati1,
+                    DdsFileFormat.BC5Unsigned,
+                    DdsFileFormat.BC5Ati2,
+                    DdsFileFormat.BC6HUnsigned,
+                    DdsFileFormat.BC7,
+                    DdsFileFormat.BC7Srgb,
+                    DdsFileFormat.B8G8R8A8,
+                    DdsFileFormat.B8G8R8A8Srgb,
+                    DdsFileFormat.B8G8R8X8,
+                    DdsFileFormat.B8G8R8X8Srgb,
+                    DdsFileFormat.R8G8B8A8,
+                    DdsFileFormat.R8G8B8A8Srgb,
+                    DdsFileFormat.R8G8B8X8,
+                    DdsFileFormat.B5G5R5A1,
+                    DdsFileFormat.B4G4R4A4,
+                    DdsFileFormat.B5G6R5,
+                    DdsFileFormat.B8G8R8,
+                    DdsFileFormat.R8Unsigned,
+                    DdsFileFormat.R8G8Unsigned,
+                    DdsFileFormat.R8G8Signed,
+                    DdsFileFormat.R32Float,
+                };
+
+                int defaultChoiceIndex = Array.IndexOf(values, DdsFileFormat.BC1);
+
+                return new StaticListChoiceProperty(PropertyNames.FileFormat, values, defaultChoiceIndex, false);
+            }
+
             static StaticListChoiceProperty CreateMipMapResamplingAlgorithm()
             {
                 object[] values = new object[]
@@ -150,8 +190,11 @@ namespace DdsFileTypePlus
             formatPCI.SetValueDisplayName(DdsFileFormat.BC2Srgb, this.strings.GetString("DdsFileFormat_BC2Srgb"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC3, this.strings.GetString("DdsFileFormat_BC3"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC3Srgb, this.strings.GetString("DdsFileFormat_BC3Srgb"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC3Rxgb, this.strings.GetString("DdsFileFormat_BC3Rxgb"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC4Unsigned, this.strings.GetString("DdsFileFormat_BC4Unsigned"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC4Ati1, this.strings.GetString("DdsFileFormat_BC4ATI1"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC5Unsigned, this.strings.GetString("DdsFileFormat_BC5Unsigned"));
+            formatPCI.SetValueDisplayName(DdsFileFormat.BC5Ati2, this.strings.GetString("DdsFileFormat_BC5ATI2"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC5Signed, this.strings.GetString("DdsFileFormat_BC5Signed"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC6HUnsigned, this.strings.GetString("DdsFileFormat_BC6HUnsigned"));
             formatPCI.SetValueDisplayName(DdsFileFormat.BC7, this.strings.GetString("DdsFileFormat_BC7"));

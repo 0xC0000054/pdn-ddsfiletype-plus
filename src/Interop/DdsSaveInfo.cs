@@ -18,6 +18,8 @@ namespace DdsFileTypePlus.Interop
     {
         public DXGI_FORMAT Format { get; init; }
 
+        public DdsFileOptions FileOptions { get; init; }
+
         public DdsErrorMetric ErrorMetric { get; init; }
 
         public BC7CompressionSpeed CompressionSpeed { get; init; }
@@ -26,9 +28,10 @@ namespace DdsFileTypePlus.Interop
 
         public NativeDdsSaveInfo ToNative() => new()
         {
-            format = Format,
-            errorMetric = ErrorMetric,
-            compressionSpeed = CompressionSpeed,
+            format = this.Format,
+            fileOptions = this.FileOptions,
+            errorMetric = this.ErrorMetric,
+            compressionSpeed = this.CompressionSpeed,
             errorDiffusionDithering = (byte)(this.ErrorDiffusionDithering ? 1 : 0)
         };
     }

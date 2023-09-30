@@ -35,6 +35,14 @@ extern "C" {
         Uniform
     };
 
+    // This must be kept in sync with DdsFileOptions.cs
+    enum class DdsFileOptions : int32_t
+    {
+        None = 0,
+        ForceLegacyDX9Formats,
+        ForceBC3ToRXGB
+    };
+
     // This must be kept in sync with BC7CompressionSpeed.cs
     enum class BC7CompressionSpeed : int32_t
     {
@@ -83,11 +91,11 @@ extern "C" {
         bool volumeMap;
     };
 
-    // This must be kept in sync with DDSSaveInfo.cs and
-    // the Native structure in DDSSaveInfo.Marshaller.cs
+    // This must be kept in sync with DdsSaveInfo.cs and NativeDdsSaveInfo.cs
     struct DDSSaveInfo
     {
         DXGI_FORMAT format;
+        DdsFileOptions fileOptions;
         DdsErrorMetric errorMetric;
         BC7CompressionSpeed compressionSpeed;
         bool errorDiffusionDithering;
@@ -130,6 +138,7 @@ extern "C" {
         const DirectX::ImageIOCallbacks* callbacks,
         DDSLoadInfo* info,
         DirectX::ScratchImage** image);
+
     __declspec(dllexport) HRESULT __stdcall Save(
         const DDSSaveInfo* input,
         const DirectX::ScratchImage* const originalImage,

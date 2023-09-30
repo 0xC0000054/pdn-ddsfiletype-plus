@@ -171,11 +171,20 @@
   <data name="DdsFileFormat_BC3" xml:space="preserve">
     <value>BC3 (Linear, DXT5)</value>
   </data>
+  <data name="DdsFileFormat_BC3Rxgb" xml:space="preserve">
+    <value>BC3 (Linear, RXGB)</value>
+  </data>
   <data name="DdsFileFormat_BC3Srgb" xml:space="preserve">
     <value>BC3 (sRGB, DX 10+)</value>
   </data>
+  <data name="DdsFileFormat_BC4ATI1" xml:space="preserve">
+    <value>BC4 (Linear, Unsigned, ATI1)</value>
+  </data>
   <data name="DdsFileFormat_BC4Unsigned" xml:space="preserve">
     <value>BC4 (Linear, Unsigned)</value>
+  </data>
+  <data name="DdsFileFormat_BC5ATI2" xml:space="preserve">
+    <value>BC5 (Linear, Unsigned, ATI2)</value>
   </data>
   <data name="DdsFileFormat_BC5Signed" xml:space="preserve">
     <value>BC5 (Linear, Signed)</value>

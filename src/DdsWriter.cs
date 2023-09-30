@@ -101,9 +101,12 @@ namespace DdsFileTypePlus
                         };
                     }
 
+                    (DXGI_FORMAT saveFormat, DdsFileOptions fileOptions) = GetSaveFormat(format);
+
                     DDSSaveInfo info = new()
                     {
-                        Format = GetSaveFormat(format),
+                        Format = saveFormat,
+                        FileOptions = fileOptions,
                         ErrorMetric = errorMetric,
                         CompressionSpeed = compressionSpeed,
                         ErrorDiffusionDithering = errorDiffusionDithering
@@ -170,37 +173,112 @@ namespace DdsFileTypePlus
             return false;
         }
 
-        private static DXGI_FORMAT GetSaveFormat(DdsFileFormat format)
+        private static (DXGI_FORMAT, DdsFileOptions) GetSaveFormat(DdsFileFormat format)
         {
-            return format switch
+            DXGI_FORMAT dxgiFormat;
+            DdsFileOptions options = DdsFileOptions.None;
+
+            switch (format)
             {
-                DdsFileFormat.BC1 => DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM,
-                DdsFileFormat.BC1Srgb => DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM_SRGB,
-                DdsFileFormat.BC2 => DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM,
-                DdsFileFormat.BC2Srgb => DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM_SRGB,
-                DdsFileFormat.BC3 => DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM,
-                DdsFileFormat.BC3Srgb => DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM_SRGB,
-                DdsFileFormat.BC4Unsigned => DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM,
-                DdsFileFormat.BC5Unsigned => DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM,
-                DdsFileFormat.BC5Signed => DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM,
-                DdsFileFormat.BC6HUnsigned => DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16,
-                DdsFileFormat.BC7 => DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM,
-                DdsFileFormat.BC7Srgb => DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM_SRGB,
-                DdsFileFormat.B8G8R8A8 => DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM,
-                DdsFileFormat.B8G8R8A8Srgb => DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB,
-                DdsFileFormat.B8G8R8X8 => DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM,
-                DdsFileFormat.B8G8R8X8Srgb => DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM_SRGB,
-                DdsFileFormat.R8G8B8A8 => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM,
-                DdsFileFormat.R8G8B8A8Srgb => DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB,
-                DdsFileFormat.B5G5R5A1 => DXGI_FORMAT.DXGI_FORMAT_B5G5R5A1_UNORM,
-                DdsFileFormat.B4G4R4A4 => DXGI_FORMAT.DXGI_FORMAT_B4G4R4A4_UNORM,
-                DdsFileFormat.B5G6R5 => DXGI_FORMAT.DXGI_FORMAT_B5G6R5_UNORM,
-                DdsFileFormat.R8Unsigned => DXGI_FORMAT.DXGI_FORMAT_R8_UNORM,
-                DdsFileFormat.R8G8Unsigned => DXGI_FORMAT.DXGI_FORMAT_R8G8_UNORM,
-                DdsFileFormat.R8G8Signed => DXGI_FORMAT.DXGI_FORMAT_R8G8_SNORM,
-                DdsFileFormat.R32Float => DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT,
-                _ => throw new InvalidOperationException($"{nameof(DdsFileFormat)}.{format} does not map to a DXGI format."),
-            };
+                case DdsFileFormat.BC1:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM;
+                    break;
+                case DdsFileFormat.BC1Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC1_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.BC2:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM;
+                    break;
+                case DdsFileFormat.BC2Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC2_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.BC3:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM;
+                    break;
+                case DdsFileFormat.BC3Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.BC4Unsigned:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM;
+                    break;
+                case DdsFileFormat.BC5Unsigned:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM;
+                    break;
+                case DdsFileFormat.BC5Signed:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC5_SNORM;
+                    break;
+                case DdsFileFormat.BC6HUnsigned:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC6H_UF16;
+                    break;
+                case DdsFileFormat.BC7:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM;
+                    break;
+                case DdsFileFormat.BC7Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC7_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.B8G8R8A8:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM;
+                    break;
+                case DdsFileFormat.B8G8R8A8Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.B8G8R8X8:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM;
+                    break;
+                case DdsFileFormat.B8G8R8X8Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.R8G8B8A8:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM;
+                    break;
+                case DdsFileFormat.R8G8B8A8Srgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+                    break;
+                case DdsFileFormat.B5G5R5A1:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B5G5R5A1_UNORM;
+                    break;
+                case DdsFileFormat.B4G4R4A4:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B4G4R4A4_UNORM;
+                    break;
+                case DdsFileFormat.B5G6R5:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_B5G6R5_UNORM;
+                    break;
+                case DdsFileFormat.R8Unsigned:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8_UNORM;
+                    break;
+                case DdsFileFormat.R8G8Unsigned:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8_UNORM;
+                    break;
+                case DdsFileFormat.R8G8Signed:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8_SNORM;
+                    break;
+                case DdsFileFormat.R32Float:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R32_FLOAT;
+                    break;
+                case DdsFileFormat.BC4Ati1:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC4_UNORM;
+                    // DirectXTex normally uses the BC4U four-character-code when saving DX9 compatible
+                    // DDS files, ForceLegacyDX9Formats makes it use the ATI1 four-character-code.
+                    options = DdsFileOptions.ForceLegacyDX9Formats;
+                    break;
+                case DdsFileFormat.BC5Ati2:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC5_UNORM;
+                    // DirectXTex normally uses the BC5U four-character-code when saving DX9 compatible
+                    // DDS files, ForceLegacyDX9Formats makes it use the ATI2 four-character-code.
+                    options = DdsFileOptions.ForceLegacyDX9Formats;
+                    break;
+                case DdsFileFormat.BC3Rxgb:
+                    dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_BC3_UNORM;
+                    options = DdsFileOptions.ForceBC3ToRXGB;
+                    break;
+                case DdsFileFormat.R8G8B8X8:
+                case DdsFileFormat.B8G8R8:
+                default:
+                    throw new InvalidOperationException($"{nameof(DdsFileFormat)}.{format} does not map to a DXGI format.");
+
+            }
+
+            return (dxgiFormat, options);
         }
 
         private static int GetMipCount(int width, int height)
@@ -278,6 +356,9 @@ namespace DdsFileTypePlus
                     case DdsFileFormat.R8G8Unsigned:
                     case DdsFileFormat.R8G8Signed:
                     case DdsFileFormat.R32Float:
+                    case DdsFileFormat.BC3Rxgb:
+                    case DdsFileFormat.BC4Ati1:
+                    case DdsFileFormat.BC5Ati2:
                         dxgiFormat = DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM;
                         break;
                     default:
@@ -349,7 +430,7 @@ namespace DdsFileTypePlus
                         {
                             uint item = (uint)i;
 
-                            RenderToDirectXTexScratchImage(cubeMapSurface, tempImage.GetImageData(0, item, 0));
+                            RenderToDirectXTexScratchImage(cubeMapSurface, tempImage.GetImageData(0, item, 0), format);
 
                             if (mipLevels > 1)
                             {
@@ -360,7 +441,8 @@ namespace DdsFileTypePlus
                                         RenderMipMap(mipSource,
                                                      tempImage.GetImageData((uint)mip, item, 0),
                                                      algorithm,
-                                                     useGammaCorrection);
+                                                     useGammaCorrection,
+                                                     format);
                                     }
                                 }
                             }
@@ -369,7 +451,7 @@ namespace DdsFileTypePlus
                 }
                 else
                 {
-                    RenderToDirectXTexScratchImage(scratchSurface, tempImage.GetImageData(0, 0, 0));
+                    RenderToDirectXTexScratchImage(scratchSurface, tempImage.GetImageData(0, 0, 0), format);
 
                     if (mipLevels > 1)
                     {
@@ -380,7 +462,8 @@ namespace DdsFileTypePlus
                                 RenderMipMap(mipSource,
                                              tempImage.GetImageData((uint)mip, 0, 0),
                                              algorithm,
-                                             useGammaCorrection);
+                                             useGammaCorrection,
+                                             format);
                             }
                         }
                     }
@@ -400,7 +483,8 @@ namespace DdsFileTypePlus
         private static unsafe void RenderMipMap(MipSourceSurface source,
                                                 DirectXTexScratchImageData mipData,
                                                 ResamplingAlgorithm algorithm,
-                                                bool useGammaCorrection)
+                                                bool useGammaCorrection,
+                                                DdsFileFormat format)
         {
             FitSurfaceOptions options = useGammaCorrection ? FitSurfaceOptions.UseGammaCorrection : FitSurfaceOptions.Default;
 
@@ -438,11 +522,11 @@ namespace DdsFileTypePlus
                     }
                 }
 
-                RenderToDirectXTexScratchImage(mipSurface, mipData);
+                RenderToDirectXTexScratchImage(mipSurface, mipData, format);
             }
         }
 
-        private static unsafe void RenderToDirectXTexScratchImage(Surface surface, DirectXTexScratchImageData scratchImage)
+        private static unsafe void RenderToDirectXTexScratchImage(Surface surface, DirectXTexScratchImageData scratchImage, DdsFileFormat format)
         {
             RegionPtr<ColorBgra32> source = surface.AsRegionPtr().Cast<ColorBgra32>();
 
@@ -454,10 +538,105 @@ namespace DdsFileTypePlus
                     break;
                 case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM:
                 case DXGI_FORMAT.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB:
-                    PixelKernels.ConvertBgra32ToRgba32(scratchImage.AsRegionPtr<ColorRgba32>(checkPixelType: false), source);
+                    if (TryGetSwizzledImageFormat(format, out SwizzledImageFormat swizzledImageFormat))
+                    {
+                        RenderToSwizzledImage(source, scratchImage.AsRegionPtr<ColorRgba32>(checkPixelType: false), swizzledImageFormat);
+                    }
+                    else
+                    {
+                        PixelKernels.ConvertBgra32ToRgba32(scratchImage.AsRegionPtr<ColorRgba32>(checkPixelType: false), source);
+                    }
                     break;
                 default:
                     throw new InvalidOperationException($"Unsupported {nameof(DXGI_FORMAT)} value: {scratchImage.Format}.");
+            }
+
+            static bool TryGetSwizzledImageFormat(DdsFileFormat format, out SwizzledImageFormat swizzledImageFormat)
+            {
+                if (format == DdsFileFormat.BC3Rxgb)
+                {
+                    swizzledImageFormat = SwizzledImageFormat.Xgbr;
+                    return true;
+                }
+
+                swizzledImageFormat = SwizzledImageFormat.Unknown;
+                return false;
+            }
+        }
+
+        private static unsafe void RenderToSwizzledImage(RegionPtr<ColorBgra32> source,
+                                                         RegionPtr<ColorRgba32> destination,
+                                                         SwizzledImageFormat format)
+        {
+            int width = source.Width;
+            int height = source.Height;
+            RegionRowPtrCollection<ColorBgra32> sourceRows = source.Rows;
+            RegionRowPtrCollection<ColorRgba32> destinationRows = destination.Rows;
+
+            for (int y = 0; y < height; ++y)
+            {
+                ColorBgra32* src = sourceRows[y].Ptr;
+                ColorRgba32* dest = destinationRows[y].Ptr;
+
+                for (int x = 0; x < width; ++x)
+                {
+                    // None of the formats appear to have transparency data in the swapped alpha channel, it is
+                    // always set to 0 or some other low value.
+                    //
+                    // This makes sense as the swizzled formats are optimized for storing the data that is used in
+                    // a normal map, and take advantage of the fact that BC3/DXT5 compresses the alpha channel
+                    // separately to improve the quality for one or more of those components.
+                    // Most of the formats store 3 channels (X, Y and Z), but some only store 2 channels (X and Y).
+                    //
+                    // Compressonator appears to always set the alpha channel to 255 when it reads an image that is
+                    // stored in one of these formats.
+
+                    switch (format)
+                    {
+                        case SwizzledImageFormat.Rxbg:
+                            dest->R = src->R;
+                            dest->A = src->G;
+                            dest->B = src->B;
+                            dest->G = 0;
+                            break;
+                        case SwizzledImageFormat.Rgxb:
+                            dest->R = src->R;
+                            dest->G = src->G;
+                            dest->A = src->B;
+                            dest->B = 0;
+                            break;
+                        case SwizzledImageFormat.Rbxg:
+                            dest->R = src->R;
+                            dest->A = src->G;
+                            dest->G = src->B;
+                            dest->B = 0;
+                            break;
+                        case SwizzledImageFormat.Xgbr:
+                            dest->A = src->R;
+                            dest->G = src->G;
+                            dest->B = src->B;
+                            dest->R = 0;
+                            break;
+                        case SwizzledImageFormat.Xrbg:
+                            dest->G = src->R;
+                            dest->A = src->G;
+                            dest->B = src->B;
+                            dest->R = 0;
+                            break;
+                        case SwizzledImageFormat.Xgxr:
+                            dest->A = src->R;
+                            dest->G = src->G;
+                            dest->B = 0;
+                            dest->R = 0;
+                            break;
+                        case SwizzledImageFormat.Unknown:
+                        default:
+                            throw new InvalidOperationException($"Unsupported {nameof(SwizzledImageFormat)}: {format}.");
+                    }
+
+                    ++src;
+                    ++dest;
+                }
             }
         }
 

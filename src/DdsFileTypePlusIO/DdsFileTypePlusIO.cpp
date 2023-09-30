@@ -56,7 +56,7 @@ namespace
         return format;
     }
 
-    HRESULT SaveImage(const ImageIOCallbacks* callbacks, const ScratchImage* const image)
+    HRESULT SaveImage(const ImageIOCallbacks* callbacks, const ScratchImage* const image, DdsFileOptions fileOptions)
     {
         TexMetadata metadata = image->GetMetadata();
 
@@ -72,7 +72,24 @@ namespace
             }
         }
 
-        return SaveToDDSIOCallbacks(image->GetImages(), image->GetImageCount(), metadata, DDS_FLAGS_NONE, callbacks);
+        DDS_FLAGS ddsFlags = DDS_FLAGS_NONE;
+
+        if (fileOptions != DdsFileOptions::None)
+        {
+            switch (fileOptions)
+            {
+            case DdsFileOptions::ForceLegacyDX9Formats:
+                ddsFlags |= DDS_FLAGS_FORCE_DX9_LEGACY;
+                break;
+            case DdsFileOptions::ForceBC3ToRXGB:
+                ddsFlags |= DDS_FLAGS_FORCE_DXT5_RXGB;
+                break;
+            default:
+                return E_INVALIDARG;
+            }
+        }
+
+        return SaveToDDSIOCallbacks(image->GetImages(), image->GetImageCount(), metadata, ddsFlags, callbacks);
     }
 }
 
@@ -397,5 +414,5 @@ HRESULT __stdcall Save(
         output.swap(convertedImage);
     }
 
-    return SaveImage(callbacks, output ? output.get() : originalImage);
+    return SaveImage(callbacks, output ? output.get() : originalImage, input->fileOptions);
 }

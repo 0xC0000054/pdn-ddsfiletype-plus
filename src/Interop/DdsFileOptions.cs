@@ -10,19 +10,12 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using System.Runtime.InteropServices;
-
 namespace DdsFileTypePlus.Interop
 {
-    // This must be kept in sync with DDSSaveInfo.cs
-    // and the DDSSaveInfo type in DdsFileTypePlusIO.h
-    [StructLayout(LayoutKind.Sequential)]
-    internal struct NativeDdsSaveInfo
+    internal enum DdsFileOptions : int
     {
-        public DXGI_FORMAT format;
-        public DdsFileOptions fileOptions;
-        public DdsErrorMetric errorMetric;
-        public BC7CompressionSpeed compressionSpeed;
-        public byte errorDiffusionDithering;
+        None = 0,
+        ForceLegacyDX9Formats,
+        ForceBC3ToRXGB
     }
 }

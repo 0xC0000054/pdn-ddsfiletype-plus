@@ -223,6 +223,15 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to BC3 (Linear, RXGB).
+        /// </summary>
+        internal static string DdsFileFormat_BC3Rxgb {
+            get {
+                return ResourceManager.GetString("DdsFileFormat_BC3Rxgb", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to BC3 (sRGB, DX 10+).
         /// </summary>
         internal static string DdsFileFormat_BC3Srgb {
@@ -232,11 +241,29 @@ namespace DdsFileTypePlus.Properties {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to BC4 (Linear, Unsigned, ATI1).
+        /// </summary>
+        internal static string DdsFileFormat_BC4ATI1 {
+            get {
+                return ResourceManager.GetString("DdsFileFormat_BC4ATI1", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to BC4 (Linear, Unsigned).
         /// </summary>
         internal static string DdsFileFormat_BC4Unsigned {
             get {
                 return ResourceManager.GetString("DdsFileFormat_BC4Unsigned", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to BC5 (Linear, Unsigned, ATI2).
+        /// </summary>
+        internal static string DdsFileFormat_BC5ATI2 {
+            get {
+                return ResourceManager.GetString("DdsFileFormat_BC5ATI2", resourceCulture);
             }
         }
         
