@@ -21,7 +21,7 @@ The plugin can read most DDS formats, but only the following formats are support
 
 * BC1 (Linear and sRGB)
 * BC2 (Linear and sRGB)
-* BC3 (Linear, sRGB and RXGB)
+* BC3 (Linear and sRGB)
 * BC4 (Unsigned)
 * BC5 (Signed and Unsigned)
 * BC6H (Unsigned 16-bit Float)
@@ -45,6 +45,7 @@ The plugin can read most DDS formats, but only the following formats are support
 * B8G8R8
 * ATI1 (BC4 Unsigned)
 * ATI2 (BC5 Unsigned)
+* RXGB (A BC3/DXT5 variant used for normal maps)
 
 ## Installing the plugin
 
