@@ -135,6 +135,7 @@ namespace DdsFileTypePlus
                     DdsFileFormat.BC4Ati1,
                     DdsFileFormat.BC5Unsigned,
                     DdsFileFormat.BC5Ati2,
+                    DdsFileFormat.BC5Signed,
                     DdsFileFormat.BC6HUnsigned,
                     DdsFileFormat.BC7,
                     DdsFileFormat.BC7Srgb,
