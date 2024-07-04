@@ -343,19 +343,6 @@ namespace
         // Verify header to validate DDS file
         if (flags & DDS_FLAGS_PERMISSIVE)
         {
-            if (pHeader->size != 24 /* Known variant */
-                && pHeader->size != sizeof(DDS_HEADER))
-            {
-                return HRESULT_E_NOT_SUPPORTED;
-            }
-        }
-        else if (pHeader->size != sizeof(DDS_HEADER))
-        {
-            return HRESULT_E_NOT_SUPPORTED;
-        }
-
-        if (flags & DDS_FLAGS_PERMISSIVE)
-        {
             if (pHeader->ddspf.size != 0 /* Known variant */
                 && pHeader->ddspf.size != 24 /* Known variant */
                 && pHeader->ddspf.size != sizeof(DDS_PIXELFORMAT))
@@ -369,8 +356,10 @@ namespace
         }
 
         metadata.mipLevels = pHeader->mipMapCount;
-        if (metadata.mipLevels == 0)
+        if ((metadata.mipLevels == 0) || (flags & DDS_FLAGS_IGNORE_MIPS))
+        {
             metadata.mipLevels = 1;
+        }
 
         // Check for DX10 extension
         if ((pHeader->ddspf.flags & DDS_FOURCC)

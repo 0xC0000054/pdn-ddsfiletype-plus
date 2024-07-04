@@ -18,20 +18,29 @@ trigger:
     - main
   paths:
     exclude:
-    - README.md
-    - HISTORY.md
-    - SECURITY.md
+    - '*.md'
     - LICENSE
+    - '.nuget/*'
+    - build/*.cmd
+    - build/*.json
+    - build/*.props
+    - build/*.ps1
+    - build/*.targets
+
 pr:
   branches:
     include:
     - main
   paths:
     exclude:
-    - README.md
-    - HISTORY.md
-    - SECURITY.md
+    - '*.md'
     - LICENSE
+    - '.nuget/*'
+    - build/*.cmd
+    - build/*.json
+    - build/*.props
+    - build/*.ps1
+    - build/*.targets
   drafts: false
 
 resources:
@@ -46,6 +55,7 @@ pool:
   vmImage: windows-2022
 
 variables:
+  Codeql.Enabled: false
   VCPKG_CMAKE_DIR: '$(VCPKG_ROOT)/scripts/buildsystems/vcpkg.cmake'
   GITHUB_PAT: $(GITHUBPUBLICTOKEN)
   WIN11_SDK: '10.0.22000.0'
@@ -63,7 +73,7 @@ jobs:
     # We can use the preinstalled vcpkg instead of the latest when MS Hosted updates their vcpkg to the newer DirectX-Headers
     displayName: Fetch VCPKG
     inputs:
-      script: git clone --quiet https://%GITHUB_PAT%@github.com/microsoft/vcpkg.git
+      script: git clone --quiet --no-tags https://%GITHUB_PAT%@github.com/microsoft/vcpkg.git
       workingDirectory: $(Build.SourcesDirectory)
   - task: CmdLine@2
     displayName: VCPKG Bootstrap
@@ -122,9 +132,15 @@ jobs:
     displayName: VCPKG install headers
     inputs:
       script: |
-        call vcpkg install directxmath
+        call .\vcpkg install directxmath
         @if ERRORLEVEL 1 goto error
-        call vcpkg install directx-headers
+        call .\vcpkg install directx-headers
+        @if ERRORLEVEL 1 goto error
+        call .\vcpkg install openexr
+        @if ERRORLEVEL 1 goto error
+        call .\vcpkg install libpng
+        @if ERRORLEVEL 1 goto error
+        call .\vcpkg install libjpeg-turbo
         @if ERRORLEVEL 1 goto error
         :finish
         @echo --- VCPKG COMPLETE ---
@@ -144,6 +160,36 @@ jobs:
     inputs:
       cwd: '$(Build.SourcesDirectory)'
       cmakeArgs: --build out
+  - task: CMake@1
+    displayName: CMake (MinGW32) w/ OpenEXR
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: -B out2 -DCMAKE_BUILD_TYPE="Debug" -DENABLE_OPENEXR_SUPPORT=ON -DBUILD_TESTING=OFF -DDIRECTX_ARCH=x86 -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_CMAKE_DIR)" -DCMAKE_CXX_COMPILER="g++.exe" -G "MinGW Makefiles" -DVCPKG_TARGET_TRIPLET=x86-mingw-static -DUSE_PREBUILT_SHADERS=ON -DCOMPILED_SHADERS=$(Build.SourcesDirectory)\DirectXTex\Shaders\Compiled -DCOMPILED_DDSVIEW_SHADERS=$(Build.SourcesDirectory)\DDSView\Shaders
+  - task: CMake@1
+    displayName: CMake (MinGW32) Build  w/ OpenEXR
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: --build out2
+  - task: CMake@1
+    displayName: CMake (MinGW32) w/ libjpeg
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: -B out3 -DCMAKE_BUILD_TYPE="Debug" -DENABLE_LIBJPEG_SUPPORT=ON -DBUILD_TESTING=OFF -DDIRECTX_ARCH=x86 -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_CMAKE_DIR)" -DCMAKE_CXX_COMPILER="g++.exe" -G "MinGW Makefiles" -DVCPKG_TARGET_TRIPLET=x86-mingw-static -DUSE_PREBUILT_SHADERS=ON -DCOMPILED_SHADERS=$(Build.SourcesDirectory)\DirectXTex\Shaders\Compiled -DCOMPILED_DDSVIEW_SHADERS=$(Build.SourcesDirectory)\DDSView\Shaders
+  - task: CMake@1
+    displayName: CMake (MinGW32) Build w/ libjpeg
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: --build out3
+  - task: CMake@1
+    displayName: CMake (MinGW32) w/ libpng
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: -B out4 -DCMAKE_BUILD_TYPE="Debug" -DENABLE_LIBPNG_SUPPORT=ON -DBUILD_TESTING=OFF -DDIRECTX_ARCH=x86 -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_CMAKE_DIR)" -DCMAKE_CXX_COMPILER="g++.exe" -G "MinGW Makefiles" -DVCPKG_TARGET_TRIPLET=x86-mingw-static -DUSE_PREBUILT_SHADERS=ON -DCOMPILED_SHADERS=$(Build.SourcesDirectory)\DirectXTex\Shaders\Compiled -DCOMPILED_DDSVIEW_SHADERS=$(Build.SourcesDirectory)\DDSView\Shaders
+  - task: CMake@1
+    displayName: CMake (MinGW32) Build w/ libpng
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: --build out4
 
 - job: MINGW64_BUILD
   displayName: 'Minimalist GNU for Windows (MinGW-W64) BUILD_TESTING=ON'
@@ -154,12 +200,12 @@ jobs:
   - task: CmdLine@2
     displayName: Fetch VCPKG
     inputs:
-      script: git clone --quiet https://%GITHUB_PAT%@github.com/microsoft/vcpkg.git
+      script: git clone --quiet --no-tags https://%GITHUB_PAT%@github.com/microsoft/vcpkg.git
       workingDirectory: $(Build.SourcesDirectory)
   - task: CmdLine@2
     displayName: Fetch Tests
     inputs:
-      script: git clone --quiet https://%GITHUB_PAT%@github.com/walbourn/directxtextest.git Tests
+      script: git clone --quiet --no-tags https://%GITHUB_PAT%@github.com/walbourn/directxtextest.git Tests
   - task: CmdLine@2
     displayName: VCPKG Bootstrap
     inputs:
@@ -204,9 +250,15 @@ jobs:
     displayName: VCPKG install headers
     inputs:
       script: |
-        call vcpkg install directxmath
+        call .\vcpkg install directxmath
         @if ERRORLEVEL 1 goto error
-        call vcpkg install directx-headers
+        call .\vcpkg install directx-headers
+        @if ERRORLEVEL 1 goto error
+        call .\vcpkg install openexr
+        @if ERRORLEVEL 1 goto error
+        call .\vcpkg install libpng
+        @if ERRORLEVEL 1 goto error
+        call .\vcpkg install libjpeg-turbo
         @if ERRORLEVEL 1 goto error
         :finish
         @echo --- VCPKG COMPLETE ---
@@ -226,3 +278,33 @@ jobs:
     inputs:
       cwd: '$(Build.SourcesDirectory)'
       cmakeArgs: --build out
+  - task: CMake@1
+    displayName: CMake (MinGW-W64) w/ OpenEXR
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: -B out2 -DCMAKE_BUILD_TYPE="Debug" -DENABLE_OPENEXR_SUPPORT=ON -DBUILD_TESTING=OFF -DDIRECTX_ARCH=x64 -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_CMAKE_DIR)" -DCMAKE_CXX_COMPILER="g++.exe" -G "MinGW Makefiles" -DVCPKG_TARGET_TRIPLET=x64-mingw-static -DUSE_PREBUILT_SHADERS=ON -DCOMPILED_SHADERS=$(Build.SourcesDirectory)\DirectXTex\Shaders\Compiled -DCOMPILED_DDSVIEW_SHADERS=$(Build.SourcesDirectory)\DDSView\Shaders
+  - task: CMake@1
+    displayName: CMake (MinGW-W64) Build  w/ OpenEXR
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: --build out2
+  - task: CMake@1
+    displayName: CMake (MinGW-W64) w/ libjpeg
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: -B out3 -DCMAKE_BUILD_TYPE="Debug" -DENABLE_LIBJPEG_SUPPORT=ON -DBUILD_TESTING=OFF -DDIRECTX_ARCH=x64 -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_CMAKE_DIR)" -DCMAKE_CXX_COMPILER="g++.exe" -G "MinGW Makefiles" -DVCPKG_TARGET_TRIPLET=x64-mingw-static -DUSE_PREBUILT_SHADERS=ON -DCOMPILED_SHADERS=$(Build.SourcesDirectory)\DirectXTex\Shaders\Compiled -DCOMPILED_DDSVIEW_SHADERS=$(Build.SourcesDirectory)\DDSView\Shaders
+  - task: CMake@1
+    displayName: CMake (MinGW-W64) Build w/ libjpeg
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: --build out3
+  - task: CMake@1
+    displayName: CMake (MinGW-W64) w/ libpng
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: -B out4 -DCMAKE_BUILD_TYPE="Debug" -DENABLE_LIBPNG_SUPPORT=ON -DBUILD_TESTING=OFF -DDIRECTX_ARCH=x64 -DCMAKE_TOOLCHAIN_FILE="$(VCPKG_CMAKE_DIR)" -DCMAKE_CXX_COMPILER="g++.exe" -G "MinGW Makefiles" -DVCPKG_TARGET_TRIPLET=x64-mingw-static -DUSE_PREBUILT_SHADERS=ON -DCOMPILED_SHADERS=$(Build.SourcesDirectory)\DirectXTex\Shaders\Compiled -DCOMPILED_DDSVIEW_SHADERS=$(Build.SourcesDirectory)\DDSView\Shaders
+  - task: CMake@1
+    displayName: CMake (MinGW-W64) Build w/ libpng
+    inputs:
+      cwd: '$(Build.SourcesDirectory)'
+      cmakeArgs: --build out4

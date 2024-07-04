@@ -18,20 +18,36 @@ trigger:
     - main
   paths:
     exclude:
-    - README.md
-    - HISTORY.md
-    - SECURITY.md
+    - '*.md'
     - LICENSE
+    - CMake*
+    - '.nuget/*'
+    - build/*.cmake
+    - build/*.cmd
+    - build/*.in
+    - build/*.json
+    - build/*.props
+    - build/*.ps1
+    - build/*.targets
+    - Auxiliary/*
 pr:
   branches:
     include:
     - main
   paths:
     exclude:
-    - README.md
-    - HISTORY.md
-    - SECURITY.md
+    - '*.md'
     - LICENSE
+    - CMake*
+    - '.nuget/*'
+    - build/*.cmake
+    - build/*.cmd
+    - build/*.in
+    - build/*.json
+    - build/*.props
+    - build/*.ps1
+    - build/*.targets
+    - Auxiliary/*
   drafts: false
 
 resources:
@@ -46,6 +62,7 @@ pool:
   vmImage: windows-2019
 
 variables:
+  Codeql.Enabled: false
   GITHUB_PAT: $(GITHUBPUBLICTOKEN)
 
 jobs:
@@ -67,7 +84,7 @@ jobs:
   - task: CmdLine@2
     displayName: Fetch Tests
     inputs:
-      script: git clone --quiet https://%GITHUB_PAT%@github.com/walbourn/directxtextest.git Tests
+      script: git clone --quiet --no-tags https://%GITHUB_PAT%@github.com/walbourn/directxtextest.git Tests
       workingDirectory: $(Build.SourcesDirectory)
       failOnStderr: true
   - task: VSBuild@1

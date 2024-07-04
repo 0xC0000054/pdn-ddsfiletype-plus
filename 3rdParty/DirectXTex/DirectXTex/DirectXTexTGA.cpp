@@ -280,6 +280,12 @@ namespace
             return HRESULT_E_INVALID_DATA;
         }
 
+        uint64_t sizeBytes = uint64_t(pHeader->wWidth) * uint64_t(pHeader->wHeight) * uint64_t(pHeader->bBitsPerPixel) / 8;
+        if (sizeBytes > UINT32_MAX)
+        {
+            return HRESULT_E_ARITHMETIC_OVERFLOW;
+        }
+
         metadata.width = pHeader->wWidth;
         metadata.height = pHeader->wHeight;
         metadata.depth = metadata.arraySize = metadata.mipLevels = 1;
@@ -1338,6 +1344,7 @@ namespace
 
         switch (metadata.GetAlphaMode())
         {
+        default:
         case TEX_ALPHA_MODE_UNKNOWN:
             ext->bAttributesType = HasAlpha(metadata.format) ? TGA_ATTRIBUTE_UNDEFINED : TGA_ATTRIBUTE_NONE;
             break;
@@ -1393,6 +1400,7 @@ namespace
             case TGA_ATTRIBUTE_UNDEFINED: return TEX_ALPHA_MODE_CUSTOM;
             case TGA_ATTRIBUTE_ALPHA: return TEX_ALPHA_MODE_STRAIGHT;
             case TGA_ATTRIBUTE_PREMULTIPLIED: return TEX_ALPHA_MODE_PREMULTIPLIED;
+            default: return TEX_ALPHA_MODE_UNKNOWN;
             }
         }
 
@@ -1652,7 +1660,7 @@ HRESULT DirectX::LoadFromTGAMemory(
         return hr;
 
     if (offset > size)
-        return E_FAIL;
+        return HRESULT_E_INVALID_DATA;
 
     size_t paletteOffset = 0;
     uint8_t palette[256 * 4] = {};
@@ -1677,7 +1685,7 @@ HRESULT DirectX::LoadFromTGAMemory(
 
     const void* pPixels = static_cast<const uint8_t*>(pSource) + offset + paletteOffset;
 
-    hr = image.Initialize2D(mdata.format, mdata.width, mdata.height, 1, 1);
+    hr = image.Initialize2D(mdata.format, mdata.width, mdata.height, 1, 1, CP_FLAGS_LIMIT_4GB);
     if (FAILED(hr))
         return hr;
 
@@ -1826,6 +1834,9 @@ HRESULT DirectX::LoadFromTGAFile(
     if (FAILED(hr))
         return hr;
 
+    if (offset > len)
+        return HRESULT_E_INVALID_DATA;
+
     // Read the pixels
     auto const remaining = len - offset;
     if (remaining == 0)
@@ -1847,7 +1858,7 @@ HRESULT DirectX::LoadFromTGAFile(
     #endif
     }
 
-    hr = image.Initialize2D(mdata.format, mdata.width, mdata.height, 1, 1);
+    hr = image.Initialize2D(mdata.format, mdata.width, mdata.height, 1, 1, CP_FLAGS_LIMIT_4GB);
     if (FAILED(hr))
         return hr;
 

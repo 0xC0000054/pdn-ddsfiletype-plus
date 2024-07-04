@@ -47,7 +47,7 @@ struct IWICImagingFactory;
 struct IWICMetadataQueryReader;
 #endif
 
-#define DIRECTX_TEX_VERSION 200
+#define DIRECTX_TEX_VERSION 204
 
 
 namespace DirectX
@@ -115,6 +115,9 @@ namespace DirectX
 
         CP_FLAGS_8BPP = 0x40000,
         // Override with a legacy 8 bits-per-pixel format size
+
+        CP_FLAGS_LIMIT_4GB = 0x10000000,
+        // Don't allow pixel allocations in excess of 4GB (always true for 32-bit)
     };
 
     HRESULT __cdecl ComputePitch(
@@ -172,7 +175,7 @@ namespace DirectX
         DXGI_FORMAT     format;
         TEX_DIMENSION   dimension;
 
-        size_t __cdecl ComputeIndex(_In_ size_t mip, _In_ size_t item, _In_ size_t slice) const noexcept;
+        size_t __cdecl ComputeIndex(size_t mip, size_t item, size_t slice) const noexcept;
             // Returns size_t(-1) to indicate an out-of-range error
 
         bool __cdecl IsCubemap() const noexcept { return (miscFlags & TEX_MISC_TEXTURECUBE) != 0; }
@@ -185,6 +188,10 @@ namespace DirectX
 
         bool __cdecl IsVolumemap() const noexcept { return (dimension == TEX_DIMENSION_TEXTURE3D); }
             // Helper for dimension
+
+        uint32_t __cdecl CalculateSubresource(size_t mip, size_t item) const noexcept;
+        uint32_t __cdecl CalculateSubresource(size_t mip, size_t item, size_t plane) const noexcept;
+            // Returns size_t(-1) to indicate an out-of-range error
     };
 
     struct DDSMetaData
@@ -228,6 +235,9 @@ namespace DirectX
 
         DDS_FLAGS_PERMISSIVE = 0x80,
         // Allow some file variants due to common bugs in the header written by various leagcy DDS writers
+
+        DDS_FLAGS_IGNORE_MIPS = 0x100,
+        // Allow some files to be read that have incorrect mipcount values in the header by only reading the top-level mip
 
         DDS_FLAGS_FORCE_DX10_EXT = 0x10000,
         // Always use the 'DX10' header extension for DDS writer (i.e. don't try to write DX9 compatible DDS files)
@@ -1031,12 +1041,16 @@ namespace DirectX
 #pragma clang diagnostic ignored "-Wswitch-enum"
 #endif
 
+#ifdef  _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4619 4616 4061)
+#endif
 
 #include "DirectXTex.inl"
 
+#ifdef  _MSC_VER
 #pragma warning(pop)
+#endif
 
 #ifdef __clang__
 #pragma clang diagnostic pop

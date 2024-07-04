@@ -96,6 +96,33 @@
       "hidden": true
     },
     {
+      "name": "GDKX",
+      "cacheVariables": {
+        "BUILD_XBOX_EXTS_XBOXONE": true
+      },
+      "environment": {
+        "XboxOneXDKLatest": ""
+      },
+      "hidden": true
+    },
+    {
+      "name": "GDKXS",
+      "cacheVariables": {
+        "BUILD_XBOX_EXTS_SCARLETT": true
+      },
+      "hidden": true
+    },
+    {
+      "name": "XDK",
+      "cacheVariables": {
+        "BUILD_XBOX_EXTS_XBOXONE": true
+      },
+      "environment": {
+        "GameDKLatest": ""
+      },
+      "hidden": true
+    },
+    {
       "name": "UWP",
       "cacheVariables": {
         "CMAKE_SYSTEM_NAME": "WindowsStore",
@@ -107,24 +134,21 @@
     {
       "name": "Scarlett",
       "cacheVariables": {
-        "XBOX_CONSOLE_TARGET": "scarlett",
-        "BUILD_TESTING": false
+        "XBOX_CONSOLE_TARGET": "scarlett"
       },
       "hidden": true
     },
     {
       "name": "XboxOne",
       "cacheVariables": {
-        "XBOX_CONSOLE_TARGET": "xboxone",
-        "BUILD_TESTING": false
+        "XBOX_CONSOLE_TARGET": "xboxone"
       },
       "hidden": true
     },
     {
       "name": "Durango",
       "cacheVariables": {
-        "XBOX_CONSOLE_TARGET": "durango",
-        "BUILD_TESTING": false
+        "XBOX_CONSOLE_TARGET": "durango"
       },
       "hidden": true
     },
@@ -142,6 +166,14 @@
       "name": "EXR",
       "cacheVariables": {
         "ENABLE_OPENEXR_SUPPORT": true
+      },
+      "hidden": true
+    },
+    {
+      "name": "JPEG_PNG",
+      "cacheVariables": {
+        "ENABLE_LIBJPEG_SUPPORT": true,
+        "ENABLE_LIBPNG_SUPPORT": true
       },
       "hidden": true
     },
@@ -166,6 +198,37 @@
         "VCPKG_TARGET_TRIPLET": "x64-mingw-static",
         "VCPKG_HOST_TRIPLET": "x64-mingw-static"
       }
+    },
+    {
+      "name": "Intel",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icl.exe",
+        "BUILD_TOOLS": false
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "IntelLLVM",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_CXX_COMPILER": "icx.exe"
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      }
+    },
+    {
+      "name": "Fuzzing",
+      "cacheVariables": {
+        "BUILD_FUZZING": true,
+        "BUILD_TESTING": false
+      },
+      "hidden": true
     },
 
     { "name": "x64-Debug"    , "description": "MSVC for x64 (Debug) with DX12", "inherits": [ "base", "x64", "Debug", "MSVC" ] },
@@ -206,6 +269,9 @@
     { "name": "x64-Debug-EXR"      , "description": "MSVC for x64 (Debug) using VCPKG/OpenEXR", "inherits": [ "base", "x64", "Debug", "MSVC", "VCPKG", "EXR" ] },
     { "name": "x64-Release-EXR"    , "description": "MSVC for x64 (Release) using VCPKG/OpenEXR", "inherits": [ "base", "x64", "Release", "MSVC", "VCPKG", "EXR" ] },
 
+    { "name": "x64-Debug-JPEG-PNG"  , "description": "MSVC for x64 (Debug) using VCPKG/PNG/JPEG", "inherits": [ "base", "x64", "Debug", "MSVC", "VCPKG", "JPEG_PNG" ] },
+    { "name": "x64-Release-JPEG-PNG", "description": "MSVC for x64 (Release) using VCPKG/PNG/JPEG", "inherits": [ "base", "x64", "Release", "MSVC", "VCPKG", "JPEG_PNG" ] },
+
     { "name": "x64-Debug-Clang"    , "description": "Clang/LLVM for x64 (Debug) with DX12", "inherits": [ "base", "x64", "Debug", "Clang" ] },
     { "name": "x64-Release-Clang"  , "description": "Clang/LLVM for x64 (Release) with DX12", "inherits": [ "base", "x64", "Release", "Clang" ] },
     { "name": "x86-Debug-Clang"    , "description": "Clang/LLVM for x86 (Debug) with DX12", "inherits": [ "base", "x86", "Debug", "Clang" ], "environment": { "CXXFLAGS": "-m32" } },
@@ -225,15 +291,49 @@
     { "name": "x86-Debug-Win7-Clang"  , "description": "Clang/LLVM for x86 (Debug) for Windows 7", "inherits": [ "base", "x86", "Debug", "Clang", "Win7" ], "environment": { "CXXFLAGS": "-m32" } },
     { "name": "x86-Release-Win7-Clang", "description": "Clang/LLVM for x86 (Release) for Windows 7", "inherits": [ "base", "x86", "Release", "Clang", "Win7" ], "environment": { "CXXFLAGS": "-m32" } },
 
+    { "name": "x64-Debug-Clang-JPEG-PNG"   , "description": "Clang/LLVM for x64 (Debug) with DX12", "inherits": [ "base", "x64", "Debug", "Clang", "VCPKG", "JPEG_PNG" ] },
+    { "name": "x64-Release-Clang-JPEG-PNG" , "description": "Clang/LLVM for x64 (Release) with DX12", "inherits": [ "base", "x64", "Release", "Clang", "VCPKG", "JPEG_PNG" ] },
+
+    { "name": "x64-Debug-GDKX"     , "description": "MSVC for x64 (Debug) Xbox One Extensions", "inherits": [ "base", "x64", "Debug", "GDKX", "MSVC" ] },
+    { "name": "x64-Release-GDKX"   , "description": "MSVC for x64 (Release) Xbox One Extensions", "inherits": [ "base", "x64", "Release", "GDKX", "MSVC" ] },
+    { "name": "x64-Debug-GDKX-S"   , "description": "MSVC for x64 (Debug) Xbox Series X|S Extensions", "inherits": [ "base", "x64", "Debug", "GDKXS", "MSVC" ] },
+    { "name": "x64-Release-GDKX-S" , "description": "MSVC for x64 (Release) Xbox Series X|S Extensions", "inherits": [ "base", "x64", "Release", "GDKXS", "MSVC" ] },
+    { "name": "x64-Debug-XDK"      , "description": "MSVC for x64 (Debug) Xbox One Extensions (legacy)", "inherits": [ "base", "x64", "Debug", "XDK", "MSVC" ] },
+    { "name": "x64-Release-XDK"    , "description": "MSVC for x64 (Release) Xbox One Extensions (legacy)", "inherits": [ "base", "x64", "Release", "XDK", "MSVC" ] },
+
+    { "name": "x64-Debug-GDKX-Clang"     , "description": "MSVC for x64 (Debug) Xbox One Extensions", "inherits": [ "base", "x64", "Debug", "GDKX", "Clang" ] },
+    { "name": "x64-Release-GDKX-Clang"   , "description": "MSVC for x64 (Release) Xbox One Extensions", "inherits": [ "base", "x64", "Release", "GDKX", "Clang" ] },
+    { "name": "x64-Debug-GDKX-S-Clang"   , "description": "MSVC for x64 (Debug) Xbox Series X|S Extensions", "inherits": [ "base", "x64", "Debug", "GDKXS", "Clang" ] },
+    { "name": "x64-Release-GDKX-S-Clang" , "description": "MSVC for x64 (Release) Xbox Series X|S Extensions", "inherits": [ "base", "x64", "Release", "GDKXS", "Clang" ] },
+
+    { "name": "x64-Debug-Scarlett-Clang"  , "description": "Clang/LLVM for x64 (Debug) for Xbox Series X|S", "inherits": [ "base", "x64", "Debug", "Clang", "Scarlett" ] },
+    { "name": "x64-Release-Scarlett-Clang", "description": "Clang/LLVM for x64 (Release) for Xbox Series X|S", "inherits": [ "base", "x64", "Release", "Clang", "Scarlett" ] },
+
+    { "name": "x64-Debug-XboxOne-Clang"   , "description": "Clang/LLVM for x64 (Debug) for Xbox One", "inherits": [ "base", "x64", "Debug", "Clang", "XboxOne" ] },
+    { "name": "x64-Release-XboxOne-Clang" , "description": "Clang/LLVM for x64 (Release) for Xbox One", "inherits": [ "base", "x64", "Release", "Clang", "XboxOne" ] },
+
     { "name": "x64-Debug-MinGW"  , "description": "MinG-W64 (Debug)", "inherits": [ "base", "x64", "Debug", "GNUC", "VCPKG", "MinGW64" ] },
     { "name": "x64-Release-MinGW", "description": "MinG-W64 (Release)", "inherits": [ "base", "x64", "Release", "GNUC", "VCPKG", "MinGW64" ] },
     { "name": "x86-Debug-MinGW"  , "description": "MinG-W32 (Debug)", "inherits": [ "base", "x86", "Debug", "GNUC", "VCPKG", "MinGW32" ] },
     { "name": "x86-Release-MinGW", "description": "MinG-W32 (Release)", "inherits": [ "base", "x86", "Release", "GNUC", "VCPKG", "MinGW32" ] },
 
-    { "name": "x64-Debug-Linux",     "description": "WSL Linux x64 (Debug)", "inherits": [ "base", "x64", "Debug", "VCPKG" ] },
-    { "name": "x64-Release-Linux",   "description": "WSL Linux x64 (Release)", "inherits": [ "base", "x64", "Release", "VCPKG" ] },
-    { "name": "arm64-Debug-Linux",   "description": "WSL Linux ARM64 (Debug)", "inherits": [ "base", "ARM64", "Debug", "VCPKG" ] },
-    { "name": "arm64-Release-Linux", "description": "WSL Linux ARM64 (Release)", "inherits": [ "base", "ARM64", "Release", "VCPKG" ] }
+    { "name": "x64-Debug-MinGW-JPEG-PNG"  , "description": "MinG-W64 (Debug)", "inherits": [ "base", "x64", "Debug", "GNUC", "VCPKG", "MinGW64", "JPEG_PNG" ] },
+    { "name": "x64-Release-MinGW-JPEG-PNG", "description": "MinG-W64 (Release)", "inherits": [ "base", "x64", "Release", "GNUC", "VCPKG", "MinGW64", "JPEG_PNG" ] },
+    { "name": "x86-Debug-MinGW-JPEG-PNG"  , "description": "MinG-W32 (Debug)", "inherits": [ "base", "x86", "Debug", "GNUC", "VCPKG", "MinGW32", "JPEG_PNG" ] },
+    { "name": "x86-Release-MinGW-JPEG-PNG", "description": "MinG-W32 (Release)", "inherits": [ "base", "x86", "Release", "GNUC", "VCPKG", "MinGW32", "JPEG_PNG" ] },
+
+    { "name": "x64-Debug-Linux",     "description": "WSL Linux x64 (Debug)", "inherits": [ "base", "x64", "Debug", "VCPKG", "JPEG_PNG" ] },
+    { "name": "x64-Release-Linux",   "description": "WSL Linux x64 (Release)", "inherits": [ "base", "x64", "Release", "VCPKG", "JPEG_PNG" ] },
+    { "name": "arm64-Debug-Linux",   "description": "WSL Linux ARM64 (Debug)", "inherits": [ "base", "ARM64", "Debug", "VCPKG", "JPEG_PNG" ] },
+    { "name": "arm64-Release-Linux", "description": "WSL Linux ARM64 (Release)", "inherits": [ "base", "ARM64", "Release", "VCPKG", "JPEG_PNG" ] },
+
+    { "name": "x64-Debug-ICC"     , "description": "Intel Classic Compiler (Debug) with DX12", "inherits": [ "base", "x64", "Debug", "Intel" ] },
+    { "name": "x64-Release-ICC"   , "description": "Intel Classic Compiler (Release) with DX12", "inherits": [ "base", "x64", "Release", "Intel" ] },
+
+    { "name": "x64-Debug-ICX"    , "description": "Intel oneAPI Compiler (Debug) with DX12", "inherits": [ "base", "x64", "Debug", "IntelLLVM" ] },
+    { "name": "x64-Release-ICX"  , "description": "Intel oneAPI Compiler (Release) with DX12", "inherits": [ "base", "x64", "Release", "IntelLLVM" ] },
+
+    { "name": "x64-Fuzzing"      , "description": "MSVC for x64 (Release) with ASan", "inherits": [ "base", "x64", "Release", "MSVC", "Fuzzing" ] }
   ],
   "testPresets": [
     { "name": "x64-Debug"    , "configurePreset": "x64-Debug" },
@@ -253,6 +353,12 @@
     { "name": "x64-Debug-MinGW"    , "configurePreset": "x64-Debug-MinGW" },
     { "name": "x64-Release-MinGW"  , "configurePreset": "x64-Release-MinGW" },
     { "name": "x86-Debug-MinGW"    , "configurePreset": "x86-Debug-MinGW" },
-    { "name": "x86-Release-MinGW"  , "configurePreset": "x86-Release-MinGW" }
+    { "name": "x86-Release-MinGW"  , "configurePreset": "x86-Release-MinGW" },
+
+    { "name": "x64-Debug-ICC"    , "configurePreset": "x64-Debug-ICC" },
+    { "name": "x64-Release-ICC"  , "configurePreset": "x64-Release-ICC"},
+
+    { "name": "x64-Debug-ICX"    , "configurePreset": "x64-Debug-ICX" },
+    { "name": "x64-Release-ICX"  , "configurePreset": "x64-Release-ICX"}
   ]
 }

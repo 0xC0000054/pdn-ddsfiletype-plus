@@ -9,8 +9,10 @@
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //--------------------------------------------------------------------------------------
 
+#ifdef  _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4005)
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define NODRAWTEXT
@@ -18,7 +20,9 @@
 #define NOMCX
 #define NOSERVICE
 #define NOHELP
+#ifdef  _MSC_VER
 #pragma warning(pop)
+#endif
 
 #if __cplusplus < 201703L
 #error Requires C++17 (and /Zc:__cplusplus with MSVC)
@@ -52,16 +56,23 @@
 #include <DirectXPackedVector.h>
 #include <wincodec.h>
 
+#ifdef  _MSC_VER
 #pragma warning(disable : 4619 4616 26812)
+#endif
 
 #include "DirectXTex.h"
-
-//Uncomment to add support for OpenEXR (.exr)
-//#define USE_OPENEXR
 
 #ifdef USE_OPENEXR
 // See <https://github.com/Microsoft/DirectXTex/wiki/Adding-OpenEXR> for details
 #include "DirectXTexEXR.h"
+#endif
+
+// See <https://github.com/Microsoft/DirectXTex/wiki/Using-JPEG-PNG-OSS> for details
+#ifdef USE_LIBJPEG
+#include "DirectXTexJPEG.h"
+#endif
+#ifdef USE_LIBPNG
+#include "DirectXTexPNG.h"
 #endif
 
 using namespace DirectX;
@@ -90,6 +101,7 @@ namespace
         CMD_CUBE_FROM_HT,
         CMD_CUBE_FROM_HS,
         CMD_CUBE_FROM_VS,
+        CMD_FROM_MIPS,
         CMD_MAX
     };
 
@@ -160,6 +172,7 @@ namespace
         { L"cube-from-ht",      CMD_CUBE_FROM_HT },
         { L"cube-from-hs",      CMD_CUBE_FROM_HS },
         { L"cube-from-vs",      CMD_CUBE_FROM_VS },
+        { L"from-mips",         CMD_FROM_MIPS },
         { nullptr,          0 }
     };
 
@@ -313,25 +326,40 @@ namespace
 #ifdef USE_OPENEXR
 #define CODEC_EXR 0xFFFF0006
 #endif
+#ifdef USE_LIBJPEG
+#define CODEC_JPEG 0xFFFF0007
+#endif
+#ifdef USE_LIBPNG
+#define CODEC_PNG 0xFFFF0008
+#endif
 
     const SValue g_pExtFileTypes[] =
     {
-        { L".BMP",  WIC_CODEC_BMP },
+        { L".BMP",  WIC_CODEC_BMP  },
+    #ifdef USE_LIBJPEG
+        { L".JPG",  CODEC_JPEG     },
+        { L".JPEG", CODEC_JPEG     },
+    #else
         { L".JPG",  WIC_CODEC_JPEG },
         { L".JPEG", WIC_CODEC_JPEG },
-        { L".PNG",  WIC_CODEC_PNG },
-        { L".DDS",  CODEC_DDS },
-        { L".TGA",  CODEC_TGA },
-        { L".HDR",  CODEC_HDR },
+    #endif
+    #ifdef USE_LIBPNG
+        { L".PNG",  CODEC_PNG      },
+    #else
+        { L".PNG",  WIC_CODEC_PNG  },
+    #endif
+        { L".DDS",  CODEC_DDS      },
+        { L".TGA",  CODEC_TGA      },
+        { L".HDR",  CODEC_HDR      },
         { L".TIF",  WIC_CODEC_TIFF },
         { L".TIFF", WIC_CODEC_TIFF },
-        { L".WDP",  WIC_CODEC_WMP },
-        { L".HDP",  WIC_CODEC_WMP },
-        { L".JXR",  WIC_CODEC_WMP },
-        #ifdef USE_OPENEXR
-        { L"EXR",   CODEC_EXR },
-        #endif
-        { nullptr,  CODEC_DDS }
+        { L".WDP",  WIC_CODEC_WMP  },
+        { L".HDP",  WIC_CODEC_WMP  },
+        { L".JXR",  WIC_CODEC_WMP  },
+    #ifdef USE_OPENEXR
+        { L".EXR",  CODEC_EXR      },
+    #endif
+        { nullptr,  CODEC_DDS      }
     };
 
     const SValue g_pFeatureLevels[] =   // valid feature levels for -fl for maximimum size
@@ -491,10 +519,10 @@ namespace
         std::list<SConversion> flist;
         std::set<std::wstring> excludes;
 
-        auto fname = std::make_unique<wchar_t[]>(32768);
         for (;;)
         {
-            inFile >> fname.get();
+            std::wstring fname;
+            std::getline(inFile, fname);
             if (!inFile)
                 break;
 
@@ -506,13 +534,13 @@ namespace
             {
                 if (flist.empty())
                 {
-                    wprintf(L"WARNING: Ignoring the line '%ls' in -flist\n", fname.get());
+                    wprintf(L"WARNING: Ignoring the line '%ls' in -flist\n", fname.c_str());
                 }
                 else
                 {
-                    std::filesystem::path path(fname.get() + 1);
+                    std::filesystem::path path(fname.c_str() + 1);
                     auto& npath = path.make_preferred();
-                    if (wcspbrk(fname.get(), L"?*") != nullptr)
+                    if (wcspbrk(fname.c_str(), L"?*") != nullptr)
                     {
                         std::list<SConversion> removeFiles;
                         SearchForFiles(npath, removeFiles, false);
@@ -532,20 +560,18 @@ namespace
                     }
                 }
             }
-            else if (wcspbrk(fname.get(), L"?*") != nullptr)
+            else if (wcspbrk(fname.c_str(), L"?*") != nullptr)
             {
-                std::filesystem::path path(fname.get());
+                std::filesystem::path path(fname.c_str());
                 SearchForFiles(path.make_preferred(), flist, false);
             }
             else
             {
                 SConversion conv = {};
-                std::filesystem::path path(fname.get());
+                std::filesystem::path path(fname.c_str());
                 conv.szSrc = path.make_preferred().native();
                 flist.push_back(conv);
             }
-
-            inFile.ignore(1000, '\n');
         }
 
         inFile.close();
@@ -829,10 +855,18 @@ namespace
         case CODEC_HDR:
             return SaveToHDRFile(img, szOutputFile);
 
-        #ifdef USE_OPENEXR
+    #ifdef USE_OPENEXR
         case CODEC_EXR:
             return SaveToEXRFile(img, szOutputFile);
-        #endif
+    #endif
+    #ifdef USE_LIBJPEG
+        case CODEC_JPEG:
+            return SaveToJPEGFile(img, szOutputFile);
+    #endif
+    #ifdef USE_LIBPNG
+        case CODEC_PNG:
+            return SaveToPNGFile(img, szOutputFile);
+    #endif
 
         default:
             {
@@ -1056,6 +1090,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
     case CMD_CUBE_FROM_HT:
     case CMD_CUBE_FROM_HS:
     case CMD_CUBE_FROM_VS:
+    case CMD_FROM_MIPS:
         break;
 
     default:
@@ -1222,6 +1257,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     case CMD_V_STRIP:
                     case CMD_MERGE:
                     case CMD_ARRAY_STRIP:
+                    case CMD_FROM_MIPS:
                         break;
 
                     default:
@@ -1421,6 +1457,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
     }
     else
     {
+        size_t conversionIndex = 0;
         for (auto pConv = conversion.begin(); pConv != conversion.end(); ++pConv)
         {
             std::filesystem::path curpath(pConv->szSrc);
@@ -1586,6 +1623,29 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     }
                 }
             #endif
+            #ifdef USE_LIBJPEG
+                else if (_wcsicmp(ext.c_str(), L".jpg") == 0 || _wcsicmp(ext.c_str(), L".jpeg") == 0)
+                {
+                    hr = LoadFromJPEGFile(curpath.c_str(), &info, *image);
+                    if (FAILED(hr))
+                    {
+                        wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
+                        return 1;
+                    }
+                }
+            #endif
+            #ifdef USE_LIBPNG
+                else if (_wcsicmp(ext.c_str(), L".png") == 0)
+                {
+                    hr = LoadFromPNGFile(curpath.c_str(), &info, *image);
+                    if (FAILED(hr))
+                    {
+                        wprintf(L" FAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
+                        return 1;
+                    }
+                }
+            #endif
+
                 else
                 {
                     // WIC shares the same filter values for mode and dither
@@ -1801,7 +1861,25 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             {
                 height = info.height;
             }
-            if (info.width != width || info.height != height)
+            size_t targetWidth = width;
+            size_t targetHeight = height;
+            if (dwCommand == CMD_FROM_MIPS)
+            {
+                size_t mipdiv = 1;
+                for (size_t i = 0; i < conversionIndex; ++i)
+                {
+                    mipdiv = mipdiv + mipdiv;
+                }
+
+                targetWidth /= mipdiv;
+                targetHeight /= mipdiv;
+                if (targetWidth == 0 || targetHeight == 0)
+                {
+                    wprintf(L"\nERROR: Too many input mips provided. For the dimensions of the first mip provided, only %zu input mips can be used.\n", conversionIndex);
+                    return 1;
+                }
+            }
+            if (info.width != targetWidth || info.height != targetHeight)
             {
                 std::unique_ptr<ScratchImage> timage(new (std::nothrow) ScratchImage);
                 if (!timage)
@@ -1810,7 +1888,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
                     return 1;
                 }
 
-                hr = Resize(image->GetImages(), image->GetImageCount(), image->GetMetadata(), width, height, dwFilter | dwFilterOpts, *timage.get());
+                hr = Resize(image->GetImages(), image->GetImageCount(), image->GetMetadata(), targetWidth, targetHeight, dwFilter | dwFilterOpts, *timage.get());
                 if (FAILED(hr))
                 {
                     wprintf(L" FAILED [resize] (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
@@ -1819,7 +1897,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
                 auto& tinfo = timage->GetMetadata();
 
-                assert(tinfo.width == width && tinfo.height == height && tinfo.mipLevels == 1);
+                assert(tinfo.width == targetWidth && tinfo.height == targetHeight && tinfo.mipLevels == 1);
                 info.width = tinfo.width;
                 info.height = tinfo.height;
                 info.mipLevels = 1;
@@ -1952,6 +2030,7 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
 
             images += info.arraySize;
             loadedImages.emplace_back(std::move(image));
+            ++conversionIndex;
         }
     }
 
@@ -2504,6 +2583,64 @@ int __cdecl wmain(_In_ int argc, _In_z_count_(argc) wchar_t* argv[])
             }
 
             // Write texture
+            wprintf(L"\nWriting %ls ", outputFile.c_str());
+            PrintInfo(result.GetMetadata());
+            wprintf(L"\n");
+            fflush(stdout);
+
+            if (dwOptions & (1 << OPT_TOLOWER))
+            {
+                std::transform(outputFile.begin(), outputFile.end(), outputFile.begin(), towlower);
+            }
+
+            if (~dwOptions & (1 << OPT_OVERWRITE))
+            {
+                if (GetFileAttributesW(outputFile.c_str()) != INVALID_FILE_ATTRIBUTES)
+                {
+                    wprintf(L"\nERROR: Output file already exists, use -y to overwrite\n");
+                    return 1;
+                }
+            }
+
+            hr = SaveToDDSFile(result.GetImages(), result.GetImageCount(), result.GetMetadata(),
+                (dwOptions & (1 << OPT_USE_DX10)) ? (DDS_FLAGS_FORCE_DX10_EXT | DDS_FLAGS_FORCE_DX10_EXT_MISC2) : DDS_FLAGS_NONE,
+                outputFile.c_str());
+            if (FAILED(hr))
+            {
+                wprintf(L"\nFAILED (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
+                return 1;
+            }
+            break;
+        }
+    case CMD_FROM_MIPS:
+        {
+            auto src = loadedImages.cbegin();
+            ScratchImage result;
+            hr = result.Initialize2D(format, width, height, 1, images);
+            if (FAILED(hr))
+            {
+                wprintf(L"FAILED setting up result image (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
+                return 1;
+            }
+            size_t mipdiv = 1;
+            size_t index = 0;
+            for (auto it = src; it != loadedImages.cend(); ++it)
+            {
+                auto dest = result.GetImage(index, 0, 0);
+                const ScratchImage* simage = it->get();
+                assert(simage != nullptr);
+                const Image* img = simage->GetImage(0, 0, 0);
+                assert(img != nullptr);
+                hr = CopyRectangle(*img, Rect(0, 0, width / mipdiv, height / mipdiv), *dest, dwFilter | dwFilterOpts, 0, 0);
+                if (FAILED(hr))
+                {
+                    wprintf(L"FAILED building result image (%08X%ls)\n", static_cast<unsigned int>(hr), GetErrorDesc(hr));
+                    return 1;
+                }
+                index++;
+                mipdiv *= 2;
+            }
+            // Write texture2D
             wprintf(L"\nWriting %ls ", outputFile.c_str());
             PrintInfo(result.GetMetadata());
             wprintf(L"\n");

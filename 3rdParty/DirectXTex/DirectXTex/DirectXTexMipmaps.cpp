@@ -71,12 +71,15 @@ namespace
         _In_ IWICBitmap* src,
         _In_ TEX_FILTER_FLAGS filter,
         _In_ const WICPixelFormatGUID& desiredPixelFormat,
-        _Deref_out_ IWICBitmap** dest) noexcept
+        __RPC__deref_out_opt /* needed to match WIC annotation */ IWICBitmap** dest) noexcept
     {
-        if (!pWIC || !src || !dest)
+        if (!dest)
             return E_POINTER;
 
         *dest = nullptr;
+
+        if (!pWIC || !src)
+            return E_POINTER;
 
         WICPixelFormatGUID actualPixelFormat;
         HRESULT hr = src->GetPixelFormat(&actualPixelFormat);
@@ -1615,6 +1618,9 @@ namespace
         if (!baseImages || !depth)
             return E_INVALIDARG;
 
+        if (depth > INT16_MAX)
+            return E_INVALIDARG;
+
         assert(levels > 1);
 
         const size_t width = baseImages[0].width;
@@ -1664,6 +1670,9 @@ namespace
     HRESULT Generate3DMipsPointFilter(size_t depth, size_t levels, const ScratchImage& mipChain) noexcept
     {
         if (!depth || !mipChain.GetImages())
+            return E_INVALIDARG;
+
+        if (depth > INT16_MAX)
             return E_INVALIDARG;
 
         // This assumes that the base images are already placed into the mipChain at the top level... (see _Setup3DMips)
@@ -1812,6 +1821,9 @@ namespace
         using namespace DirectX::Filters;
 
         if (!depth || !mipChain.GetImages())
+            return E_INVALIDARG;
+
+        if (depth > INT16_MAX)
             return E_INVALIDARG;
 
         // This assumes that the base images are already placed into the mipChain at the top level... (see _Setup3DMips)
@@ -1986,6 +1998,9 @@ namespace
         using namespace DirectX::Filters;
 
         if (!depth || !mipChain.GetImages())
+            return E_INVALIDARG;
+
+        if (depth > INT16_MAX)
             return E_INVALIDARG;
 
         // This assumes that the base images are already placed into the mipChain at the top level... (see _Setup3DMips)
@@ -2181,6 +2196,9 @@ namespace
         using namespace DirectX::Filters;
 
         if (!depth || !mipChain.GetImages())
+            return E_INVALIDARG;
+
+        if (depth > INT16_MAX)
             return E_INVALIDARG;
 
         // This assumes that the base images are already placed into the mipChain at the top level... (see _Setup3DMips)
@@ -2562,6 +2580,9 @@ namespace
         using namespace DirectX::Filters;
 
         if (!depth || !mipChain.GetImages())
+            return E_INVALIDARG;
+
+        if (depth > INT16_MAX)
             return E_INVALIDARG;
 
         // This assumes that the base images are already placed into the mipChain at the top level... (see _Setup3DMips)
@@ -3244,6 +3265,9 @@ HRESULT DirectX::GenerateMipMaps3D(
     if (!baseImages || !depth)
         return E_INVALIDARG;
 
+    if (depth > INT16_MAX)
+        return E_INVALIDARG;
+
     if (filter & TEX_FILTER_FORCE_WIC)
         return HRESULT_E_NOT_SUPPORTED;
 
@@ -3350,6 +3374,9 @@ HRESULT DirectX::GenerateMipMaps3D(
     ScratchImage& mipChain)
 {
     if (!srcImages || !nimages || !IsValid(metadata.format))
+        return E_INVALIDARG;
+
+    if (levels > INT16_MAX)
         return E_INVALIDARG;
 
     if (filter & TEX_FILTER_FORCE_WIC)

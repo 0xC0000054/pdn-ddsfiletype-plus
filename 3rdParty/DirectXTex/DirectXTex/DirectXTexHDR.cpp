@@ -163,7 +163,8 @@ namespace
                 formatFound = true;
 
                 const size_t len = FindEOL(info, size);
-                if (len == size_t(-1))
+                if (len == size_t(-1)
+                    || len < 1)
                 {
                     return E_FAIL;
                 }
@@ -207,7 +208,8 @@ namespace
             else
             {
                 const size_t len = FindEOL(info, size);
-                if (len == size_t(-1))
+                if (len == size_t(-1)
+                    || len < 1)
                 {
                     return E_FAIL;
                 }
@@ -247,6 +249,11 @@ namespace
             return E_FAIL;
         }
 
+        if (height > UINT16_MAX)
+        {
+            return HRESULT_E_NOT_SUPPORTED;
+        }
+
         const char* ptr = orientation + 2;
         while (*ptr != 0 && *ptr != '-' && *ptr != '+')
             ++ptr;
@@ -279,12 +286,23 @@ namespace
             return E_FAIL;
         }
 
+        if (width > UINT16_MAX)
+        {
+            return HRESULT_E_NOT_SUPPORTED;
+        }
+
         info += len + 1;
         size -= len + 1;
 
         if (!width || !height)
         {
             return HRESULT_E_INVALID_DATA;
+        }
+
+        uint64_t sizeBytes = uint64_t(width) * uint64_t(height) * sizeof(float) * 4;
+        if (sizeBytes > UINT32_MAX)
+        {
+            return HRESULT_E_ARITHMETIC_OVERFLOW;
         }
 
         if (size == 0)
@@ -699,7 +717,7 @@ HRESULT DirectX::LoadFromHDRMemory(const void* pSource, size_t size, TexMetadata
     if (remaining == 0)
         return E_FAIL;
 
-    hr = image.Initialize2D(mdata.format, mdata.width, mdata.height, 1, 1);
+    hr = image.Initialize2D(mdata.format, mdata.width, mdata.height, 1, 1, CP_FLAGS_LIMIT_4GB);
     if (FAILED(hr))
         return hr;
 

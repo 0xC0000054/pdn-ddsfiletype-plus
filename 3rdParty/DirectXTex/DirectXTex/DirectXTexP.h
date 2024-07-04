@@ -11,6 +11,7 @@
 
 #pragma once
 
+#ifdef _MSC_VER
 // Off by default warnings
 #pragma warning(disable : 4619 4616 4061 4265 4365 4571 4623 4625 4626 4628 4668 4710 4711 4746 4774 4820 4987 5026 5027 5031 5032 5039 5045 5219 5246 5264 26812)
 // C4619/4616 #pragma warning warnings
@@ -39,16 +40,24 @@
 // C5264 'const' variable is not used
 // 26812: The enum type 'x' is unscoped. Prefer 'enum class' over 'enum' (Enum.3).
 
-// Windows 8.1 SDK related Off by default warnings
-#pragma warning(disable : 4471 4917 4986 5029)
+#if defined(_XBOX_ONE) && defined(_TITLE)
+// Xbox One XDK related Off by default warnings
+#pragma warning(disable : 4471 4643 4917 4986 5029 5038 5040 5043 5204 5246 5256 5262 5267)
 // C4471 forward declaration of an unscoped enumeration must have an underlying type
+// C4643 Forward declaring in namespace std is not permitted by the C++ Standard
 // C4917 a GUID can only be associated with a class, interface or namespace
 // C4986 exception specification does not match previous declaration
 // C5029 nonstandard extension used
-
-// Xbox One XDK related Off by default warnings
-#pragma warning(disable : 4643)
-// C4643 Forward declaring in namespace std is not permitted by the C++ Standard
+// C5038 data member 'X' will be initialized after data member 'Y'
+// C5040 dynamic exception specifications are valid only in C++14 and earlier; treating as noexcept(false)
+// C5043 exception specification does not match previous declaration
+// C5204 class has virtual functions, but its trivial destructor is not virtual; instances of objects derived from this class may not be destructed correctly
+// C5246 'anonymous struct or union': the initialization of a subobject should be wrapped in braces
+// C5256 a non-defining declaration of an enumeration with a fixed underlying type is only permitted as a standalone declaration
+// C5262 implicit fall-through occurs here; are you missing a break statement?
+// C5267 definition of implicit copy constructor for 'X' is deprecated because it has a user-provided assignment operator
+#endif // _XBOX_ONE && _TITLE
+#endif // _MSC_VER
 
 #ifdef __INTEL_COMPILER
 #pragma warning(disable : 161)
@@ -133,6 +142,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cctype>
 #include <cstdlib>
 #include <ctime>
 #include <cstring>
@@ -194,6 +204,9 @@ using WICPixelFormatGUID = GUID;
 #if defined(__MINGW32__) && !defined(E_BOUNDS)
 #define E_BOUNDS static_cast<HRESULT>(0x8000000BL)
 #endif
+
+// HRESULT_FROM_WIN32(ERROR_FILE_NOT_FOUND)
+#define HRESULT_ERROR_FILE_NOT_FOUND static_cast<HRESULT>(0x80070002)
 
 // HRESULT_FROM_WIN32(ERROR_ARITHMETIC_OVERFLOW)
 #define HRESULT_E_ARITHMETIC_OVERFLOW static_cast<HRESULT>(0x80070216L)

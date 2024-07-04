@@ -761,7 +761,7 @@ struct CD3DX12_HEAP_PROPERTIES : public D3D12_HEAP_PROPERTIES
     bool IsCPUAccessible() const noexcept
     {
         return Type == D3D12_HEAP_TYPE_UPLOAD || Type == D3D12_HEAP_TYPE_READBACK
-#if 0
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
             || Type == D3D12_HEAP_TYPE_GPU_UPLOAD
 #endif
             || (Type == D3D12_HEAP_TYPE_CUSTOM &&
@@ -1539,7 +1539,6 @@ struct CD3DX12_STATIC_SAMPLER_DESC : public D3D12_STATIC_SAMPLER_DESC
             shaderVisibility,
             registerSpace);
     }
-
 };
 
 //------------------------------------------------------------------------------------------------
@@ -2029,6 +2028,7 @@ struct CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC : public D3D12_VERSIONED_ROOT_SIGNA
         desc.Desc_1_1.pStaticSamplers = _pStaticSamplers;
         desc.Desc_1_1.Flags = flags;
     }
+
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
     static inline void Init_1_2(
         _Out_ D3D12_VERSIONED_ROOT_SIGNATURE_DESC& desc,
@@ -2174,15 +2174,6 @@ struct CD3DX12_GPU_DESCRIPTOR_HANDLE : public D3D12_GPU_DESCRIPTOR_HANDLE
 constexpr UINT D3D12CalcSubresource( UINT MipSlice, UINT ArraySlice, UINT PlaneSlice, UINT MipLevels, UINT ArraySize ) noexcept
 {
     return MipSlice + ArraySlice * MipLevels + PlaneSlice * MipLevels * ArraySize;
-}
-
-//------------------------------------------------------------------------------------------------
-template <typename T, typename U, typename V>
-inline void D3D12DecomposeSubresource( UINT Subresource, UINT MipLevels, UINT ArraySize, _Out_ T& MipSlice, _Out_ U& ArraySlice, _Out_ V& PlaneSlice ) noexcept
-{
-    MipSlice = static_cast<T>(Subresource % MipLevels);
-    ArraySlice = static_cast<U>((Subresource / MipLevels) % ArraySize);
-    PlaneSlice = static_cast<V>(Subresource / (MipLevels * ArraySize));
 }
 
 //------------------------------------------------------------------------------------------------
@@ -2479,6 +2470,16 @@ struct CD3DX12_VIEW_INSTANCING_DESC : public D3D12_VIEW_INSTANCING_DESC
         Flags = InFlags;
     }
 };
+
+//------------------------------------------------------------------------------------------------
+template <typename T, typename U, typename V>
+inline void D3D12DecomposeSubresource( UINT Subresource, UINT MipLevels, UINT ArraySize, _Out_ T& MipSlice, _Out_ U& ArraySlice, _Out_ V& PlaneSlice ) noexcept
+{
+    MipSlice = static_cast<T>(Subresource % MipLevels);
+    ArraySlice = static_cast<U>((Subresource / MipLevels) % ArraySize);
+    PlaneSlice = static_cast<V>(Subresource / (MipLevels * ArraySize));
+}
+
 
 //------------------------------------------------------------------------------------------------
 // Row-by-row memcpy
@@ -2830,6 +2831,37 @@ constexpr bool D3D12IsLayoutOpaque( D3D12_TEXTURE_LAYOUT Layout ) noexcept
 { return Layout == D3D12_TEXTURE_LAYOUT_UNKNOWN || Layout == D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE; }
 
 //------------------------------------------------------------------------------------------------
+#ifndef D3DX12_ASSERT
+  #ifdef assert
+    #define D3DX12_ASSERT(x) assert(x)
+  #else
+    #define D3DX12_ASSERT(x)
+  #endif
+#endif
+
+template< typename T >
+inline T D3DX12Align(T uValue, T uAlign)
+{
+    // Assert power of 2 alignment
+    D3DX12_ASSERT(0 == (uAlign & (uAlign - 1)));
+    T uMask = uAlign - 1;
+    T uResult = (uValue + uMask) & ~uMask;
+    D3DX12_ASSERT(uResult >= uValue);
+    D3DX12_ASSERT(0 == (uResult % uAlign));
+    return uResult;
+}
+
+//------------------------------------------------------------------------------------------------
+template< typename T >
+inline T D3DX12AlignAtLeast(T uValue, T uAlign)
+{
+    T aligned = D3DX12Align(uValue, uAlign);
+    return aligned > uAlign ? aligned : uAlign;
+}
+
+// D3DX12GetCopyableFootprints is not included as it relies on D3D12_PROPERTY_LAYOUT_FORMAT_TABLE
+
+//------------------------------------------------------------------------------------------------
 template <typename t_CommandListType>
 inline ID3D12CommandList * const * CommandListCast(t_CommandListType * const * pp) noexcept
 {
@@ -2845,6 +2877,11 @@ inline ID3D12CommandList * const * CommandListCast(t_CommandListType * const * p
 // To help enable root signature 1.1 features when they are available and not require maintaining
 // two code paths for building root signatures, this helper method reconstructs a 1.0 signature when
 // 1.1 is not supported.
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wcovered-switch-default"
+#endif
+
 inline HRESULT D3DX12SerializeVersionedRootSignature(
     _In_ const D3D12_VERSIONED_ROOT_SIGNATURE_DESC* pRootSignatureDesc,
     D3D_ROOT_SIGNATURE_VERSION MaxVersion,
@@ -2904,39 +2941,72 @@ inline HRESULT D3DX12SerializeVersionedRootSignature(
                                 break;
 
                             case D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE:
-                                const D3D12_ROOT_DESCRIPTOR_TABLE1& table_1_1 = desc_1_1.pParameters[n].DescriptorTable;
-
-                                const SIZE_T DescriptorRangesSize = sizeof(D3D12_DESCRIPTOR_RANGE) * table_1_1.NumDescriptorRanges;
-                                void* pDescriptorRanges = (DescriptorRangesSize > 0 && SUCCEEDED(hr)) ? HeapAlloc(GetProcessHeap(), 0, DescriptorRangesSize) : nullptr;
-                                if (DescriptorRangesSize > 0 && pDescriptorRanges == nullptr)
                                 {
-                                    hr = E_OUTOFMEMORY;
-                                }
-                                auto pDescriptorRanges_1_0 = static_cast<D3D12_DESCRIPTOR_RANGE*>(pDescriptorRanges);
+                                    const D3D12_ROOT_DESCRIPTOR_TABLE1& table_1_1 = desc_1_1.pParameters[n].DescriptorTable;
 
-                                if (SUCCEEDED(hr))
-                                {
-                                    for (UINT x = 0; x < table_1_1.NumDescriptorRanges; x++)
+                                    const SIZE_T DescriptorRangesSize = sizeof(D3D12_DESCRIPTOR_RANGE) * table_1_1.NumDescriptorRanges;
+                                    void* pDescriptorRanges = (DescriptorRangesSize > 0 && SUCCEEDED(hr)) ? HeapAlloc(GetProcessHeap(), 0, DescriptorRangesSize) : nullptr;
+                                    if (DescriptorRangesSize > 0 && pDescriptorRanges == nullptr)
                                     {
-                                        __analysis_assume(DescriptorRangesSize == sizeof(D3D12_DESCRIPTOR_RANGE) * table_1_1.NumDescriptorRanges);
-                                        pDescriptorRanges_1_0[x].BaseShaderRegister = table_1_1.pDescriptorRanges[x].BaseShaderRegister;
-                                        pDescriptorRanges_1_0[x].NumDescriptors = table_1_1.pDescriptorRanges[x].NumDescriptors;
-                                        pDescriptorRanges_1_0[x].OffsetInDescriptorsFromTableStart = table_1_1.pDescriptorRanges[x].OffsetInDescriptorsFromTableStart;
-                                        pDescriptorRanges_1_0[x].RangeType = table_1_1.pDescriptorRanges[x].RangeType;
-                                        pDescriptorRanges_1_0[x].RegisterSpace = table_1_1.pDescriptorRanges[x].RegisterSpace;
+                                        hr = E_OUTOFMEMORY;
                                     }
-                                }
+                                    auto pDescriptorRanges_1_0 = static_cast<D3D12_DESCRIPTOR_RANGE*>(pDescriptorRanges);
 
-                                D3D12_ROOT_DESCRIPTOR_TABLE& table_1_0 = pParameters_1_0[n].DescriptorTable;
-                                table_1_0.NumDescriptorRanges = table_1_1.NumDescriptorRanges;
-                                table_1_0.pDescriptorRanges = pDescriptorRanges_1_0;
+                                    if (SUCCEEDED(hr))
+                                    {
+                                        for (UINT x = 0; x < table_1_1.NumDescriptorRanges; x++)
+                                        {
+                                            __analysis_assume(DescriptorRangesSize == sizeof(D3D12_DESCRIPTOR_RANGE) * table_1_1.NumDescriptorRanges);
+                                            pDescriptorRanges_1_0[x].BaseShaderRegister = table_1_1.pDescriptorRanges[x].BaseShaderRegister;
+                                            pDescriptorRanges_1_0[x].NumDescriptors = table_1_1.pDescriptorRanges[x].NumDescriptors;
+                                            pDescriptorRanges_1_0[x].OffsetInDescriptorsFromTableStart = table_1_1.pDescriptorRanges[x].OffsetInDescriptorsFromTableStart;
+                                            pDescriptorRanges_1_0[x].RangeType = table_1_1.pDescriptorRanges[x].RangeType;
+                                            pDescriptorRanges_1_0[x].RegisterSpace = table_1_1.pDescriptorRanges[x].RegisterSpace;
+                                        }
+                                    }
+
+                                    D3D12_ROOT_DESCRIPTOR_TABLE& table_1_0 = pParameters_1_0[n].DescriptorTable;
+                                    table_1_0.NumDescriptorRanges = table_1_1.NumDescriptorRanges;
+                                    table_1_0.pDescriptorRanges = pDescriptorRanges_1_0;
+                                }
+                                break;
+
+                            default:
+                                break;
                             }
                         }
                     }
 
+                    D3D12_STATIC_SAMPLER_DESC* pStaticSamplers = nullptr;
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+                    if (desc_1_1.NumStaticSamplers > 0 && pRootSignatureDesc->Version == D3D_ROOT_SIGNATURE_VERSION_1_2)
+                    {
+                        const SIZE_T SamplersSize = sizeof(D3D12_STATIC_SAMPLER_DESC) * desc_1_1.NumStaticSamplers;
+                        pStaticSamplers = static_cast<D3D12_STATIC_SAMPLER_DESC*>(HeapAlloc(GetProcessHeap(), 0, SamplersSize));
+
+                        if (pStaticSamplers == nullptr)
+                        {
+                            hr = E_OUTOFMEMORY;
+                        }
+                        else
+                        {
+                            const D3D12_ROOT_SIGNATURE_DESC2& desc_1_2 = pRootSignatureDesc->Desc_1_2;
+                            for (UINT n = 0; n < desc_1_1.NumStaticSamplers; ++n)
+                            {
+                                if ((desc_1_2.pStaticSamplers[n].Flags & ~D3D12_SAMPLER_FLAG_UINT_BORDER_COLOR) != 0)
+                                {
+                                    hr = E_INVALIDARG;
+                                    break;
+                                }
+                                memcpy(pStaticSamplers + n, desc_1_2.pStaticSamplers + n, sizeof(D3D12_STATIC_SAMPLER_DESC));
+                            }
+                        }
+                    }
+#endif
+
                     if (SUCCEEDED(hr))
                     {
-                        const CD3DX12_ROOT_SIGNATURE_DESC desc_1_0(desc_1_1.NumParameters, pParameters_1_0, desc_1_1.NumStaticSamplers, desc_1_1.pStaticSamplers, desc_1_1.Flags);
+                        const CD3DX12_ROOT_SIGNATURE_DESC desc_1_0(desc_1_1.NumParameters, pParameters_1_0, desc_1_1.NumStaticSamplers, pStaticSamplers == nullptr ? desc_1_1.pStaticSamplers : pStaticSamplers, desc_1_1.Flags);
                         hr = D3D12SerializeRootSignature(&desc_1_0, D3D_ROOT_SIGNATURE_VERSION_1, ppBlob, ppErrorBlob);
                     }
 
@@ -2952,20 +3022,91 @@ inline HRESULT D3DX12SerializeVersionedRootSignature(
                         }
                         HeapFree(GetProcessHeap(), 0, pParameters);
                     }
+
+                    if (pStaticSamplers)
+                    {
+                        HeapFree(GetProcessHeap(), 0, pStaticSamplers);
+                    }
+
                     return hr;
                 }
+
+                default:
+                    break;
             }
             break;
 
         case D3D_ROOT_SIGNATURE_VERSION_1_1:
+            switch (pRootSignatureDesc->Version)
+            {
+            case D3D_ROOT_SIGNATURE_VERSION_1_0:
+            case D3D_ROOT_SIGNATURE_VERSION_1_1:
+                return D3D12SerializeVersionedRootSignature(pRootSignatureDesc, ppBlob, ppErrorBlob);
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
+            case D3D_ROOT_SIGNATURE_VERSION_1_2:
+            {
+                HRESULT hr = S_OK;
+                const D3D12_ROOT_SIGNATURE_DESC1& desc_1_1 = pRootSignatureDesc->Desc_1_1;
+
+                D3D12_STATIC_SAMPLER_DESC* pStaticSamplers = nullptr;
+                if (desc_1_1.NumStaticSamplers > 0)
+                {
+                    const SIZE_T SamplersSize = sizeof(D3D12_STATIC_SAMPLER_DESC) * desc_1_1.NumStaticSamplers;
+                    pStaticSamplers = static_cast<D3D12_STATIC_SAMPLER_DESC*>(HeapAlloc(GetProcessHeap(), 0, SamplersSize));
+
+                    if (pStaticSamplers == nullptr)
+                    {
+                        hr = E_OUTOFMEMORY;
+                    }
+                    else
+                    {
+                        const D3D12_ROOT_SIGNATURE_DESC2& desc_1_2 = pRootSignatureDesc->Desc_1_2;
+                        for (UINT n = 0; n < desc_1_1.NumStaticSamplers; ++n)
+                        {
+                            if ((desc_1_2.pStaticSamplers[n].Flags & ~D3D12_SAMPLER_FLAG_UINT_BORDER_COLOR) != 0)
+                            {
+                                hr = E_INVALIDARG;
+                                break;
+                            }
+                            memcpy(pStaticSamplers + n, desc_1_2.pStaticSamplers + n, sizeof(D3D12_STATIC_SAMPLER_DESC));
+                        }
+                    }
+                }
+
+                if (SUCCEEDED(hr))
+                {
+                    const CD3DX12_VERSIONED_ROOT_SIGNATURE_DESC desc(desc_1_1.NumParameters, desc_1_1.pParameters, desc_1_1.NumStaticSamplers, pStaticSamplers == nullptr ? desc_1_1.pStaticSamplers : pStaticSamplers, desc_1_1.Flags);
+                    hr = D3D12SerializeVersionedRootSignature(&desc, ppBlob, ppErrorBlob);
+                }
+
+                if (pStaticSamplers)
+                {
+                    HeapFree(GetProcessHeap(), 0, pStaticSamplers);
+                }
+
+                return hr;
+            }
+#endif
+
+            default:
+                break;
+            }
+            break;
+
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
         case D3D_ROOT_SIGNATURE_VERSION_1_2:
 #endif
+        default:
             return D3D12SerializeVersionedRootSignature(pRootSignatureDesc, ppBlob, ppErrorBlob);
     }
 
     return E_INVALIDARG;
 }
+
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
 
 //------------------------------------------------------------------------------------------------
 struct CD3DX12_RT_FORMAT_ARRAY : public D3D12_RT_FORMAT_ARRAY
@@ -2992,8 +3133,10 @@ struct CD3DX12_RT_FORMAT_ARRAY : public D3D12_RT_FORMAT_ARRAY
 struct DefaultSampleMask { operator UINT() noexcept { return UINT_MAX; } };
 struct DefaultSampleDesc { operator DXGI_SAMPLE_DESC() noexcept { return DXGI_SAMPLE_DESC{1, 0}; } };
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4324)
+#endif
 template <typename InnerStructType, D3D12_PIPELINE_STATE_SUBOBJECT_TYPE Type, typename DefaultArg = InnerStructType>
 class alignas(void*) CD3DX12_PIPELINE_STATE_STREAM_SUBOBJECT
 {
@@ -3009,7 +3152,9 @@ public:
     InnerStructType* operator&() noexcept { return &pssInner; }
     InnerStructType const* operator&() const noexcept { return &pssInner; }
 };
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif
 typedef CD3DX12_PIPELINE_STATE_STREAM_SUBOBJECT< D3D12_PIPELINE_STATE_FLAGS,         D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_FLAGS>                             CD3DX12_PIPELINE_STATE_STREAM_FLAGS;
 typedef CD3DX12_PIPELINE_STATE_STREAM_SUBOBJECT< UINT,                               D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_NODE_MASK>                         CD3DX12_PIPELINE_STATE_STREAM_NODE_MASK;
 typedef CD3DX12_PIPELINE_STATE_STREAM_SUBOBJECT< ID3D12RootSignature*,               D3D12_PIPELINE_STATE_SUBOBJECT_TYPE_ROOT_SIGNATURE>                    CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE;
@@ -3090,6 +3235,9 @@ struct ID3DX12PipelineParserCallbacks
     virtual void ErrorBadInputParameter(UINT /*ParameterIndex*/) {}
     virtual void ErrorDuplicateSubobject(D3D12_PIPELINE_STATE_SUBOBJECT_TYPE /*DuplicateType*/) {}
     virtual void ErrorUnknownSubobject(UINT /*UnknownTypeValue*/) {}
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 613)
+    virtual void FinalizeCb() {}
+#endif
 
     virtual ~ID3DX12PipelineParserCallbacks() = default;
 };
@@ -3727,6 +3875,7 @@ struct CD3DX12_PIPELINE_MESH_STATE_STREAM
         : Flags(Desc.Flags)
         , NodeMask(Desc.NodeMask)
         , pRootSignature(Desc.pRootSignature)
+        , PrimitiveTopologyType(Desc.PrimitiveTopologyType)
         , PS(Desc.PS)
         , AS(Desc.AS)
         , MS(Desc.MS)
@@ -3743,6 +3892,7 @@ struct CD3DX12_PIPELINE_MESH_STATE_STREAM
     CD3DX12_PIPELINE_STATE_STREAM_FLAGS Flags;
     CD3DX12_PIPELINE_STATE_STREAM_NODE_MASK NodeMask;
     CD3DX12_PIPELINE_STATE_STREAM_ROOT_SIGNATURE pRootSignature;
+    CD3DX12_PIPELINE_STATE_STREAM_PRIMITIVE_TOPOLOGY PrimitiveTopologyType;
     CD3DX12_PIPELINE_STATE_STREAM_PS PS;
     CD3DX12_PIPELINE_STATE_STREAM_AS AS;
     CD3DX12_PIPELINE_STATE_STREAM_MS MS;
@@ -3758,21 +3908,22 @@ struct CD3DX12_PIPELINE_MESH_STATE_STREAM
     D3DX12_MESH_SHADER_PIPELINE_STATE_DESC MeshShaderDescV0() const noexcept
     {
         D3DX12_MESH_SHADER_PIPELINE_STATE_DESC D;
-        D.Flags                 = this->Flags;
-        D.NodeMask              = this->NodeMask;
-        D.pRootSignature        = this->pRootSignature;
-        D.PS                    = this->PS;
-        D.AS                    = this->AS;
-        D.MS                    = this->MS;
-        D.BlendState            = this->BlendState;
-        D.DepthStencilState     = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEPTH_STENCIL_DESC1(this->DepthStencilState));
-        D.DSVFormat             = this->DSVFormat;
-        D.RasterizerState       = this->RasterizerState;
-        D.NumRenderTargets      = D3D12_RT_FORMAT_ARRAY(this->RTVFormats).NumRenderTargets;
+        D.Flags = this->Flags;
+        D.NodeMask = this->NodeMask;
+        D.pRootSignature = this->pRootSignature;
+        D.PrimitiveTopologyType = this->PrimitiveTopologyType;
+        D.PS = this->PS;
+        D.AS = this->AS;
+        D.MS = this->MS;
+        D.BlendState = this->BlendState;
+        D.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEPTH_STENCIL_DESC1(this->DepthStencilState));
+        D.DSVFormat = this->DSVFormat;
+        D.RasterizerState = this->RasterizerState;
+        D.NumRenderTargets = D3D12_RT_FORMAT_ARRAY(this->RTVFormats).NumRenderTargets;
         memcpy(D.RTVFormats, D3D12_RT_FORMAT_ARRAY(this->RTVFormats).RTFormats, sizeof(D.RTVFormats));
-        D.SampleDesc            = this->SampleDesc;
-        D.SampleMask            = this->SampleMask;
-        D.CachedPSO             = this->CachedPSO;
+        D.SampleDesc = this->SampleDesc;
+        D.SampleMask = this->SampleMask;
+        D.CachedPSO = this->CachedPSO;
         return D;
     }
 };
@@ -4065,7 +4216,87 @@ private:
 };
 #endif // D3D12_SDK_VERSION >= 608
 
-#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 613)
+// This SDK 613 version has better primitive topology default handling than the v610 equivalent below.
+struct CD3DX12_PIPELINE_STATE_STREAM5_PARSE_HELPER : public ID3DX12PipelineParserCallbacks
+{
+    CD3DX12_PIPELINE_STATE_STREAM5 PipelineStream;
+    CD3DX12_PIPELINE_STATE_STREAM5_PARSE_HELPER() noexcept
+        : SeenDSS(false),
+        SeenMS(false),
+        SeenTopology(false)
+    {
+        // Adjust defaults to account for absent members.
+        PipelineStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+
+        // Depth disabled if no DSV format specified.
+        static_cast<D3D12_DEPTH_STENCIL_DESC2&>(PipelineStream.DepthStencilState).DepthEnable = false;
+    }
+
+    // ID3DX12PipelineParserCallbacks
+    void FlagsCb(D3D12_PIPELINE_STATE_FLAGS Flags) override { PipelineStream.Flags = Flags; }
+    void NodeMaskCb(UINT NodeMask) override { PipelineStream.NodeMask = NodeMask; }
+    void RootSignatureCb(ID3D12RootSignature* pRootSignature) override { PipelineStream.pRootSignature = pRootSignature; }
+    void InputLayoutCb(const D3D12_INPUT_LAYOUT_DESC& InputLayout) override { PipelineStream.InputLayout = InputLayout; }
+    void IBStripCutValueCb(D3D12_INDEX_BUFFER_STRIP_CUT_VALUE IBStripCutValue) override { PipelineStream.IBStripCutValue = IBStripCutValue; }
+    void PrimitiveTopologyTypeCb(D3D12_PRIMITIVE_TOPOLOGY_TYPE PrimitiveTopologyType) override
+    {
+        PipelineStream.PrimitiveTopologyType = PrimitiveTopologyType;
+        SeenTopology = true;
+    }
+    void VSCb(const D3D12_SHADER_BYTECODE& VS) override { PipelineStream.VS = VS; }
+    void GSCb(const D3D12_SHADER_BYTECODE& GS) override { PipelineStream.GS = GS; }
+    void StreamOutputCb(const D3D12_STREAM_OUTPUT_DESC& StreamOutput) override { PipelineStream.StreamOutput = StreamOutput; }
+    void HSCb(const D3D12_SHADER_BYTECODE& HS) override { PipelineStream.HS = HS; }
+    void DSCb(const D3D12_SHADER_BYTECODE& DS) override { PipelineStream.DS = DS; }
+    void PSCb(const D3D12_SHADER_BYTECODE& PS) override { PipelineStream.PS = PS; }
+    void CSCb(const D3D12_SHADER_BYTECODE& CS) override { PipelineStream.CS = CS; }
+    void ASCb(const D3D12_SHADER_BYTECODE& AS) override { PipelineStream.AS = AS; }
+    void MSCb(const D3D12_SHADER_BYTECODE& MS) override { PipelineStream.MS = MS; SeenMS = true; }
+    void BlendStateCb(const D3D12_BLEND_DESC& BlendState) override { PipelineStream.BlendState = CD3DX12_BLEND_DESC(BlendState); }
+    void DepthStencilStateCb(const D3D12_DEPTH_STENCIL_DESC& DepthStencilState) override
+    {
+        PipelineStream.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC2(DepthStencilState);
+        SeenDSS = true;
+    }
+    void DepthStencilState1Cb(const D3D12_DEPTH_STENCIL_DESC1& DepthStencilState) override
+    {
+        PipelineStream.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC2(DepthStencilState);
+        SeenDSS = true;
+    }
+    void DepthStencilState2Cb(const D3D12_DEPTH_STENCIL_DESC2& DepthStencilState) override
+    {
+        PipelineStream.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC2(DepthStencilState);
+        SeenDSS = true;
+    }
+    void DSVFormatCb(DXGI_FORMAT DSVFormat) override {PipelineStream.DSVFormat = DSVFormat;}
+    void RasterizerStateCb(const D3D12_RASTERIZER_DESC& RasterizerState) override { PipelineStream.RasterizerState = CD3DX12_RASTERIZER_DESC2(RasterizerState); }
+    void RasterizerState1Cb(const D3D12_RASTERIZER_DESC1& RasterizerState) override { PipelineStream.RasterizerState = CD3DX12_RASTERIZER_DESC2(RasterizerState); }
+    void RasterizerState2Cb(const D3D12_RASTERIZER_DESC2& RasterizerState) override { PipelineStream.RasterizerState = CD3DX12_RASTERIZER_DESC2(RasterizerState); }
+    void RTVFormatsCb(const D3D12_RT_FORMAT_ARRAY& RTVFormats) override { PipelineStream.RTVFormats = RTVFormats; }
+    void SampleDescCb(const DXGI_SAMPLE_DESC& SampleDesc) override { PipelineStream.SampleDesc = SampleDesc; }
+    void SampleMaskCb(UINT SampleMask) override { PipelineStream.SampleMask = SampleMask; }
+    void ViewInstancingCb(const D3D12_VIEW_INSTANCING_DESC& ViewInstancingDesc) override { PipelineStream.ViewInstancingDesc = CD3DX12_VIEW_INSTANCING_DESC(ViewInstancingDesc); }
+    void CachedPSOCb(const D3D12_CACHED_PIPELINE_STATE& CachedPSO) override { PipelineStream.CachedPSO = CachedPSO; }
+    void FinalizeCb() override
+    {
+        if (!SeenDSS && PipelineStream.DSVFormat != DXGI_FORMAT_UNKNOWN)
+        {
+            // Re-enable depth for the default state.
+            static_cast<D3D12_DEPTH_STENCIL_DESC2&>(PipelineStream.DepthStencilState).DepthEnable = true;
+        }
+        if (!SeenTopology && SeenMS)
+        {
+            PipelineStream.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_UNDEFINED;
+        }
+    }
+
+private:
+    bool SeenDSS;
+    bool SeenMS;
+    bool SeenTopology;
+};
+#elif defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
 struct CD3DX12_PIPELINE_STATE_STREAM5_PARSE_HELPER : public ID3DX12PipelineParserCallbacks
 {
     CD3DX12_PIPELINE_STATE_STREAM5 PipelineStream;
@@ -4365,6 +4596,9 @@ inline HRESULT D3DX12ParsePipelineStream(const D3D12_PIPELINE_STATE_STREAM_DESC&
             return E_INVALIDARG;
         }
     }
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 613)
+    pCallbacks->FinalizeCb();
+#endif
 
     return S_OK;
 }
@@ -4403,16 +4637,6 @@ inline bool operator==( const D3D12_RENDER_PASS_ENDING_ACCESS_RESOLVE_PARAMETERS
     return true;
 }
 
-#ifdef _MSC_VER
-#pragma warning(push)
-#pragma warning(disable : 4062)
-#endif
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wswitch"
-#endif
-
 inline bool operator==( const D3D12_RENDER_PASS_BEGINNING_ACCESS &a, const D3D12_RENDER_PASS_BEGINNING_ACCESS &b) noexcept
 {
     if (a.Type != b.Type) return false;
@@ -4428,6 +4652,8 @@ inline bool operator==( const D3D12_RENDER_PASS_BEGINNING_ACCESS &a, const D3D12
         if (!(a.PreserveLocal == b.PreserveLocal)) return false;
         break;
 #endif
+    default:
+        break;
     }
     return true;
 }
@@ -4447,18 +4673,12 @@ inline bool operator==(const D3D12_RENDER_PASS_ENDING_ACCESS& a, const D3D12_REN
         if (!(a.PreserveLocal == b.PreserveLocal)) return false;
         break;
 #endif
+    default:
+        break;
     }
 
     return true;
 }
-
-#if defined(__GNUC__) || defined(__clang__)
-#pragma GCC diagnostic pop
-#endif
-
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
 
 inline bool operator==( const D3D12_RENDER_PASS_RENDER_TARGET_DESC &a, const D3D12_RENDER_PASS_RENDER_TARGET_DESC &b) noexcept
 {
@@ -4494,6 +4714,8 @@ inline bool operator==( const D3D12_RENDER_PASS_DEPTH_STENCIL_DESC &a, const D3D
 //
 //================================================================================================
 #include <list>
+#include <forward_list>
+#include <vector>
 #include <memory>
 #include <string>
 #include <vector>
@@ -4522,9 +4744,22 @@ public:
         Init(Type);
     }
     void SetStateObjectType(D3D12_STATE_OBJECT_TYPE Type) noexcept { m_Desc.Type = Type; }
-    operator const D3D12_STATE_OBJECT_DESC&()
+    CD3DX12_STATE_OBJECT_DESC(const CD3DX12_STATE_OBJECT_DESC& other) = delete;
+    CD3DX12_STATE_OBJECT_DESC& operator=(const CD3DX12_STATE_OBJECT_DESC& other) = delete;
+    CD3DX12_STATE_OBJECT_DESC(CD3DX12_STATE_OBJECT_DESC&& other) = default;
+    CD3DX12_STATE_OBJECT_DESC& operator=(CD3DX12_STATE_OBJECT_DESC&& other) = default;
+    operator const D3D12_STATE_OBJECT_DESC& ()
     {
         // Do final preparation work
+        for (auto& ownedSubobject : m_OwnedSubobjectHelpers)
+        {
+            ownedSubobject->Finalize();
+        }
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+        m_RepointedSubobjectVectors.clear();
+        m_RepointedPrograms.clear();
+#endif
         m_RepointedAssociations.clear();
         m_SubobjectArray.clear();
         m_SubobjectArray.reserve(m_Desc.NumSubobjects);
@@ -4552,12 +4787,36 @@ public:
                 m_RepointedAssociations.push_back(Repointed);
                 m_SubobjectArray[i].pDesc = &m_RepointedAssociations.back();
             }
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+            else if (m_SubobjectArray[i].Type == D3D12_STATE_SUBOBJECT_TYPE_GENERIC_PROGRAM)
+            {
+                auto originalGenericProgramDesc =
+                    static_cast<const D3D12_GENERIC_PROGRAM_DESC*>(m_SubobjectArray[i].pDesc);
+                D3D12_GENERIC_PROGRAM_DESC Repointed = *originalGenericProgramDesc;
+                if (originalGenericProgramDesc->NumSubobjects > 0)
+                {
+                    m_RepointedSubobjectVectors.emplace_back(std::vector<const D3D12_STATE_SUBOBJECT*>());
+                    std::vector<D3D12_STATE_SUBOBJECT const*>& repointedGenericProgramSubobjects = m_RepointedSubobjectVectors.back();
+                    repointedGenericProgramSubobjects.resize(originalGenericProgramDesc->NumSubobjects);
+                    for (UINT s = 0; s < originalGenericProgramDesc->NumSubobjects; s++)
+                    {
+                        auto pWrapper =
+                            static_cast<const SUBOBJECT_WRAPPER*>(originalGenericProgramDesc->ppSubobjects[s]);
+                        repointedGenericProgramSubobjects[s] = pWrapper->pSubobjectArrayLocation;
+                    }
+                    // Below: using ugly way to get pointer in case .data() is not defined
+                    Repointed.ppSubobjects = &repointedGenericProgramSubobjects[0];
+                }
+                m_RepointedPrograms.push_back(Repointed);
+                m_SubobjectArray[i].pDesc = &m_RepointedPrograms.back();
+            }
+#endif
         }
         // Below: using ugly way to get pointer in case .data() is not defined
         m_Desc.pSubobjects = m_Desc.NumSubobjects ? &m_SubobjectArray[0] : nullptr;
         return m_Desc;
     }
-    operator const D3D12_STATE_OBJECT_DESC*()
+    operator const D3D12_STATE_OBJECT_DESC* ()
     {
         // Cast calls the above final preparation work
         return &static_cast<const D3D12_STATE_OBJECT_DESC&>(*this);
@@ -4615,6 +4874,10 @@ private:
         m_SubobjectList.clear();
         m_SubobjectArray.clear();
         m_RepointedAssociations.clear();
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+        m_RepointedSubobjectVectors.clear();
+        m_RepointedPrograms.clear();
+#endif
     }
     typedef struct SUBOBJECT_WRAPPER : public D3D12_STATE_SUBOBJECT
     {
@@ -4627,13 +4890,21 @@ private:
     std::vector<D3D12_STATE_SUBOBJECT> m_SubobjectArray; // Built at the end, copying list contents
 
     std::list<D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION>
-            m_RepointedAssociations; // subobject type that contains pointers to other subobjects,
-                                     // repointed to flattened array
+        m_RepointedAssociations; // subobject type that contains pointers to other subobjects,
+                                 // repointed to flattened array
 
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+    std::list<std::vector<D3D12_STATE_SUBOBJECT const*>>
+        m_RepointedSubobjectVectors;
+    std::list<D3D12_GENERIC_PROGRAM_DESC>
+        m_RepointedPrograms;
+#endif
+
+    template<typename CStr, typename StdStr>
     class StringContainer
     {
     public:
-        LPCWSTR LocalCopy(LPCWSTR string, bool bSingleString = false)
+        CStr LocalCopy(CStr string, bool bSingleString = false)
         {
             if (string)
             {
@@ -4655,38 +4926,34 @@ private:
         }
         void clear() noexcept { m_Strings.clear(); }
     private:
-        std::list<std::wstring> m_Strings;
+        std::list<StdStr> m_Strings;
     };
 
+public:
     class SUBOBJECT_HELPER_BASE
     {
     public:
         SUBOBJECT_HELPER_BASE() noexcept { Init(); }
         virtual ~SUBOBJECT_HELPER_BASE() = default;
         virtual D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept = 0;
+        SUBOBJECT_HELPER_BASE(const SUBOBJECT_HELPER_BASE& other) = delete;
+        SUBOBJECT_HELPER_BASE& operator=(const SUBOBJECT_HELPER_BASE& other) = delete;
+        SUBOBJECT_HELPER_BASE(SUBOBJECT_HELPER_BASE&& other) = default;
+        SUBOBJECT_HELPER_BASE& operator=(SUBOBJECT_HELPER_BASE&& other) = default;
         void AddToStateObject(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
         {
             m_pSubobject = ContainingStateObject.TrackSubobject(Type(), Data());
         }
+        virtual void Finalize() {};
+        operator const D3D12_STATE_SUBOBJECT& () const noexcept { return *m_pSubobject; }
     protected:
         virtual void* Data() noexcept = 0;
         void Init() noexcept { m_pSubobject = nullptr; }
         D3D12_STATE_SUBOBJECT* m_pSubobject;
     };
 
-#if(__cplusplus >= 201103L)
-    std::list<std::unique_ptr<const SUBOBJECT_HELPER_BASE>> m_OwnedSubobjectHelpers;
-#else
-    class OWNED_HELPER
-    {
-    public:
-        OWNED_HELPER(const SUBOBJECT_HELPER_BASE* pHelper) noexcept { m_pHelper = pHelper; }
-        ~OWNED_HELPER() { delete m_pHelper; }
-        const SUBOBJECT_HELPER_BASE* m_pHelper;
-    };
-
-    std::list<OWNED_HELPER> m_OwnedSubobjectHelpers;
-#endif
+private:
+    std::list<std::unique_ptr<SUBOBJECT_HELPER_BASE>> m_OwnedSubobjectHelpers;
 
     friend class CD3DX12_DXIL_LIBRARY_SUBOBJECT;
     friend class CD3DX12_EXISTING_COLLECTION_SUBOBJECT;
@@ -4700,6 +4967,33 @@ private:
     friend class CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT;
     friend class CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT;
     friend class CD3DX12_NODE_MASK_SUBOBJECT;
+    //TODO: SDK Version check should include all the newly added subobject type for the public release.
+    // The SDK version check will be changed based on when we release state objects.
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+    friend class CD3DX12_GENERIC_PROGRAM_SUBOBJECT;
+    friend class CD3DX12_WORK_GRAPH_SUBOBJECT;
+    friend class CD3DX12_STREAM_OUTPUT_SUBOBJECT;
+    friend class CD3DX12_BLEND_SUBOBJECT;
+    friend class CD3DX12_RASTERIZER_SUBOBJECT;
+    friend class CD3DX12_DEPTH_STENCIL2_SUBOBJECT;
+    friend class CD3DX12_INPUT_LAYOUT_SUBOBJECT;
+    friend class CD3DX12_IB_STRIP_CUT_VALUE_SUBOBJECT;
+    friend class CD3DX12_PRIMITIVE_TOPOLOGY_SUBOBJECT;
+    friend class CD3DX12_RENDER_TARGET_FORMATS_SUBOBJECT;
+    friend class CD3DX12_DEPTH_STENCIL_FORMAT_SUBOBJECT;
+    friend class CD3DX12_SAMPLE_DESC_SUBOBJECT;
+    friend class CD3DX12_FLAGS_SUBOBJECT;
+    friend class CD3DX12_VIEW_INSTANCING_SUBOBJECT;
+    friend class CD3DX12_DEPTH_STENCIL_SUBOBJECT;
+    friend class CD3DX12_DEPTH_STENCIL1_SUBOBJECT;
+    friend class CD3DX12_SAMPLE_MASK_SUBOBJECT;
+    friend class CD3DX12_NODE_OUTPUT_OVERRIDES;
+    friend class CD3DX12_SHADER_NODE;
+    friend class CD3DX12_BROADCASTING_LAUNCH_NODE_OVERRIDES;
+    friend class CD3DX12_COALESCING_LAUNCH_NODE_OVERRIDES;
+    friend class CD3DX12_THREAD_LAUNCH_NODE_OVERRIDES;
+    friend class CD3DX12_COMMON_COMPUTE_NODE_OVERRIDES;
+#endif // D3D12_SDK_VERSION >= 612
 };
 
 //------------------------------------------------------------------------------------------------
@@ -4716,6 +5010,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_DXIL_LIBRARY_SUBOBJECT(const CD3DX12_DXIL_LIBRARY_SUBOBJECT& other) = delete;
+    CD3DX12_DXIL_LIBRARY_SUBOBJECT& operator=(const CD3DX12_DXIL_LIBRARY_SUBOBJECT& other) = delete;
+    CD3DX12_DXIL_LIBRARY_SUBOBJECT(CD3DX12_DXIL_LIBRARY_SUBOBJECT&& other) = default;
+    CD3DX12_DXIL_LIBRARY_SUBOBJECT& operator=(CD3DX12_DXIL_LIBRARY_SUBOBJECT&& other) = default;
     void SetDXILLibrary(const D3D12_SHADER_BYTECODE* pCode) noexcept
     {
         static const D3D12_SHADER_BYTECODE Default = {};
@@ -4753,7 +5051,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_DXIL_LIBRARY;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_DXIL_LIBRARY_DESC&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -4765,7 +5062,7 @@ private:
     }
     void* Data() noexcept override { return &m_Desc; }
     D3D12_DXIL_LIBRARY_DESC m_Desc;
-    CD3DX12_STATE_OBJECT_DESC::StringContainer m_Strings;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
     std::vector<D3D12_EXPORT_DESC> m_Exports;
 };
 
@@ -4783,6 +5080,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_EXISTING_COLLECTION_SUBOBJECT(const CD3DX12_EXISTING_COLLECTION_SUBOBJECT& other) = delete;
+    CD3DX12_EXISTING_COLLECTION_SUBOBJECT& operator=(const CD3DX12_EXISTING_COLLECTION_SUBOBJECT& other) = delete;
+    CD3DX12_EXISTING_COLLECTION_SUBOBJECT(CD3DX12_EXISTING_COLLECTION_SUBOBJECT&& other) = default;
+    CD3DX12_EXISTING_COLLECTION_SUBOBJECT& operator=(CD3DX12_EXISTING_COLLECTION_SUBOBJECT&& other) = default;
     void SetExistingCollection(ID3D12StateObject*pExistingCollection) noexcept
     {
         m_Desc.pExistingCollection = pExistingCollection;
@@ -4820,7 +5121,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_EXISTING_COLLECTION;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_EXISTING_COLLECTION_DESC&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -4834,7 +5134,7 @@ private:
     void* Data() noexcept override { return &m_Desc; }
     D3D12_EXISTING_COLLECTION_DESC m_Desc;
     D3DX12_COM_PTR<ID3D12StateObject> m_CollectionRef;
-    CD3DX12_STATE_OBJECT_DESC::StringContainer m_Strings;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
     std::vector<D3D12_EXPORT_DESC> m_Exports;
 };
 
@@ -4852,6 +5152,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT(const CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT& other) = delete;
+    CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT& operator=(const CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT& other) = delete;
+    CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT(CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT&& other) = default;
+    CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT& operator=(CD3DX12_SUBOBJECT_TO_EXPORTS_ASSOCIATION_SUBOBJECT&& other) = default;
     void SetSubobjectToAssociate(const D3D12_STATE_SUBOBJECT& SubobjectToAssociate) noexcept
     {
         m_Desc.pSubobjectToAssociate = &SubobjectToAssociate;
@@ -4881,7 +5185,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -4893,7 +5196,7 @@ private:
     }
     void* Data() noexcept override { return &m_Desc; }
     D3D12_SUBOBJECT_TO_EXPORTS_ASSOCIATION m_Desc;
-    CD3DX12_STATE_OBJECT_DESC::StringContainer m_Strings;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
     std::vector<LPCWSTR> m_Exports;
 };
 
@@ -4911,6 +5214,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION(const CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION& other) = delete;
+    CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION& operator=(const CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION& other) = delete;
+    CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION(CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION&& other) = default;
+    CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION& operator=(CD3DX12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION&& other) = default;
     void SetSubobjectNameToAssociate(LPCWSTR SubobjectToAssociate)
     {
         m_Desc.SubobjectToAssociate = m_SubobjectName.LocalCopy(SubobjectToAssociate, true);
@@ -4940,7 +5247,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -4953,8 +5259,8 @@ private:
     }
     void* Data() noexcept override { return &m_Desc; }
     D3D12_DXIL_SUBOBJECT_TO_EXPORTS_ASSOCIATION m_Desc;
-    CD3DX12_STATE_OBJECT_DESC::StringContainer m_Strings;
-    CD3DX12_STATE_OBJECT_DESC::StringContainer m_SubobjectName;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_SubobjectName;
     std::vector<LPCWSTR> m_Exports;
 };
 
@@ -4972,6 +5278,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_HIT_GROUP_SUBOBJECT(const CD3DX12_HIT_GROUP_SUBOBJECT& other) = delete;
+    CD3DX12_HIT_GROUP_SUBOBJECT& operator=(const CD3DX12_HIT_GROUP_SUBOBJECT& other) = delete;
+    CD3DX12_HIT_GROUP_SUBOBJECT(CD3DX12_HIT_GROUP_SUBOBJECT&& other) = default;
+    CD3DX12_HIT_GROUP_SUBOBJECT& operator=(CD3DX12_HIT_GROUP_SUBOBJECT&& other) = default;
     void SetHitGroupExport(LPCWSTR exportName)
     {
         m_Desc.HitGroupExport = m_Strings[0].LocalCopy(exportName, true);
@@ -4993,7 +5303,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_HIT_GROUP;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_HIT_GROUP_DESC&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -5008,7 +5317,7 @@ private:
     void* Data() noexcept override { return &m_Desc; }
     D3D12_HIT_GROUP_DESC m_Desc;
     static constexpr UINT m_NumStrings = 4;
-    CD3DX12_STATE_OBJECT_DESC::StringContainer
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring>
         m_Strings[m_NumStrings]; // one string for every entrypoint name
 };
 
@@ -5026,6 +5335,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT(const CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT& other) = delete;
+    CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT& operator=(const CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT& other) = delete;
+    CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT(CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT&& other) = default;
+    CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT& operator=(CD3DX12_RAYTRACING_SHADER_CONFIG_SUBOBJECT&& other) = default;
     void Config(UINT MaxPayloadSizeInBytes, UINT MaxAttributeSizeInBytes) noexcept
     {
         m_Desc.MaxPayloadSizeInBytes = MaxPayloadSizeInBytes;
@@ -5035,7 +5348,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_SHADER_CONFIG;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_RAYTRACING_SHADER_CONFIG&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -5061,6 +5373,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT(const CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT& other) = delete;
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT& operator=(const CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT& other) = delete;
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT(CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT&& other) = default;
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT& operator=(CD3DX12_RAYTRACING_PIPELINE_CONFIG_SUBOBJECT&& other) = default;
     void Config(UINT MaxTraceRecursionDepth) noexcept
     {
         m_Desc.MaxTraceRecursionDepth = MaxTraceRecursionDepth;
@@ -5069,7 +5385,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_RAYTRACING_PIPELINE_CONFIG&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -5095,6 +5410,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT(const CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT& other) = delete;
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT& operator=(const CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT& other) = delete;
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT(CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT&& other) = default;
+    CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT& operator=(CD3DX12_RAYTRACING_PIPELINE_CONFIG1_SUBOBJECT&& other) = default;
     void Config(UINT MaxTraceRecursionDepth, D3D12_RAYTRACING_PIPELINE_FLAGS Flags) noexcept
     {
         m_Desc.MaxTraceRecursionDepth = MaxTraceRecursionDepth;
@@ -5104,7 +5423,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_RAYTRACING_PIPELINE_CONFIG1;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_RAYTRACING_PIPELINE_CONFIG1&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -5130,6 +5448,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT(const CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT& other) = delete;
+    CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT& operator=(const CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT& other) = delete;
+    CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT(CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT&& other) = default;
+    CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT& operator=(CD3DX12_GLOBAL_ROOT_SIGNATURE_SUBOBJECT&& other) = default;
     void SetRootSignature(ID3D12RootSignature* pRootSig) noexcept
     {
         m_pRootSig = pRootSig;
@@ -5138,7 +5460,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_GLOBAL_ROOT_SIGNATURE;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator ID3D12RootSignature*() const noexcept { return D3DX12_COM_PTR_GET(m_pRootSig); }
 private:
     void Init() noexcept
@@ -5164,6 +5485,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT(const CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT& other) = delete;
+    CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT& operator=(const CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT& other) = delete;
+    CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT(CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT&& other) = default;
+    CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT& operator=(CD3DX12_LOCAL_ROOT_SIGNATURE_SUBOBJECT&& other) = default;
     void SetRootSignature(ID3D12RootSignature* pRootSig) noexcept
     {
         m_pRootSig = pRootSig;
@@ -5172,7 +5497,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_LOCAL_ROOT_SIGNATURE;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator ID3D12RootSignature*() const noexcept { return D3DX12_COM_PTR_GET(m_pRootSig); }
 private:
     void Init() noexcept
@@ -5198,6 +5522,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT(const CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT& other) = delete;
+    CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT& operator=(const CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT& other) = delete;
+    CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT(CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT&& other) = default;
+    CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT& operator=(CD3DX12_STATE_OBJECT_CONFIG_SUBOBJECT&& other) = default;
     void SetFlags(D3D12_STATE_OBJECT_FLAGS Flags) noexcept
     {
         m_Desc.Flags = Flags;
@@ -5206,7 +5534,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_STATE_OBJECT_CONFIG;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_STATE_OBJECT_CONFIG&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -5232,6 +5559,10 @@ public:
         Init();
         AddToStateObject(ContainingStateObject);
     }
+    CD3DX12_NODE_MASK_SUBOBJECT(const CD3DX12_NODE_MASK_SUBOBJECT& other) = delete;
+    CD3DX12_NODE_MASK_SUBOBJECT& operator=(const CD3DX12_NODE_MASK_SUBOBJECT& other) = delete;
+    CD3DX12_NODE_MASK_SUBOBJECT(CD3DX12_NODE_MASK_SUBOBJECT&& other) = default;
+    CD3DX12_NODE_MASK_SUBOBJECT& operator=(CD3DX12_NODE_MASK_SUBOBJECT&& other) = default;
     void SetNodeMask(UINT NodeMask) noexcept
     {
         m_Desc.NodeMask = NodeMask;
@@ -5240,7 +5571,6 @@ public:
     {
         return D3D12_STATE_SUBOBJECT_TYPE_NODE_MASK;
     }
-    operator const D3D12_STATE_SUBOBJECT&() const noexcept { return *m_pSubobject; }
     operator const D3D12_NODE_MASK&() const noexcept { return m_Desc; }
 private:
     void Init() noexcept
@@ -5251,6 +5581,1317 @@ private:
     void* Data() noexcept override { return &m_Desc; }
     D3D12_NODE_MASK m_Desc;
 };
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+//------------------------------------------------------------------------------------------------
+class CD3DX12_STREAM_OUTPUT_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_STREAM_OUTPUT_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_STREAM_OUTPUT_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetSODeclEntries(const D3D12_SO_DECLARATION_ENTRY* soDeclEntries, UINT numEntries)
+    {
+        m_soDecalEntries.resize(numEntries);
+        for (UINT i = 0; i < numEntries; i++)
+        {
+            m_soDecalEntries[i] = D3D12_SO_DECLARATION_ENTRY{
+                soDeclEntries[i].Stream,
+                m_Strings.LocalCopy(soDeclEntries[i].SemanticName),
+                soDeclEntries[i].SemanticIndex,
+                soDeclEntries[i].StartComponent,
+                soDeclEntries[i].ComponentCount,
+                soDeclEntries[i].OutputSlot
+            };
+        }
+        // Below: using ugly way to get pointer in case .data() is not defined
+        m_Desc.pSODeclaration = &m_soDecalEntries[0];
+        m_Desc.NumEntries = numEntries;
+    }
+    void SetBufferStrides(const UINT* bufferStrides, UINT numStrides)
+    {
+        m_Desc.pBufferStrides = bufferStrides;
+        m_Desc.NumStrides = numStrides;
+    }
+    void SetRasterizedStream(UINT rasterizedStream)
+    {
+        m_Desc.RasterizedStream = rasterizedStream;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_STREAM_OUTPUT;
+    }
+    operator const D3D12_STREAM_OUTPUT_DESC& () const noexcept { return m_Desc; }
+
+private:
+    void Init()
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_STREAM_OUTPUT_DESC m_Desc;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCSTR, std::string> m_Strings;
+    std::vector<D3D12_SO_DECLARATION_ENTRY> m_soDecalEntries;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_BLEND_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_BLEND_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_BLEND_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetAlphaToCoverageEnable(bool alphaToCoverageEnable)
+    {
+        m_Desc.AlphaToCoverageEnable = alphaToCoverageEnable;
+    }
+    void SetIndependentBlendEnable(bool independentBlendEnable)
+    {
+        m_Desc.IndependentBlendEnable = independentBlendEnable;
+    }
+    void SetRenderTarget(UINT renderTargetIndex, const D3D12_RENDER_TARGET_BLEND_DESC& renderTargetBlendDesc)
+    {
+        m_Desc.RenderTarget[renderTargetIndex].BlendEnable = renderTargetBlendDesc.BlendEnable;
+        m_Desc.RenderTarget[renderTargetIndex].BlendOp = renderTargetBlendDesc.BlendOp;
+        m_Desc.RenderTarget[renderTargetIndex].BlendOpAlpha = renderTargetBlendDesc.BlendOpAlpha;
+        m_Desc.RenderTarget[renderTargetIndex].DestBlend = renderTargetBlendDesc.DestBlend;
+        m_Desc.RenderTarget[renderTargetIndex].DestBlendAlpha = renderTargetBlendDesc.DestBlendAlpha;
+        m_Desc.RenderTarget[renderTargetIndex].LogicOp = renderTargetBlendDesc.LogicOp;
+        m_Desc.RenderTarget[renderTargetIndex].LogicOpEnable = renderTargetBlendDesc.LogicOpEnable;
+        m_Desc.RenderTarget[renderTargetIndex].RenderTargetWriteMask = renderTargetBlendDesc.RenderTargetWriteMask;
+        m_Desc.RenderTarget[renderTargetIndex].SrcBlend = renderTargetBlendDesc.SrcBlend;
+        m_Desc.RenderTarget[renderTargetIndex].SrcBlendAlpha = renderTargetBlendDesc.SrcBlendAlpha;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_BLEND;
+    }
+    operator const D3D12_BLEND_DESC& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    CD3DX12_BLEND_DESC m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_RASTERIZER_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_RASTERIZER_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_RASTERIZER_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetFillMode(D3D12_FILL_MODE fillMode)
+    {
+        m_Desc.FillMode = fillMode;
+    }
+    void SetCullMode(D3D12_CULL_MODE cullMode)
+    {
+        m_Desc.CullMode = cullMode;
+    }
+    void SetFrontCounterClockwise(BOOL frontCounterClockwise)
+    {
+        m_Desc.FrontCounterClockwise = frontCounterClockwise;
+    }
+    void SetDepthBias(FLOAT depthBias)
+    {
+        m_Desc.DepthBias = depthBias;
+    }
+    void SetDepthBiasClamp(FLOAT depthBiasClamp)
+    {
+        m_Desc.DepthBiasClamp = depthBiasClamp;
+    }
+    void SetSlopeScaledDepthBias(FLOAT slopeScaledDepthBias)
+    {
+        m_Desc.SlopeScaledDepthBias = slopeScaledDepthBias;
+    }
+    void SetDepthClipEnable(BOOL depthClipEnable)
+    {
+        m_Desc.DepthClipEnable = depthClipEnable;
+    }
+    void SetLineRasterizationMode(D3D12_LINE_RASTERIZATION_MODE lineRasterizationMode)
+    {
+        m_Desc.LineRasterizationMode = lineRasterizationMode;
+    }
+    void SetForcedSampleCount(UINT forcedSampleCount)
+    {
+        m_Desc.ForcedSampleCount = forcedSampleCount;
+    }
+    void SetConservativeRaster(D3D12_CONSERVATIVE_RASTERIZATION_MODE conservativeRaster)
+    {
+        m_Desc.ConservativeRaster = conservativeRaster;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_RASTERIZER;
+    }
+    operator const D3D12_RASTERIZER_DESC2& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = CD3DX12_RASTERIZER_DESC2(D3D12_DEFAULT);
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    CD3DX12_RASTERIZER_DESC2 m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_DEPTH_STENCIL2_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_DEPTH_STENCIL2_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_DEPTH_STENCIL2_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetDepthEnable(BOOL depthEnable)
+    {
+        m_Desc.DepthEnable = depthEnable;
+    }
+    void SetDepthWriteMask(D3D12_DEPTH_WRITE_MASK depthWriteMask)
+    {
+        m_Desc.DepthWriteMask = depthWriteMask;
+    }
+    void SetDepthFunc(D3D12_COMPARISON_FUNC depthFunc)
+    {
+        m_Desc.DepthFunc = depthFunc;
+    }
+    void SetStencilEnable(BOOL stencilEnable)
+    {
+        m_Desc.StencilEnable = stencilEnable;
+    }
+    void SetFrontFace(D3D12_DEPTH_STENCILOP_DESC1 frontFace)
+    {
+        m_Desc.FrontFace = {
+            frontFace.StencilFailOp,
+            frontFace.StencilDepthFailOp,
+            frontFace.StencilPassOp,
+            frontFace.StencilFunc,
+            frontFace.StencilReadMask,
+            frontFace.StencilWriteMask
+        };
+    }
+    void SetBackFace(D3D12_DEPTH_STENCILOP_DESC1 backFace)
+    {
+        m_Desc.BackFace = {
+            backFace.StencilFailOp,
+            backFace.StencilDepthFailOp,
+            backFace.StencilPassOp,
+            backFace.StencilFunc,
+            backFace.StencilReadMask,
+            backFace.StencilWriteMask
+        };
+    }
+    void SetDepthBoundsTestEnable(BOOL depthBoundsTestEnable)
+    {
+        m_Desc.DepthBoundsTestEnable = depthBoundsTestEnable;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL2;
+    }
+    operator const D3D12_DEPTH_STENCIL_DESC2& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = CD3DX12_DEPTH_STENCIL_DESC2(D3D12_DEFAULT);
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    CD3DX12_DEPTH_STENCIL_DESC2 m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_INPUT_LAYOUT_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_INPUT_LAYOUT_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_INPUT_LAYOUT_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void AddInputLayoutElementDesc(D3D12_INPUT_ELEMENT_DESC inputLayoutElementDesc)
+    {
+        m_inputLayoutElements.emplace_back(
+            D3D12_INPUT_ELEMENT_DESC{
+                m_Strings.LocalCopy(inputLayoutElementDesc.SemanticName),
+                inputLayoutElementDesc.SemanticIndex,
+                inputLayoutElementDesc.Format,
+                inputLayoutElementDesc.InputSlot,
+                inputLayoutElementDesc.AlignedByteOffset,
+                inputLayoutElementDesc.InputSlotClass,
+                inputLayoutElementDesc.InstanceDataStepRate
+            });
+        ++m_numElements;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_INPUT_LAYOUT;
+    }
+    operator const D3D12_INPUT_LAYOUT_DESC& () const noexcept { return m_Desc; }
+    virtual void Finalize() override
+    {
+        if (m_numElements > 0)
+        {
+            std::list<D3D12_INPUT_ELEMENT_DESC>::iterator inputLayoutIt = m_inputLayoutElements.begin();
+            m_inputLayoutElementsVector.resize(m_numElements);
+            for (UINT i = 0; inputLayoutIt != m_inputLayoutElements.end(); i++, inputLayoutIt++)
+            {
+                m_inputLayoutElementsVector[i] = *inputLayoutIt;
+            }
+            // Below: using ugly way to get pointer in case .data() is not defined
+            m_Desc.pInputElementDescs = &m_inputLayoutElementsVector[0];
+        }
+        m_Desc.NumElements = m_numElements;
+    }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+        m_Desc.pInputElementDescs = nullptr;
+        m_numElements = 0;
+        m_inputLayoutElements.clear();
+        m_inputLayoutElementsVector.clear();
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_INPUT_LAYOUT_DESC m_Desc;
+    std::list<D3D12_INPUT_ELEMENT_DESC> m_inputLayoutElements;
+    std::vector<D3D12_INPUT_ELEMENT_DESC> m_inputLayoutElementsVector;
+    UINT m_numElements;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCSTR, std::string> m_Strings;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_IB_STRIP_CUT_VALUE_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_IB_STRIP_CUT_VALUE_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_IB_STRIP_CUT_VALUE_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetIBStripCutValue(D3D12_INDEX_BUFFER_STRIP_CUT_VALUE ibStripCutValue)
+    {
+        m_Desc = ibStripCutValue;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_IB_STRIP_CUT_VALUE;
+    }
+    operator const D3D12_INDEX_BUFFER_STRIP_CUT_VALUE& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_INDEX_BUFFER_STRIP_CUT_VALUE m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_PRIMITIVE_TOPOLOGY_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_PRIMITIVE_TOPOLOGY_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_PRIMITIVE_TOPOLOGY_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetPrimitiveTopologyType(D3D12_PRIMITIVE_TOPOLOGY_TYPE primitiveTopologytype)
+    {
+        m_Desc = primitiveTopologytype;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_PRIMITIVE_TOPOLOGY;
+    }
+    operator const D3D12_PRIMITIVE_TOPOLOGY_TYPE& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_PRIMITIVE_TOPOLOGY_TYPE m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_RENDER_TARGET_FORMATS_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_RENDER_TARGET_FORMATS_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_RENDER_TARGET_FORMATS_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetNumRenderTargets(UINT numRenderTargets)
+    {
+        m_Desc.NumRenderTargets = numRenderTargets;
+    }
+    void SetRenderTargetFormat(UINT renderTarget, DXGI_FORMAT renderTargetFormat)
+    {
+        m_Desc.RTFormats[renderTarget] = renderTargetFormat;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_RENDER_TARGET_FORMATS;
+    }
+    operator const D3D12_RT_FORMAT_ARRAY& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_RT_FORMAT_ARRAY m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_DEPTH_STENCIL_FORMAT_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_DEPTH_STENCIL_FORMAT_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_DEPTH_STENCIL_FORMAT_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetDepthStencilFormat(DXGI_FORMAT depthStencilFormat)
+    {
+        m_Desc = depthStencilFormat;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL_FORMAT;
+    }
+    operator const DXGI_FORMAT& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    DXGI_FORMAT m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_SAMPLE_DESC_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_SAMPLE_DESC_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_SAMPLE_DESC_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetCount(UINT count)
+    {
+        m_Desc.Count = count;
+    }
+    void SetQuality(UINT quality)
+    {
+        m_Desc.Quality = quality;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_SAMPLE_DESC;
+    }
+    operator const DXGI_SAMPLE_DESC& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    DXGI_SAMPLE_DESC m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_FLAGS_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_FLAGS_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_FLAGS_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetFlags(D3D12_PIPELINE_STATE_FLAGS flags)
+    {
+        m_Desc = flags;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_FLAGS;
+    }
+    operator const D3D12_PIPELINE_STATE_FLAGS& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_PIPELINE_STATE_FLAGS m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_VIEW_INSTANCING_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_VIEW_INSTANCING_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_VIEW_INSTANCING_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void AddViewInstanceLocation(D3D12_VIEW_INSTANCE_LOCATION viewInstanceLocation)
+    {
+        m_viewInstanceCount++;
+        m_viewInstanceLocations.emplace_back(
+            D3D12_VIEW_INSTANCE_LOCATION
+            {
+                viewInstanceLocation.ViewportArrayIndex,
+                viewInstanceLocation.RenderTargetArrayIndex
+            }
+        );
+    }
+    void SetFlags(D3D12_VIEW_INSTANCING_FLAGS flags)
+    {
+        m_Desc.Flags = flags;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_VIEW_INSTANCING;
+    }
+    operator const D3D12_VIEW_INSTANCING_DESC& () const noexcept { return m_Desc; }
+    virtual void Finalize() override
+    {
+        if (m_viewInstanceCount > 0)
+        {
+            m_viewInstanceLocationsVector.resize(m_viewInstanceCount);
+            std::list<D3D12_VIEW_INSTANCE_LOCATION>::iterator viewInstancingLocationIt = m_viewInstanceLocations.begin();
+            for (UINT i = 0; viewInstancingLocationIt != m_viewInstanceLocations.end(); i++, viewInstancingLocationIt++)
+            {
+                m_viewInstanceLocationsVector[i] = *viewInstancingLocationIt;
+            }
+            // Below: using ugly way to get pointer in case .data() is not defined
+            m_Desc.pViewInstanceLocations = &m_viewInstanceLocationsVector[0];
+        }
+        m_Desc.ViewInstanceCount = m_viewInstanceCount;
+    }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = CD3DX12_VIEW_INSTANCING_DESC(D3D12_DEFAULT);
+        m_viewInstanceCount = 0;
+        m_viewInstanceLocations.clear();
+        m_viewInstanceLocationsVector.clear();
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    CD3DX12_VIEW_INSTANCING_DESC m_Desc;
+    UINT m_viewInstanceCount;
+    std::list<D3D12_VIEW_INSTANCE_LOCATION> m_viewInstanceLocations;
+    std::vector<D3D12_VIEW_INSTANCE_LOCATION> m_viewInstanceLocationsVector;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_DEPTH_STENCIL_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_DEPTH_STENCIL_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_DEPTH_STENCIL_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetDepthEnable(BOOL depthEnable)
+    {
+        m_Desc.DepthEnable = depthEnable;
+    }
+    void SetDepthWriteMask(D3D12_DEPTH_WRITE_MASK depthWriteMask)
+    {
+        m_Desc.DepthWriteMask = depthWriteMask;
+    }
+    void SetDepthFunc(D3D12_COMPARISON_FUNC depthFunc)
+    {
+        m_Desc.DepthFunc = depthFunc;
+    }
+    void SetStencilEnable(BOOL stencilEnable)
+    {
+        m_Desc.StencilEnable = stencilEnable;
+    }
+    void SetStencilReadMask(UINT8 stencilReadMask)
+    {
+        m_Desc.StencilReadMask = stencilReadMask;
+    }
+    void SetStencilWriteMask(UINT8 stencilWriteMask)
+    {
+        m_Desc.StencilWriteMask = stencilWriteMask;
+    }
+    void SetFrontFace(D3D12_DEPTH_STENCILOP_DESC frontFace)
+    {
+        m_Desc.FrontFace = {
+            frontFace.StencilFailOp,
+            frontFace.StencilDepthFailOp,
+            frontFace.StencilPassOp,
+            frontFace.StencilFunc
+        };
+    }
+    void SetBackFace(D3D12_DEPTH_STENCILOP_DESC backFace)
+    {
+        m_Desc.BackFace = {
+            backFace.StencilFailOp,
+            backFace.StencilDepthFailOp,
+            backFace.StencilPassOp,
+            backFace.StencilFunc
+        };
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL;
+    }
+    operator const D3D12_DEPTH_STENCIL_DESC& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    CD3DX12_DEPTH_STENCIL_DESC m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_DEPTH_STENCIL1_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_DEPTH_STENCIL1_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_DEPTH_STENCIL1_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetDepthEnable(BOOL depthEnable)
+    {
+        m_Desc.DepthEnable = depthEnable;
+    }
+    void SetDepthWriteMask(D3D12_DEPTH_WRITE_MASK depthWriteMask)
+    {
+        m_Desc.DepthWriteMask = depthWriteMask;
+    }
+    void SetDepthFunc(D3D12_COMPARISON_FUNC depthFunc)
+    {
+        m_Desc.DepthFunc = depthFunc;
+    }
+    void SetStencilEnable(BOOL stencilEnable)
+    {
+        m_Desc.StencilEnable = stencilEnable;
+    }
+    void SetStencilReadMask(UINT8 stencilReadMask)
+    {
+        m_Desc.StencilReadMask = stencilReadMask;
+    }
+    void SetStencilWriteMask(UINT8 stencilWriteMask)
+    {
+        m_Desc.StencilWriteMask = stencilWriteMask;
+    }
+    void SetFrontFace(D3D12_DEPTH_STENCILOP_DESC frontFace)
+    {
+        m_Desc.FrontFace = {
+            frontFace.StencilFailOp,
+            frontFace.StencilDepthFailOp,
+            frontFace.StencilPassOp,
+            frontFace.StencilFunc
+        };
+    }
+    void SetBackFace(D3D12_DEPTH_STENCILOP_DESC backFace)
+    {
+        m_Desc.BackFace = {
+            backFace.StencilFailOp,
+            backFace.StencilDepthFailOp,
+            backFace.StencilPassOp,
+            backFace.StencilFunc
+        };
+    }
+    void SetDepthBoundsTestEnable(BOOL depthBoundsTestEnable)
+    {
+        m_Desc.DepthBoundsTestEnable = depthBoundsTestEnable;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_DEPTH_STENCIL1;
+    }
+    operator const D3D12_DEPTH_STENCIL_DESC1& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = CD3DX12_DEPTH_STENCIL_DESC1(D3D12_DEFAULT);
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    CD3DX12_DEPTH_STENCIL_DESC1 m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_SAMPLE_MASK_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_SAMPLE_MASK_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_SAMPLE_MASK_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetSampleMask(UINT sampleMask)
+    {
+        m_Desc = sampleMask;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_SAMPLE_MASK;
+    }
+    operator const UINT& () const noexcept { return m_Desc; }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    UINT m_Desc;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_GENERIC_PROGRAM_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_GENERIC_PROGRAM_SUBOBJECT()
+    {
+        Init();
+    }
+    CD3DX12_GENERIC_PROGRAM_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    void SetProgramName(LPCWSTR ProgramName)
+    {
+        m_Desc.ProgramName = m_Strings.LocalCopy(ProgramName);
+    }
+    void AddExport(LPCWSTR exportName)
+    {
+        m_Exports.emplace_back(m_Strings.LocalCopy(exportName));
+        m_numExports++;
+    }
+    void AddSubobject(const D3D12_STATE_SUBOBJECT& subobject)
+    {
+        m_Subobjects.emplace_back(&subobject);
+        m_numSubobjects++;
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_GENERIC_PROGRAM;
+    }
+    operator const D3D12_GENERIC_PROGRAM_DESC& () const noexcept { return m_Desc; }
+    virtual void Finalize() override
+    {
+        // Set exports
+        if (m_numExports > 0)
+        {
+            m_ExportsVector.resize(m_numExports);
+            std::list<LPCWSTR>::iterator exportIt = m_Exports.begin();
+            for (UINT i = 0; exportIt != m_Exports.end(); i++, exportIt++)
+            {
+                m_ExportsVector[i] = *exportIt;
+            }
+            // Below: using ugly way to get pointer in case .data() is not defined
+            m_Desc.pExports = &m_ExportsVector[0];
+        }
+        else
+        {
+            m_Desc.pExports = nullptr;
+        }
+        m_Desc.NumExports = m_numExports;
+
+        // Set subobjects
+        if (m_numSubobjects > 0)
+        {
+            m_SubobjectsVector.resize(m_numSubobjects);
+            std::list<D3D12_STATE_SUBOBJECT const*>::iterator subobjectIt = m_Subobjects.begin();
+            for (UINT i = 0; subobjectIt != m_Subobjects.end(); i++, subobjectIt++)
+            {
+                m_SubobjectsVector[i] = *subobjectIt;
+            }
+            // Below: using ugly way to get pointer in case .data() is not defined
+            m_Desc.ppSubobjects = &m_SubobjectsVector[0];
+        }
+        else
+        {
+            m_Desc.ppSubobjects = nullptr;
+        }
+        m_Desc.NumSubobjects = m_numSubobjects;
+    }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+        m_numExports = 0;
+        m_numSubobjects = 0;
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_GENERIC_PROGRAM_DESC m_Desc;
+    std::list<LPCWSTR> m_Exports;
+    std::vector<LPCWSTR> m_ExportsVector;
+    UINT m_numExports;
+    std::list<D3D12_STATE_SUBOBJECT const*> m_Subobjects;
+    std::vector<D3D12_STATE_SUBOBJECT const*> m_SubobjectsVector;
+    UINT m_numSubobjects;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_NODE_OUTPUT_OVERRIDES
+{
+public:
+    CD3DX12_NODE_OUTPUT_OVERRIDES(const D3D12_NODE_OUTPUT_OVERRIDES** ppOwner, UINT* pNumOutputOverrides) noexcept
+    {
+        m_Desc.clear();
+        m_ppOwner = ppOwner;
+        *m_ppOwner = nullptr;
+        m_pNumOutputOverrides = pNumOutputOverrides;
+        *m_pNumOutputOverrides = 0;
+    }
+    void NewOutputOverride()
+    {
+        m_Desc.emplace_back(D3D12_NODE_OUTPUT_OVERRIDES{});
+        *m_ppOwner = m_Desc.data();
+        (*m_pNumOutputOverrides)++;
+    }
+    void OutputIndex(UINT index)
+    {
+        m_Desc.back().OutputIndex = index;
+    }
+    void NewName(LPCWSTR Name, UINT ArrayIndex = 0)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(Name),ArrayIndex });
+        m_Desc.back().pNewName = &m_NodeIDs.front();
+    }
+    void AllowSparseNodes(BOOL bAllow)
+    {
+        m_UINTs.emplace_front((UINT)bAllow);
+        m_Desc.back().pAllowSparseNodes = (BOOL*)&m_UINTs.front();
+    }
+    void MaxOutputRecords(UINT maxOutputRecords) noexcept
+    {
+        m_UINTs.emplace_front(maxOutputRecords);
+        m_Desc.back().pMaxRecords = &m_UINTs.front();
+    }
+    void MaxOutputRecordsSharedWith(UINT outputIndex) noexcept
+    {
+        m_UINTs.emplace_front(outputIndex);
+        m_Desc.back().pMaxRecordsSharedWithOutputIndex = &m_UINTs.front();
+    }
+private:
+    std::vector<D3D12_NODE_OUTPUT_OVERRIDES> m_Desc;
+    // Cached parameters
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    std::forward_list<UINT> m_UINTs;
+    std::forward_list<D3D12_NODE_ID> m_NodeIDs;
+    const D3D12_NODE_OUTPUT_OVERRIDES** m_ppOwner;
+    UINT* m_pNumOutputOverrides;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_NODE_HELPER_BASE
+{
+public:
+    virtual ~CD3DX12_NODE_HELPER_BASE() = default;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_SHADER_NODE // Not specifying launch mode.
+                          // Don't need to distinguish if no parameter overriding is happening
+    : public CD3DX12_NODE_HELPER_BASE
+{
+public:
+    CD3DX12_SHADER_NODE(
+        D3D12_NODE* pNode,
+        LPCWSTR _Shader = nullptr)
+    {
+        m_pDesc = pNode;
+        m_pDesc->NodeType = D3D12_NODE_TYPE_SHADER;
+        Shader(_Shader);
+    }
+    void Shader(LPCWSTR _Shader)
+    {
+        m_pDesc->Shader.Shader = m_Strings.LocalCopy(_Shader);
+    }
+    D3D12_NODE* m_pDesc;
+private:
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+};
+
+//------------------------------------------------------------------------------------------------
+// Use this class when defining a broadcasting launch node where configuration parameters
+// need to be overridden.  If overrides are not needed, just use CD3DX12_COMPUTE_SHADER_NODE
+class CD3DX12_BROADCASTING_LAUNCH_NODE_OVERRIDES
+    : public CD3DX12_NODE_HELPER_BASE
+{
+public:
+    CD3DX12_BROADCASTING_LAUNCH_NODE_OVERRIDES(
+        D3D12_NODE* pNode,
+        LPCWSTR _Shader = nullptr) :
+        m_NodeOutputOverrides(&Overrides.pOutputOverrides, &Overrides.NumOutputOverrides)
+    {
+        Overrides = {};
+        m_pDesc = pNode;
+        m_pDesc->NodeType = D3D12_NODE_TYPE_SHADER;
+        m_pDesc->Shader.OverridesType = D3D12_NODE_OVERRIDES_TYPE_BROADCASTING_LAUNCH;
+        m_pDesc->Shader.pBroadcastingLaunchOverrides = &Overrides;
+        Shader(_Shader);
+    }
+    void Shader(LPCWSTR _Shader)
+    {
+        m_pDesc->Shader.Shader = m_Strings.LocalCopy(_Shader);
+    }
+    void LocalRootArgumentsTableIndex(UINT index)
+    {
+        m_UINTs.emplace_front(index);
+        Overrides.pLocalRootArgumentsTableIndex = &m_UINTs.front();
+    }
+    void ProgramEntry(BOOL bIsProgramEntry)
+    {
+        m_UINTs.emplace_front(bIsProgramEntry);
+        Overrides.pProgramEntry = (BOOL*)&m_UINTs.front();
+    }
+    void NewName(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pNewName = &m_NodeIDs.front();
+    }
+    void ShareInputOf(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pShareInputOf = &m_NodeIDs.front();
+    }
+    void DispatchGrid(UINT x, UINT y, UINT z)
+    {
+        m_UINT3s.emplace_front(UINT3{ x,y,z });
+        Overrides.pDispatchGrid = (UINT*)&m_UINT3s.front();
+    }
+    void MaxDispatchGrid(UINT x, UINT y, UINT z)
+    {
+        m_UINT3s.emplace_front(UINT3{x,y,z});
+        Overrides.pMaxDispatchGrid = (UINT*)&m_UINT3s.front();
+    }
+    CD3DX12_NODE_OUTPUT_OVERRIDES& NodeOutputOverrides()
+    {
+        return m_NodeOutputOverrides;
+    }
+    D3D12_BROADCASTING_LAUNCH_OVERRIDES Overrides;
+    D3D12_NODE* m_pDesc;
+private:
+    // Cached parameters
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    std::forward_list<UINT> m_UINTs;
+    struct UINT3
+    {
+        UINT x;
+        UINT y;
+        UINT z;
+    };
+    std::forward_list<UINT3> m_UINT3s;
+    std::forward_list<D3D12_NODE_ID> m_NodeIDs;
+    CD3DX12_NODE_OUTPUT_OVERRIDES m_NodeOutputOverrides;
+};
+
+//------------------------------------------------------------------------------------------------
+// Use this class when defining a coalescing launch node where configuration parameters
+// need to be overridden.  If overrides are not needed, just use CD3DX12_COMPUTE_SHADER_NODE
+class CD3DX12_COALESCING_LAUNCH_NODE_OVERRIDES
+    : public CD3DX12_NODE_HELPER_BASE
+{
+public:
+    CD3DX12_COALESCING_LAUNCH_NODE_OVERRIDES(
+        D3D12_NODE* pNode,
+        LPCWSTR _Shader = nullptr) :
+        m_NodeOutputOverrides(&Overrides.pOutputOverrides, &Overrides.NumOutputOverrides)
+    {
+        Overrides = {};
+        m_pDesc = pNode;
+        m_pDesc->NodeType = D3D12_NODE_TYPE_SHADER;
+        m_pDesc->Shader.OverridesType = D3D12_NODE_OVERRIDES_TYPE_COALESCING_LAUNCH;
+        m_pDesc->Shader.pCoalescingLaunchOverrides = &Overrides;
+        Shader(_Shader);
+    }
+    void Shader(LPCWSTR _Shader)
+    {
+        m_pDesc->Shader.Shader = m_Strings.LocalCopy(_Shader);
+    }
+    void LocalRootArgumentsTableIndex(UINT index)
+    {
+        m_UINTs.emplace_front(index);
+        Overrides.pLocalRootArgumentsTableIndex = &m_UINTs.front();
+    }
+    void ProgramEntry(BOOL bIsProgramEntry)
+    {
+        m_UINTs.emplace_front(bIsProgramEntry);
+        Overrides.pProgramEntry = (BOOL*)&m_UINTs.front();
+    }
+    void NewName(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pNewName = &m_NodeIDs.front();
+    }
+    void ShareInputOf(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pShareInputOf = &m_NodeIDs.front();
+    }
+    CD3DX12_NODE_OUTPUT_OVERRIDES& NodeOutputOverrides()
+    {
+        return m_NodeOutputOverrides;
+    }
+    D3D12_COALESCING_LAUNCH_OVERRIDES Overrides;
+    D3D12_NODE* m_pDesc;
+private:
+    // Cached parameters
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    std::forward_list<UINT> m_UINTs;
+    struct UINT3
+    {
+        UINT x;
+        UINT y;
+        UINT z;
+    };
+    std::forward_list<UINT3> m_UINT3s;
+    std::forward_list<D3D12_NODE_ID> m_NodeIDs;
+    CD3DX12_NODE_OUTPUT_OVERRIDES m_NodeOutputOverrides;
+};
+
+//------------------------------------------------------------------------------------------------
+// Use this class when defining a thread launch node where configuration parameters
+// need to be overridden.  If overrides are not needed, just use CD3DX12_COMPUTE_SHADER_NODE
+class CD3DX12_THREAD_LAUNCH_NODE_OVERRIDES
+    : public CD3DX12_NODE_HELPER_BASE
+{
+public:
+    CD3DX12_THREAD_LAUNCH_NODE_OVERRIDES(
+        D3D12_NODE* pNode,
+        LPCWSTR _Shader = nullptr) :
+        m_NodeOutputOverrides(&Overrides.pOutputOverrides, &Overrides.NumOutputOverrides)
+    {
+        Overrides = {};
+        m_pDesc = pNode;
+        m_pDesc->NodeType = D3D12_NODE_TYPE_SHADER;
+        m_pDesc->Shader.OverridesType = D3D12_NODE_OVERRIDES_TYPE_THREAD_LAUNCH;
+        m_pDesc->Shader.pThreadLaunchOverrides = &Overrides;
+        Shader(_Shader);
+    }
+    void Shader(LPCWSTR _Shader)
+    {
+        m_pDesc->Shader.Shader = m_Strings.LocalCopy(_Shader);
+    }
+    void LocalRootArgumentsTableIndex(UINT index)
+    {
+        m_UINTs.emplace_front(index);
+        Overrides.pLocalRootArgumentsTableIndex = &m_UINTs.front();
+    }
+    void ProgramEntry(BOOL bIsProgramEntry)
+    {
+        m_UINTs.emplace_front(bIsProgramEntry);
+        Overrides.pProgramEntry = (BOOL*)&m_UINTs.front();
+    }
+    void NewName(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pNewName = &m_NodeIDs.front();
+    }
+    void ShareInputOf(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pShareInputOf = &m_NodeIDs.front();
+    }
+    CD3DX12_NODE_OUTPUT_OVERRIDES& NodeOutputOverrides()
+    {
+        return m_NodeOutputOverrides;
+    }
+    D3D12_THREAD_LAUNCH_OVERRIDES Overrides;
+    D3D12_NODE* m_pDesc;
+private:
+    // Cached parameters
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    std::forward_list<UINT> m_UINTs;
+    std::forward_list<D3D12_NODE_ID> m_NodeIDs;
+    CD3DX12_NODE_OUTPUT_OVERRIDES m_NodeOutputOverrides;
+};
+
+//------------------------------------------------------------------------------------------------
+// Use this class when defining a node where configuration parameters
+// need to be overridden for parameters that are common to all launch node types.
+// This option is a convenience if you don't want to determine what the launch mode is
+// and just want to override a setting that isn't specific to launch mode.
+// If overrides are not needed, just use CD3DX12_COMPUTE_SHADER_NODE
+class CD3DX12_COMMON_COMPUTE_NODE_OVERRIDES
+    : public CD3DX12_NODE_HELPER_BASE
+{
+public:
+    CD3DX12_COMMON_COMPUTE_NODE_OVERRIDES(
+        D3D12_NODE* pNode,
+        LPCWSTR _Shader = nullptr) :
+        m_NodeOutputOverrides(&Overrides.pOutputOverrides, &Overrides.NumOutputOverrides)
+    {
+        Overrides = {};
+        m_pDesc = pNode;
+        m_pDesc->NodeType = D3D12_NODE_TYPE_SHADER;
+        m_pDesc->Shader.OverridesType = D3D12_NODE_OVERRIDES_TYPE_COMMON_COMPUTE;
+        m_pDesc->Shader.pThreadLaunchOverrides = &Overrides;
+        Shader(_Shader);
+    }
+    void Shader(LPCWSTR _Shader)
+    {
+        m_pDesc->Shader.Shader = m_Strings.LocalCopy(_Shader);
+    }
+    void LocalRootArgumentsTableIndex(UINT index)
+    {
+        m_UINTs.emplace_front(index);
+        Overrides.pLocalRootArgumentsTableIndex = &m_UINTs.front();
+    }
+    void ProgramEntry(BOOL bIsProgramEntry)
+    {
+        m_UINTs.emplace_front(bIsProgramEntry);
+        Overrides.pProgramEntry = (BOOL*)&m_UINTs.front();
+    }
+    void NewName(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pNewName = &m_NodeIDs.front();
+    }
+    void ShareInputOf(D3D12_NODE_ID NodeID)
+    {
+        m_NodeIDs.emplace_front(D3D12_NODE_ID{ m_Strings.LocalCopy(NodeID.Name),NodeID.ArrayIndex });
+        Overrides.pShareInputOf = &m_NodeIDs.front();
+    }
+    CD3DX12_NODE_OUTPUT_OVERRIDES& NodeOutputOverrides()
+    {
+        return m_NodeOutputOverrides;
+    }
+    D3D12_THREAD_LAUNCH_OVERRIDES Overrides;
+    D3D12_NODE* m_pDesc;
+private:
+    // Cached parameters
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    std::forward_list<UINT> m_UINTs;
+    std::forward_list<D3D12_NODE_ID> m_NodeIDs;
+    CD3DX12_NODE_OUTPUT_OVERRIDES m_NodeOutputOverrides;
+};
+
+//------------------------------------------------------------------------------------------------
+class CD3DX12_WORK_GRAPH_SUBOBJECT
+    : public CD3DX12_STATE_OBJECT_DESC::SUBOBJECT_HELPER_BASE
+{
+public:
+    CD3DX12_WORK_GRAPH_SUBOBJECT() noexcept
+    {
+        Init();
+    }
+    CD3DX12_WORK_GRAPH_SUBOBJECT(CD3DX12_STATE_OBJECT_DESC& ContainingStateObject)
+    {
+        Init();
+        AddToStateObject(ContainingStateObject);
+    }
+    D3D12_STATE_SUBOBJECT_TYPE Type() const noexcept override
+    {
+        return D3D12_STATE_SUBOBJECT_TYPE_WORK_GRAPH;
+    }
+    void IncludeAllAvailableNodes()
+    {
+        m_Desc.Flags |= D3D12_WORK_GRAPH_FLAG_INCLUDE_ALL_AVAILABLE_NODES;
+    }
+    void SetProgramName(LPCWSTR ProgramName)
+    {
+        m_Desc.ProgramName = m_Strings.LocalCopy(ProgramName);
+    }
+    void AddEntrypoint(D3D12_NODE_ID Entrypoint)
+    {
+        m_Entrypoints.emplace_back(D3D12_NODE_ID{ m_Strings.LocalCopy(Entrypoint.Name),Entrypoint.ArrayIndex });
+        m_NumEntrypoints++;
+    }
+
+    template<typename T>
+    T* CreateNode()
+    {
+        m_NodeDescs.push_back({});
+        m_NumNodes++;
+        T* pNodeHelper = new T(&m_NodeDescs.back());
+        m_OwnedNodeHelpers.emplace_back(pNodeHelper);
+        return pNodeHelper;
+    }
+    CD3DX12_SHADER_NODE* CreateShaderNode(LPCWSTR Shader = nullptr)
+    {
+        auto pNode = CreateNode<CD3DX12_SHADER_NODE>();
+        pNode->Shader(Shader);
+        return pNode;
+    }
+    CD3DX12_BROADCASTING_LAUNCH_NODE_OVERRIDES* CreateBroadcastingLaunchNodeOverrides(LPCWSTR Shader = nullptr)
+    {
+        auto pNode = CreateNode<CD3DX12_BROADCASTING_LAUNCH_NODE_OVERRIDES>();
+        pNode->Shader(Shader);
+        return pNode;
+    }
+    CD3DX12_COALESCING_LAUNCH_NODE_OVERRIDES* CreateCoalescingLaunchNodeOverrides(LPCWSTR Shader = nullptr)
+    {
+        auto pNode = CreateNode<CD3DX12_COALESCING_LAUNCH_NODE_OVERRIDES>();
+        pNode->Shader(Shader);
+        return pNode;
+    }
+    CD3DX12_THREAD_LAUNCH_NODE_OVERRIDES* CreateThreadLaunchNodeOverrides(LPCWSTR Shader = nullptr)
+    {
+        auto pNode = CreateNode<CD3DX12_THREAD_LAUNCH_NODE_OVERRIDES>();
+        pNode->Shader(Shader);
+        return pNode;
+    }
+    CD3DX12_COMMON_COMPUTE_NODE_OVERRIDES* CreateCommonComputeNodeOverrides(LPCWSTR Shader = nullptr)
+    {
+        auto pNode = CreateNode<CD3DX12_COMMON_COMPUTE_NODE_OVERRIDES>();
+        pNode->Shader(Shader);
+        return pNode;
+    }
+    operator const D3D12_WORK_GRAPH_DESC& () noexcept
+    {
+        return m_Desc;
+    }
+    virtual void Finalize() override
+    {
+        m_EntrypointsVector.resize(m_NumEntrypoints);
+        std::list<D3D12_NODE_ID>::iterator entryIt = m_Entrypoints.begin();
+        for (UINT n = 0; n < m_NumEntrypoints; n++, entryIt++)
+        {
+            m_EntrypointsVector[n] = *entryIt;
+        }
+        m_Desc.NumEntrypoints = m_NumEntrypoints;
+        m_Desc.pEntrypoints = m_EntrypointsVector.data();
+
+        m_NodeDescsVector.resize(m_NumNodes);
+        std::list<D3D12_NODE>::iterator nodeIt = m_NodeDescs.begin();
+        for (UINT n = 0; n < m_NumNodes; n++, nodeIt++)
+        {
+            m_NodeDescsVector[n] = *nodeIt;
+        }
+        m_Desc.NumExplicitlyDefinedNodes = m_NumNodes;
+        m_Desc.pExplicitlyDefinedNodes = m_NodeDescsVector.data();
+    }
+private:
+    void Init() noexcept
+    {
+        SUBOBJECT_HELPER_BASE::Init();
+        m_Desc = {};
+        m_NodeDescs.clear();
+        m_NodeDescsVector.clear();
+        m_NumNodes = 0;
+        m_NumEntrypoints = 0;
+    }
+    void* Data() noexcept override { return &m_Desc; }
+    D3D12_WORK_GRAPH_DESC m_Desc;
+    std::list<D3D12_NODE_ID> m_Entrypoints;
+    UINT m_NumEntrypoints;
+    std::vector<D3D12_NODE_ID> m_EntrypointsVector;
+    std::list<D3D12_NODE> m_NodeDescs;
+    UINT m_NumNodes;
+    std::vector<D3D12_NODE> m_NodeDescsVector;
+    CD3DX12_STATE_OBJECT_DESC::StringContainer<LPCWSTR, std::wstring> m_Strings;
+    std::list<std::unique_ptr<const CD3DX12_NODE_HELPER_BASE>> m_OwnedNodeHelpers;
+};
+#endif // D3D12_SDK_VERSION >= 612
+
+#undef D3DX12_COM_PTR
+#undef D3DX12_COM_PTR_GET
+#undef D3DX12_COM_PTR_ADDRESSOF
 
 #endif // !D3DX12_NO_STATE_OBJECT_HELPERS
 
@@ -5580,9 +7221,7 @@ public: // Function declaration
 #endif
 
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
-#if 0
     BOOL GPUUploadHeapSupported() const noexcept;
-#endif
 
     // D3D12_OPTIONS17
     BOOL NonNormalizedCoordinateSamplersSupported() const noexcept;
@@ -5602,6 +7241,15 @@ public: // Function declaration
     UINT MaxSamplerDescriptorHeapSize() const noexcept;
     UINT MaxSamplerDescriptorHeapSizeWithStaticSamplers() const noexcept;
     UINT MaxViewDescriptorHeapSize() const noexcept;
+#endif
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+    BOOL ComputeOnlyWriteWatchSupported() const noexcept;
+#endif
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+    D3D12_EXECUTE_INDIRECT_TIER ExecuteIndirectTier() const noexcept;
+    D3D12_WORK_GRAPHS_TIER WorkGraphsTier() const noexcept;
 #endif
 
 private: // Private structs and helpers declaration
@@ -5686,6 +7334,12 @@ private: // Member data
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
     D3D12_FEATURE_DATA_D3D12_OPTIONS19 m_dOptions19;
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+    D3D12_FEATURE_DATA_D3D12_OPTIONS20 m_dOptions20;
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+    D3D12_FEATURE_DATA_D3D12_OPTIONS21 m_dOptions21;
 #endif
 };
 
@@ -5774,6 +7428,12 @@ inline CD3DX12FeatureSupport::CD3DX12FeatureSupport() noexcept
 #endif
 #if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 610)
 , m_dOptions19{}
+#endif
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+, m_dOptions20{}
+#endif
+#if defined (D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+, m_dOptions21{}
 #endif
 {}
 
@@ -5933,6 +7593,20 @@ inline HRESULT CD3DX12FeatureSupport::Init(ID3D12Device* pDevice)
         m_dOptions19.MaxSamplerDescriptorHeapSize = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE;
         m_dOptions19.MaxSamplerDescriptorHeapSizeWithStaticSamplers = D3D12_MAX_SHADER_VISIBLE_SAMPLER_HEAP_SIZE;
         m_dOptions19.MaxViewDescriptorHeapSize = D3D12_MAX_SHADER_VISIBLE_DESCRIPTOR_HEAP_SIZE_TIER_1;
+    }
+#endif
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+    if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS20, &m_dOptions20, sizeof(m_dOptions20))))
+    {
+        m_dOptions20 = {};
+    }
+#endif
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+    if (FAILED(m_pDevice->CheckFeatureSupport(D3D12_FEATURE_D3D12_OPTIONS21, &m_dOptions21, sizeof(m_dOptions21))))
+    {
+        m_dOptions21 = {};
     }
 #endif
 
@@ -6281,9 +7955,7 @@ FEATURE_SUPPORT_GET(BOOL, m_dOptions15, DynamicIndexBufferStripCutSupported);
 FEATURE_SUPPORT_GET(BOOL, m_dOptions16, DynamicDepthBiasSupported);
 #endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 609)
-#if 0
 FEATURE_SUPPORT_GET(BOOL, m_dOptions16, GPUUploadHeapSupported);
-#endif
 
 // 46: Options17
 FEATURE_SUPPORT_GET(BOOL, m_dOptions17, NonNormalizedCoordinateSamplersSupported);
@@ -6305,6 +7977,17 @@ FEATURE_SUPPORT_GET(UINT, m_dOptions19, MaxSamplerDescriptorHeapSizeWithStaticSa
 FEATURE_SUPPORT_GET(UINT, m_dOptions19, MaxViewDescriptorHeapSize);
 #endif
 
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+// 49: Options20
+FEATURE_SUPPORT_GET(BOOL, m_dOptions20, ComputeOnlyWriteWatchSupported);
+#endif
+
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+// 50: Options21
+FEATURE_SUPPORT_GET(D3D12_EXECUTE_INDIRECT_TIER, m_dOptions21, ExecuteIndirectTier);
+FEATURE_SUPPORT_GET(D3D12_WORK_GRAPHS_TIER, m_dOptions21, WorkGraphsTier);
+#endif
+
 // Helper function to decide the highest shader model supported by the system
 // Stores the result in m_dShaderModel
 // Must be updated whenever a new shader model is added to the d3d12.h header
@@ -6315,6 +7998,9 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestShaderModel()
 
     const D3D_SHADER_MODEL allModelVersions[] =
     {
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 612)
+        D3D_SHADER_MODEL_6_9,
+#endif
 #if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 606)
         D3D_SHADER_MODEL_6_8,
 #endif
@@ -6411,7 +8097,12 @@ inline HRESULT CD3DX12FeatureSupport::QueryHighestFeatureLevel()
         D3D_FEATURE_LEVEL_9_3,
         D3D_FEATURE_LEVEL_9_2,
         D3D_FEATURE_LEVEL_9_1,
-        D3D_FEATURE_LEVEL_1_0_CORE
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 5)
+        D3D_FEATURE_LEVEL_1_0_CORE,
+#endif
+#if defined(D3D12_SDK_VERSION) && (D3D12_SDK_VERSION >= 611)
+        D3D_FEATURE_LEVEL_1_0_GENERIC
+#endif
     };
 
     D3D12_FEATURE_DATA_FEATURE_LEVELS dFeatureLevel;

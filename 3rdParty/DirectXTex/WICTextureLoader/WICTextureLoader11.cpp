@@ -84,6 +84,10 @@ namespace
     {
         const GUID&         wic;
         DXGI_FORMAT         format;
+
+        constexpr WICTranslate(const GUID& wg, DXGI_FORMAT fmt) noexcept :
+            wic(wg),
+            format(fmt) {}
     };
 
     constexpr WICTranslate g_WICFormats[] =
@@ -118,6 +122,10 @@ namespace
     {
         const GUID& source;
         const GUID& target;
+
+        constexpr WICConvert(const GUID& src, const GUID& tgt) noexcept :
+            source(src),
+            target(tgt) {}
     };
 
     constexpr WICConvert g_WICConvert[] =
@@ -794,29 +802,19 @@ namespace
             );
             if (result > 0)
             {
-                const char* pstrName = strrchr(strFileA, '\\');
-                if (!pstrName)
-                {
-                    pstrName = strFileA;
-                }
-                else
-                {
-                    pstrName++;
-                }
-
                 if (texture && *texture)
                 {
                     (*texture)->SetPrivateData(WKPDID_D3DDebugObjectName,
-                        static_cast<UINT>(strnlen_s(pstrName, MAX_PATH)),
-                        pstrName
+                        static_cast<UINT>(result),
+                        strFileA
                     );
                 }
 
                 if (textureView && *textureView)
                 {
                     (*textureView)->SetPrivateData(WKPDID_D3DDebugObjectName,
-                        static_cast<UINT>(strnlen_s(pstrName, MAX_PATH)),
-                        pstrName
+                        static_cast<UINT>(result),
+                        strFileA
                     );
                 }
             }

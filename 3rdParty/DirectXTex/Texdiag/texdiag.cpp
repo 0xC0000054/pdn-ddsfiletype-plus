@@ -9,8 +9,10 @@
 // http://go.microsoft.com/fwlink/?LinkId=248926
 //--------------------------------------------------------------------------------------
 
+#ifdef  _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4005)
+#endif
 #define WIN32_LEAN_AND_MEAN
 #define NOMINMAX
 #define NODRAWTEXT
@@ -18,7 +20,9 @@
 #define NOMCX
 #define NOSERVICE
 #define NOHELP
+#ifdef  _MSC_VER
 #pragma warning(pop)
+#endif
 
 #if __cplusplus < 201703L
 #error Requires C++17 (and /Zc:__cplusplus with MSVC)
@@ -46,18 +50,25 @@
 
 #include <dxgiformat.h>
 
+#ifdef  _MSC_VER
 #pragma warning(disable : 4619 4616 26812)
+#endif
 
 #include "DirectXTex.h"
 
 #include <DirectXPackedVector.h>
 
-//Uncomment to add support for OpenEXR (.exr)
-//#define USE_OPENEXR
-
 #ifdef USE_OPENEXR
 // See <https://github.com/Microsoft/DirectXTex/wiki/Adding-OpenEXR> for details
 #include "DirectXTexEXR.h"
+#endif
+
+// See <https://github.com/Microsoft/DirectXTex/wiki/Using-JPEG-PNG-OSS> for details
+#ifdef USE_LIBJPEG
+#include "DirectXTexJPEG.h"
+#endif
+#ifdef USE_LIBPNG
+#include "DirectXTexPNG.h"
 #endif
 
 using namespace DirectX;
@@ -80,6 +91,8 @@ enum OPTIONS : uint32_t
     OPT_FILTER,
     OPT_DDS_DWORD_ALIGN,
     OPT_DDS_BAD_DXTN_TAILS,
+    OPT_DDS_PERMISSIVE,
+    OPT_DDS_IGNORE_MIPS,
     OPT_OUTPUTFILE,
     OPT_TOLOWER,
     OPT_OVERWRITE,
@@ -126,25 +139,27 @@ const SValue g_pCommands[] =
 
 const SValue g_pOptions[] =
 {
-    { L"r",         OPT_RECURSIVE },
-    { L"f",         OPT_FORMAT },
-    { L"if",        OPT_FILTER },
-    { L"dword",     OPT_DDS_DWORD_ALIGN },
-    { L"badtails",  OPT_DDS_BAD_DXTN_TAILS },
-    { L"nologo",    OPT_NOLOGO },
-    { L"o",         OPT_OUTPUTFILE },
-    { L"l",         OPT_TOLOWER },
-    { L"y",         OPT_OVERWRITE },
-    { L"ft",        OPT_FILETYPE },
-    { L"tu",        OPT_TYPELESS_UNORM },
-    { L"tf",        OPT_TYPELESS_FLOAT },
-    { L"xlum",      OPT_EXPAND_LUMINANCE },
-    { L"targetx",   OPT_TARGET_PIXELX },
-    { L"targety",   OPT_TARGET_PIXELY },
-    { L"c",         OPT_DIFF_COLOR },
-    { L"t",         OPT_THRESHOLD },
-    { L"flist",     OPT_FILELIST },
-    { nullptr,      0 }
+    { L"r",          OPT_RECURSIVE },
+    { L"f",          OPT_FORMAT },
+    { L"if",         OPT_FILTER },
+    { L"dword",      OPT_DDS_DWORD_ALIGN },
+    { L"badtails",   OPT_DDS_BAD_DXTN_TAILS },
+    { L"permissive", OPT_DDS_PERMISSIVE },
+    { L"ignoremips", OPT_DDS_IGNORE_MIPS },
+    { L"nologo",     OPT_NOLOGO },
+    { L"o",          OPT_OUTPUTFILE },
+    { L"l",          OPT_TOLOWER },
+    { L"y",          OPT_OVERWRITE },
+    { L"ft",         OPT_FILETYPE },
+    { L"tu",         OPT_TYPELESS_UNORM },
+    { L"tf",         OPT_TYPELESS_FLOAT },
+    { L"xlum",       OPT_EXPAND_LUMINANCE },
+    { L"targetx",    OPT_TARGET_PIXELX },
+    { L"targety",    OPT_TARGET_PIXELY },
+    { L"c",          OPT_DIFF_COLOR },
+    { L"t",          OPT_THRESHOLD },
+    { L"flist",      OPT_FILELIST },
+    { nullptr,       0 }
 };
 
 #define DEFFMT(fmt) { L## #fmt, DXGI_FORMAT_ ## fmt }
@@ -342,13 +357,28 @@ const SValue g_pFilters[] =
 #ifdef USE_OPENEXR
 #define CODEC_EXR 0xFFFF0006
 #endif
+#ifdef USE_LIBJPEG
+#define CODEC_JPEG 0xFFFF0007
+#endif
+#ifdef USE_LIBPNG
+#define CODEC_PNG 0xFFFF0008
+#endif
 
 const SValue g_pDumpFileTypes[] =
 {
     { L"bmp",   WIC_CODEC_BMP  },
+#ifdef USE_LIBJPEG
+    { L"jpg",   CODEC_JPEG     },
+    { L"jpeg",  CODEC_JPEG     },
+#else
     { L"jpg",   WIC_CODEC_JPEG },
     { L"jpeg",  WIC_CODEC_JPEG },
+#endif
+#ifdef USE_LIBPNG
+    { L"png",   CODEC_PNG      },
+#else
     { L"png",   WIC_CODEC_PNG  },
+#endif
     { L"tga",   CODEC_TGA      },
     { L"hdr",   CODEC_HDR      },
     { L"tif",   WIC_CODEC_TIFF },
@@ -362,22 +392,31 @@ const SValue g_pDumpFileTypes[] =
 
 const SValue g_pExtFileTypes[] =
 {
-    { L".bmp",  WIC_CODEC_BMP },
+    { L".bmp",  WIC_CODEC_BMP  },
+#ifdef USE_LIBJPEG
+    { L".jpg",  CODEC_JPEG     },
+    { L".jpeg", CODEC_JPEG     },
+#else
     { L".jpg",  WIC_CODEC_JPEG },
     { L".jpeg", WIC_CODEC_JPEG },
-    { L".png",  WIC_CODEC_PNG },
-    { L".dds",  CODEC_DDS },
-    { L".tga",  CODEC_TGA },
-    { L".hdr",  CODEC_HDR },
+#endif
+#ifdef USE_LIBPNG
+    { L".png",  CODEC_PNG      },
+#else
+    { L".png",  WIC_CODEC_PNG  },
+#endif
+    { L".dds",  CODEC_DDS      },
+    { L".tga",  CODEC_TGA      },
+    { L".hdr",  CODEC_HDR      },
     { L".tif",  WIC_CODEC_TIFF },
     { L".tiff", WIC_CODEC_TIFF },
-    { L".wdp",  WIC_CODEC_WMP },
-    { L".hdp",  WIC_CODEC_WMP },
-    { L".jxr",  WIC_CODEC_WMP },
+    { L".wdp",  WIC_CODEC_WMP  },
+    { L".hdp",  WIC_CODEC_WMP  },
+    { L".jxr",  WIC_CODEC_WMP  },
 #ifdef USE_OPENEXR
-    { L"exr",   CODEC_EXR },
+    { L"exr",   CODEC_EXR      },
 #endif
-    { nullptr,  CODEC_DDS }
+    { nullptr,  CODEC_DDS      }
 };
 
 //////////////////////////////////////////////////////////////////////////////
@@ -481,10 +520,10 @@ namespace
         std::list<SConversion> flist;
         std::set<std::wstring> excludes;
 
-        auto fname = std::make_unique<wchar_t[]>(32768);
         for (;;)
         {
-            inFile >> fname.get();
+            std::wstring fname;
+            std::getline(inFile, fname);
             if (!inFile)
                 break;
 
@@ -496,13 +535,13 @@ namespace
             {
                 if (flist.empty())
                 {
-                    wprintf(L"WARNING: Ignoring the line '%ls' in -flist\n", fname.get());
+                    wprintf(L"WARNING: Ignoring the line '%ls' in -flist\n", fname.c_str());
                 }
                 else
                 {
-                    std::filesystem::path path(fname.get() + 1);
+                    std::filesystem::path path(fname.c_str() + 1);
                     auto& npath = path.make_preferred();
-                    if (wcspbrk(fname.get(), L"?*") != nullptr)
+                    if (wcspbrk(fname.c_str(), L"?*") != nullptr)
                     {
                         std::list<SConversion> removeFiles;
                         SearchForFiles(npath, removeFiles, false);
@@ -522,20 +561,18 @@ namespace
                     }
                 }
             }
-            else if (wcspbrk(fname.get(), L"?*") != nullptr)
+            else if (wcspbrk(fname.c_str(), L"?*") != nullptr)
             {
-                std::filesystem::path path(fname.get());
+                std::filesystem::path path(fname.c_str());
                 SearchForFiles(path.make_preferred(), flist, false);
             }
             else
             {
                 SConversion conv = {};
-                std::filesystem::path path(fname.get());
+                std::filesystem::path path(fname.c_str());
                 conv.szSrc = path.make_preferred().native();
                 flist.push_back(conv);
             }
-
-            inFile.ignore(1000, '\n');
         }
 
         inFile.close();
@@ -673,6 +710,8 @@ namespace
             L"   -t{u|f}             TYPELESS format is treated as UNORM or FLOAT\n"
             L"   -dword              Use DWORD instead of BYTE alignment\n"
             L"   -badtails           Fix for older DXTn with bad mipchain tails\n"
+            L"   -permissive         Allow some DX9 variants with unusual header values\n"
+            L"   -ignoremips         Reads just the top-level mip which reads some invalid files\n"
             L"   -xlum               expand legacy L8, L16, and A8P8 formats\n"
             L"\n"
             L"                       (diff only)\n"
@@ -772,6 +811,10 @@ namespace
                 ddsFlags |= DDS_FLAGS_EXPAND_LUMINANCE;
             if (dwOptions & (1 << OPT_DDS_BAD_DXTN_TAILS))
                 ddsFlags |= DDS_FLAGS_BAD_DXTN_TAILS;
+            if (dwOptions & (1 << OPT_DDS_PERMISSIVE))
+                ddsFlags |= DDS_FLAGS_PERMISSIVE;
+            if (dwOptions & (1 << OPT_DDS_IGNORE_MIPS))
+                ddsFlags |= DDS_FLAGS_IGNORE_MIPS;
 
             HRESULT hr = LoadFromDDSFile(fileName, ddsFlags, &info, *image);
             if (FAILED(hr))
@@ -808,6 +851,18 @@ namespace
         else if (_wcsicmp(ext.c_str(), L".exr") == 0)
         {
             return LoadFromEXRFile(fileName, &info, *image);
+        }
+    #endif
+    #ifdef USE_LIBJPEG
+        else if (_wcsicmp(ext.c_str(), L".jpg") == 0 || _wcsicmp(ext.c_str(), L".jpeg") == 0)
+        {
+            return LoadFromJPEGFile(fileName, &info, *image);
+        }
+    #endif
+    #ifdef USE_LIBPNG
+        else if (_wcsicmp(ext.c_str(), L".png") == 0)
+        {
+            return LoadFromPNGFile(fileName, &info, *image);
         }
     #endif
         else
@@ -849,11 +904,18 @@ namespace
         case CODEC_HDR:
             return SaveToHDRFile(*image, fileName);
 
-        #ifdef USE_OPENEXR
+    #ifdef USE_OPENEXR
         case CODEC_EXR:
             return SaveToEXRFile(*image, fileName);
-        #endif
-
+    #endif
+    #ifdef USE_LIBJPEG
+        case CODEC_JPEG:
+            return SaveToJPEGFile(*image, fileName);
+    #endif
+    #ifdef USE_LIBPNG
+        case CODEC_PNG:
+            return SaveToPNGFile(*image, fileName);
+    #endif
         default:
             return SaveToWICFile(*image, WIC_FLAGS_NONE, GetWICCodec(static_cast<WICCodecs>(codec)), fileName);
         }
