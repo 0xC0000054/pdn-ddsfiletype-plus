@@ -31,6 +31,8 @@ namespace DdsFileTypePlus
 
         private static ReadOnlySpan<byte> PngFileSignature => new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 };
 
+        private static ReadOnlySpan<byte> TgaFileSignature => "TRUEVISION-XFILE.\0"u8;
+
         private static ReadOnlySpan<byte> TiffBigEndianFileSignature => new byte[] { 0x4d, 0x4d, 0x00, 0x2a };
 
         private static ReadOnlySpan<byte> TiffLittleEndianFileSignature => new byte[] { 0x49, 0x49, 0x2a, 0x00 };
@@ -70,8 +72,32 @@ namespace DdsFileTypePlus
             return fileTypeInfo;
         }
 
-        [SkipLocalsInit]
         private static string TryGetFileTypeName(Stream stream)
+        {
+            string name = TryGetFormatFromImageHeader(stream);
+
+            if (string.IsNullOrEmpty(name))
+            {
+                name = TryGetFormatFromImageFooter(stream);
+            }
+
+            return name;
+        }
+
+        private static string TryGetFormatFromImageFooter(Stream stream)
+        {
+            string name = string.Empty;
+
+            if (IsTgaFile(stream))
+            {
+                name = "TGA";
+            }
+
+            return name;
+        }
+
+        [SkipLocalsInit]
+        private static string TryGetFormatFromImageHeader(Stream stream)
         {
             string name = string.Empty;
 
@@ -118,6 +144,32 @@ namespace DdsFileTypePlus
 
                 result = bytes.SequenceEqual(Gif87aFileSignature)
                       || bytes.SequenceEqual(Gif89aFileSignature);
+            }
+
+            return result;
+        }
+
+        [SkipLocalsInit]
+        private static bool IsTgaFile(Stream stream)
+        {
+            // This only detects TGA 2.0 files, TGA versions prior to 2.0 didn't
+            // have any signature to identify the format.
+            // TGA 2.0 has a footer that includes the 18 byte TRUEVISION-XFILE.\0
+            // signature at the end.
+
+            const int TgaSignatureLength = 18;
+
+            bool result = false;
+
+            if (stream.Length > TgaSignatureLength)
+            {
+                stream.Seek(-TgaSignatureLength, SeekOrigin.End);
+
+                Span<byte> signature = stackalloc byte[TgaSignatureLength];
+
+                stream.ReadExactly(signature);
+
+                result = signature.SequenceEqual(TgaFileSignature);
             }
 
             return result;
