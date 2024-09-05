@@ -12,43 +12,15 @@ schedules:
     include:
     - main
 
-trigger:
-  branches:
-    include:
-    - main
-  paths:
-    exclude:
-    - '*.md'
-    - LICENSE
-    - CMake*
-    - '.nuget/*'
-    - build/*.cmake
-    - build/*.cmd
-    - build/*.in
-    - build/*.json
-    - build/*.props
-    - build/*.ps1
-    - build/*.targets
-    - Auxiliary/*
+# GitHub Actions handles test suite for CI/PR
+trigger: none
 pr:
   branches:
     include:
     - main
   paths:
-    exclude:
-    - '*.md'
-    - LICENSE
-    - CMake*
-    - '.nuget/*'
-    - build/*.cmake
-    - build/*.cmd
-    - build/*.in
-    - build/*.json
-    - build/*.props
-    - build/*.ps1
-    - build/*.targets
-    - Auxiliary/*
-  drafts: false
+    include:
+    - build/DirectXTex-GitHub-Test.yml
 
 resources:
   repositories:
@@ -64,6 +36,7 @@ pool:
 variables:
   Codeql.Enabled: false
   GITHUB_PAT: $(GITHUBPUBLICTOKEN)
+  GUID_FEED: $(ADOFeedGUID)
 
 jobs:
 - job: DESKTOP_BUILD
@@ -87,6 +60,14 @@ jobs:
       script: git clone --quiet --no-tags https://%GITHUB_PAT%@github.com/walbourn/directxtextest.git Tests
       workingDirectory: $(Build.SourcesDirectory)
       failOnStderr: true
+  - task: NuGetToolInstaller@1
+    displayName: 'Use NuGet'
+  - task: NuGetCommand@2
+    displayName: NuGet restore tests
+    inputs:
+      solution: Tests/DirectXTex_Tests_Desktop_2019.sln
+      feedRestore: $(GUID_FEED)
+      includeNuGetOrg: false
   - task: VSBuild@1
     displayName: Build solution DirectXTex_Tests_Desktop_2019.sln 32dbg
     inputs:

@@ -18,6 +18,8 @@ elseif(CMAKE_GENERATOR_PLATFORM MATCHES "^[Aa][Rr][Mm]$")
     set(DIRECTX_ARCH arm)
 elseif(CMAKE_GENERATOR_PLATFORM MATCHES "^[Aa][Rr][Mm]64$")
     set(DIRECTX_ARCH arm64)
+elseif(CMAKE_GENERATOR_PLATFORM MATCHES "^[Aa][Rr][Mm]64EC$")
+    set(DIRECTX_ARCH arm64ec)
 elseif(CMAKE_VS_PLATFORM_NAME_DEFAULT MATCHES "^[Ww][Ii][Nn]32$")
     set(DIRECTX_ARCH x86)
 elseif(CMAKE_VS_PLATFORM_NAME_DEFAULT MATCHES "^[Xx]64$")
@@ -26,6 +28,15 @@ elseif(CMAKE_VS_PLATFORM_NAME_DEFAULT MATCHES "^[Aa][Rr][Mm]$")
     set(DIRECTX_ARCH arm)
 elseif(CMAKE_VS_PLATFORM_NAME_DEFAULT MATCHES "^[Aa][Rr][Mm]64$")
     set(DIRECTX_ARCH arm64)
+elseif(CMAKE_VS_PLATFORM_NAME_DEFAULT MATCHES "^[Aa][Rr][Mm]64EC$")
+    set(DIRECTX_ARCH arm64ec)
+endif()
+
+#--- Determines host architecture
+if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "[Aa][Rr][Mm]64|aarch64|arm64")
+    set(DIRECTX_HOST_ARCH arm64)
+else()
+    set(DIRECTX_HOST_ARCH x64)
 endif()
 
 #--- Build with Unicode Win32 APIs per "UTF-8 Everywhere"
@@ -81,16 +92,38 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     list(APPEND COMPILER_SWITCHES /Zc:__cplusplus /Zc:inline /fp:fast /Qdiag-disable:161)
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    list(APPEND COMPILER_SWITCHES /sdl /permissive- /JMC- /Zc:__cplusplus /Zc:inline /fp:fast)
+    list(APPEND COMPILER_SWITCHES /sdl /Zc:inline /fp:fast)
 
     if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
       message(STATUS "Building using Whole Program Optimization")
       list(APPEND COMPILER_SWITCHES $<$<NOT:$<CONFIG:Debug>>:/Gy /Gw>)
     endif()
 
-    if(OpenMP_CXX_FOUND)
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.10)
+      list(APPEND COMPILER_SWITCHES /permissive-)
+    endif()
+
+    if((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.11)
+       AND (OpenMP_CXX_FOUND
+           OR (XBOX_CONSOLE_TARGET STREQUAL "durango")))
       # OpenMP in MSVC is not compatible with /permissive- unless you disable two-phase lookup
       list(APPEND COMPILER_SWITCHES /Zc:twoPhase-)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.14)
+      list(APPEND COMPILER_SWITCHES /Zc:__cplusplus)
+    endif()
+
+    if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.15)
+      list(APPEND COMPILER_SWITCHES /JMC-)
+    endif()
+
+    if((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.20)
+       AND (XBOX_CONSOLE_TARGET STREQUAL "durango"))
+        list(APPEND COMPILER_SWITCHES /d2FH4-)
+        if(CMAKE_INTERPROCEDURAL_OPTIMIZATION)
+          list(APPEND LINKER_SWITCHES -d2:-FH4-)
+        endif()
     endif()
 
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.24)
@@ -108,6 +141,11 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 
     if(CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.28)
       list(APPEND COMPILER_SWITCHES /Zc:lambda)
+    endif()
+
+    if((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.29)
+       AND (NOT VCPKG_TOOLCHAIN))
+      list(APPEND COMPILER_SWITCHES /external:W4)
     endif()
 
     if((CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 19.31)
