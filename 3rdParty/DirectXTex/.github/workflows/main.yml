@@ -21,6 +21,9 @@ on:
       - build/*.targets
       - build/*.yml
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -46,6 +49,24 @@ jobs:
             build_type: x86-Release
             arch: amd64_x86
           - os: windows-2022
+            build_type: arm64-Debug
+            arch: amd64_arm64
+          - os: windows-2022
+            build_type: arm64-Release
+            arch: amd64_arm64
+          - os: windows-2022
+            build_type: arm64ec-Debug
+            arch: amd64_arm64
+          - os: windows-2022
+            build_type: arm64ec-Release
+            arch: amd64_arm64
+          - os: windows-2022
+            build_type: x64-Debug-Win8
+            arch: amd64
+          - os: windows-2022
+            build_type: x64-Release-Win8
+            arch: amd64
+          - os: windows-2022
             build_type: x64-Debug-Clang
             arch: amd64
           - os: windows-2022
@@ -58,25 +79,19 @@ jobs:
             build_type: x86-Release-Clang
             arch: amd64_x86
           - os: windows-2022
-            build_type: arm64-Debug
+            build_type: arm64-Debug-Clang
             arch: amd64_arm64
           - os: windows-2022
-            build_type: arm64-Release
-            arch: amd64_arm64
-          - os: windows-2022
-            build_type: arm64ec-Debug
-            arch: amd64_arm64
-          - os: windows-2022
-            build_type: arm64ec-Release
+            build_type: arm64-Release-Clang
             arch: amd64_arm64
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
     - name: 'Install Ninja'
       run: choco install ninja
 
-    - uses: ilammy/msvc-dev-cmd@v1
+    - uses: ilammy/msvc-dev-cmd@0b201ec74fa43914dc39ae48a89fd1d8cb592756 # v1.13.0
       with:
         arch: ${{ matrix.arch }}
 

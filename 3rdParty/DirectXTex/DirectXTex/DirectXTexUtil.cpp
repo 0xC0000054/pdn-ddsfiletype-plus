@@ -84,7 +84,6 @@ namespace
 
     BOOL WINAPI InitializeWICFactory(PINIT_ONCE, PVOID, PVOID *ifactory) noexcept
     {
-    #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
         HRESULT hr = CoCreateInstance(
             CLSID_WICImagingFactory2,
             nullptr,
@@ -112,16 +111,6 @@ namespace
             );
             return SUCCEEDED(hr) ? TRUE : FALSE;
         }
-    #else
-        g_WIC2 = false;
-
-        return SUCCEEDED(CoCreateInstance(
-            CLSID_WICImagingFactory,
-            nullptr,
-            CLSCTX_INPROC_SERVER,
-            __uuidof(IWICImagingFactory),
-            ifactory)) ? TRUE : FALSE;
-    #endif
     }
 
 #else // !WIN32
@@ -150,13 +139,11 @@ DXGI_FORMAT DirectX::Internal::WICToDXGI(const GUID& guid) noexcept
             return g_WICFormats[i].format;
     }
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
     if (g_WIC2)
     {
         if (memcmp(&GUID_WICPixelFormat96bppRGBFloat, &guid, sizeof(GUID)) == 0)
             return DXGI_FORMAT_R32G32B32_FLOAT;
     }
-#endif
 
     return DXGI_FORMAT_UNKNOWN;
 }
@@ -196,7 +183,6 @@ bool DirectX::Internal::DXGIToWIC(DXGI_FORMAT format, GUID& guid, bool ignoreRGB
         memcpy(&guid, &GUID_WICPixelFormat32bppBGR, sizeof(GUID));
         return true;
 
-    #if (_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
     case DXGI_FORMAT_R32G32B32_FLOAT:
         if (g_WIC2)
         {
@@ -204,7 +190,6 @@ bool DirectX::Internal::DXGIToWIC(DXGI_FORMAT format, GUID& guid, bool ignoreRGB
             return true;
         }
         break;
-    #endif
 
     default:
         for (size_t i = 0; i < std::size(g_WICFormats); ++i)
@@ -328,14 +313,12 @@ void DirectX::SetWICFactory(_In_opt_ IWICImagingFactory* pWIC) noexcept
     bool iswic2 = false;
     if (pWIC)
     {
-    #if(_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
         ComPtr<IWICImagingFactory2> wic2;
         HRESULT hr = pWIC->QueryInterface(IID_PPV_ARGS(wic2.GetAddressOf()));
         if (SUCCEEDED(hr))
         {
             iswic2 = true;
         }
-    #endif
         pWIC->AddRef();
     }
 
@@ -921,6 +904,45 @@ size_t DirectX::BitsPerColor(DXGI_FORMAT fmt) noexcept
 
 
 //-------------------------------------------------------------------------------------
+// Returns bytes per block for a given DXGI BC format, or 0 on failure
+//-------------------------------------------------------------------------------------
+_Use_decl_annotations_
+size_t DirectX::BytesPerBlock(DXGI_FORMAT fmt) noexcept
+{
+    switch (fmt)
+    {
+    case DXGI_FORMAT_BC1_TYPELESS:
+    case DXGI_FORMAT_BC1_UNORM:
+    case DXGI_FORMAT_BC1_UNORM_SRGB:
+    case DXGI_FORMAT_BC4_TYPELESS:
+    case DXGI_FORMAT_BC4_UNORM:
+    case DXGI_FORMAT_BC4_SNORM:
+        return 8;
+
+    case DXGI_FORMAT_BC2_TYPELESS:
+    case DXGI_FORMAT_BC2_UNORM:
+    case DXGI_FORMAT_BC2_UNORM_SRGB:
+    case DXGI_FORMAT_BC3_TYPELESS:
+    case DXGI_FORMAT_BC3_UNORM:
+    case DXGI_FORMAT_BC3_UNORM_SRGB:
+    case DXGI_FORMAT_BC5_TYPELESS:
+    case DXGI_FORMAT_BC5_UNORM:
+    case DXGI_FORMAT_BC5_SNORM:
+    case DXGI_FORMAT_BC6H_TYPELESS:
+    case DXGI_FORMAT_BC6H_UF16:
+    case DXGI_FORMAT_BC6H_SF16:
+    case DXGI_FORMAT_BC7_TYPELESS:
+    case DXGI_FORMAT_BC7_UNORM:
+    case DXGI_FORMAT_BC7_UNORM_SRGB:
+        return 16;
+
+    default:
+        return 0;
+    }
+}
+
+
+//-------------------------------------------------------------------------------------
 // Computes the image row pitch in bytes, and the slice ptich (size in bytes of the image)
 // based on DXGI format, width, and height
 //-------------------------------------------------------------------------------------
@@ -933,6 +955,9 @@ HRESULT DirectX::ComputePitch(DXGI_FORMAT fmt, size_t width, size_t height,
 
     switch (static_cast<int>(fmt))
     {
+    case DXGI_FORMAT_UNKNOWN:
+        return E_INVALIDARG;
+
     case DXGI_FORMAT_BC1_TYPELESS:
     case DXGI_FORMAT_BC1_UNORM:
     case DXGI_FORMAT_BC1_UNORM_SRGB:
@@ -1153,6 +1178,9 @@ size_t DirectX::ComputeScanlines(DXGI_FORMAT fmt, size_t height) noexcept
 {
     switch (static_cast<int>(fmt))
     {
+    case DXGI_FORMAT_UNKNOWN:
+        return 0;
+
     case DXGI_FORMAT_BC1_TYPELESS:
     case DXGI_FORMAT_BC1_UNORM:
     case DXGI_FORMAT_BC1_UNORM_SRGB:
@@ -1649,7 +1677,7 @@ HRESULT Blob::Initialize(size_t size) noexcept
 
     Release();
 
-    m_buffer = _aligned_malloc(size, 16);
+    m_buffer = reinterpret_cast<uint8_t*>(_aligned_malloc(size, 16));
     if (!m_buffer)
     {
         Release();
@@ -1685,7 +1713,7 @@ HRESULT Blob::Resize(size_t size) noexcept
     if (!m_buffer || !m_size)
         return E_UNEXPECTED;
 
-    void *tbuffer = _aligned_malloc(size, 16);
+    auto tbuffer = reinterpret_cast<uint8_t*>(_aligned_malloc(size, 16));
     if (!tbuffer)
         return E_OUTOFMEMORY;
 

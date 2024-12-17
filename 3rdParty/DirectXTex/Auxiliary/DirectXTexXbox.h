@@ -41,6 +41,9 @@
 #include <d3d11_1.h>
 #endif
 
+#include <cstdint>
+#include <utility>
+
 #define DIRECTX_TEX_XBOX_VERSION 150
 
 namespace Xbox
@@ -95,13 +98,13 @@ namespace Xbox
     // Image I/O
 
     HRESULT __cdecl GetMetadataFromDDSMemory(
-        _In_reads_bytes_(size) const void* pSource, _In_ size_t size,
+        _In_reads_bytes_(size) const uint8_t* pSource, _In_ size_t size,
         _Out_ DirectX::TexMetadata& metadata, _Out_ bool& isXbox);
     HRESULT __cdecl GetMetadataFromDDSFile(
         _In_z_ const wchar_t* szFile, _Out_ DirectX::TexMetadata& metadata, _Out_ bool& isXbox);
 
     HRESULT __cdecl GetMetadataFromDDSMemoryEx(
-        _In_reads_bytes_(size) const void* pSource, _In_ size_t size,
+        _In_reads_bytes_(size) const uint8_t* pSource, _In_ size_t size,
         _Out_ DirectX::TexMetadata& metadata, _Out_ bool& isXbox,
         _Out_opt_ DirectX::DDSMetaData* ddPixelFormat);
     HRESULT __cdecl GetMetadataFromDDSFileEx(
@@ -109,14 +112,14 @@ namespace Xbox
         _Out_opt_ DirectX::DDSMetaData* ddPixelFormat);
 
     HRESULT __cdecl LoadFromDDSMemory(
-        _In_reads_bytes_(size) const void* pSource, _In_ size_t size,
+        _In_reads_bytes_(size) const uint8_t* pSource, _In_ size_t size,
         _Out_opt_ DirectX::TexMetadata* metadata, _Out_ XboxImage& image);
     HRESULT __cdecl LoadFromDDSFile(
         _In_z_ const wchar_t* szFile,
         _Out_opt_ DirectX::TexMetadata* metadata, _Out_ XboxImage& image);
 
     HRESULT __cdecl LoadFromDDSMemoryEx(
-        _In_reads_bytes_(size) const void* pSource, _In_ size_t size,
+        _In_reads_bytes_(size) const uint8_t* pSource, _In_ size_t size,
         _Out_opt_ DirectX::TexMetadata* metadata,
         _Out_opt_ DirectX::DDSMetaData* ddPixelFormat,
         _Out_ XboxImage& image);
@@ -128,6 +131,39 @@ namespace Xbox
 
     HRESULT __cdecl SaveToDDSMemory(_In_ const XboxImage& xbox, _Out_ DirectX::Blob& blob);
     HRESULT __cdecl SaveToDDSFile(_In_ const XboxImage& xbox, _In_z_ const wchar_t* szFile);
+
+#ifdef __cpp_lib_byte
+    inline HRESULT __cdecl GetMetadataFromDDSMemory(
+        _In_reads_bytes_(size) const std::byte* pSource, _In_ size_t size,
+        _Out_ DirectX::TexMetadata& metadata, _Out_ bool& isXbox)
+    {
+        return GetMetadataFromDDSMemory(reinterpret_cast<const uint8_t*>(pSource), size, metadata, isXbox);
+    }
+
+    inline HRESULT __cdecl GetMetadataFromDDSMemoryEx(
+        _In_reads_bytes_(size) const std::byte* pSource, _In_ size_t size,
+        _Out_ DirectX::TexMetadata& metadata, _Out_ bool& isXbox,
+        _Out_opt_ DirectX::DDSMetaData* ddPixelFormat)
+    {
+        return GetMetadataFromDDSMemoryEx(reinterpret_cast<const uint8_t*>(pSource), size, metadata, isXbox, ddPixelFormat);
+    }
+
+    inline HRESULT __cdecl LoadFromDDSMemory(
+        _In_reads_bytes_(size) const std::byte* pSource, _In_ size_t size,
+        _Out_opt_ DirectX::TexMetadata* metadata, _Out_ XboxImage& image)
+    {
+        return LoadFromDDSMemory(reinterpret_cast<const uint8_t*>(pSource), size, metadata, image);
+    }
+
+    inline HRESULT __cdecl LoadFromDDSMemoryEx(
+        _In_reads_bytes_(size) const std::byte* pSource, _In_ size_t size,
+        _Out_opt_ DirectX::TexMetadata* metadata,
+        _Out_opt_ DirectX::DDSMetaData* ddPixelFormat,
+        _Out_ XboxImage& image)
+    {
+        return LoadFromDDSMemoryEx(reinterpret_cast<const uint8_t*>(pSource), size, metadata, ddPixelFormat, image);
+    }
+#endif // __cpp_lib_byte
 
     //---------------------------------------------------------------------------------
     // Xbox Texture Tiling / Detiling (requires XG DLL to be present at runtime)
@@ -173,6 +209,22 @@ namespace Xbox
     // DDS helper functions
     HRESULT __cdecl EncodeDDSHeader(
         const XboxImage& xbox,
-        _Out_writes_bytes_(maxsize) void* pDestination, _In_ size_t maxsize) noexcept;
+        _Out_writes_bytes_(maxsize) uint8_t* pDestination, _In_ size_t maxsize) noexcept;
+
+#ifdef __cpp_lib_byte
+    inline HRESULT __cdecl EncodeDDSHeader(
+        const XboxImage& xbox,
+        _Out_writes_bytes_(maxsize) std::byte* pDestination, _In_ size_t maxsize) noexcept
+    {
+        return EncodeDDSHeader(xbox, reinterpret_cast<uint8_t*>(pDestination), maxsize);
+    }
+
+    inline HRESULT __cdecl EncodeDDSHeader(
+        const XboxImage& xbox,
+        _Reserved_ std::nullptr_t, _In_ size_t maxsize) noexcept
+    {
+        return EncodeDDSHeader(xbox, static_cast<uint8_t*>(nullptr), maxsize);
+    }
+#endif
 
 } // namespace

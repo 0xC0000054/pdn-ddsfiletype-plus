@@ -139,7 +139,7 @@ namespace
     // Decodes TGA header
     //-------------------------------------------------------------------------------------
     HRESULT DecodeTGAHeader(
-        _In_reads_bytes_(size) const void* pSource,
+        _In_reads_bytes_(size) const uint8_t* pSource,
         size_t size,
         TGA_FLAGS flags,
         _Out_ TexMetadata& metadata,
@@ -156,7 +156,7 @@ namespace
             return HRESULT_E_INVALID_DATA;
         }
 
-        auto pHeader = static_cast<const TGA_HEADER*>(pSource);
+        auto pHeader = reinterpret_cast<const TGA_HEADER*>(pSource);
 
         if (pHeader->bDescriptor & (TGA_FLAGS_INTERLEAVED_2WAY | TGA_FLAGS_INTERLEAVED_4WAY))
         {
@@ -1447,7 +1447,7 @@ namespace
 //-------------------------------------------------------------------------------------
 _Use_decl_annotations_
 HRESULT DirectX::GetMetadataFromTGAMemory(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     TGA_FLAGS flags,
     TexMetadata& metadata) noexcept
@@ -1492,12 +1492,10 @@ HRESULT DirectX::GetMetadataFromTGAFile(const wchar_t* szFile, TGA_FLAGS flags, 
         return E_INVALIDARG;
 
 #ifdef _WIN32
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -1641,7 +1639,7 @@ HRESULT DirectX::GetMetadataFromTGAFile(const wchar_t* szFile, TGA_FLAGS flags, 
 //-------------------------------------------------------------------------------------
 _Use_decl_annotations_
 HRESULT DirectX::LoadFromTGAMemory(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     TGA_FLAGS flags,
     TexMetadata* metadata,
@@ -1758,12 +1756,10 @@ HRESULT DirectX::LoadFromTGAFile(
     image.Release();
 
 #ifdef _WIN32
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -2279,7 +2275,7 @@ HRESULT DirectX::SaveToTGAMemory(
         return hr;
 
     // Copy header
-    auto destPtr = static_cast<uint8_t*>(blob.GetBufferPointer());
+    auto destPtr = blob.GetBufferPointer();
     assert(destPtr  != nullptr);
 
     uint8_t* dPtr = destPtr;
@@ -2357,13 +2353,10 @@ HRESULT DirectX::SaveToTGAFile(
 
     // Create file and write header
 #ifdef _WIN32
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_WRITE, 0,
-        CREATE_ALWAYS, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile,
-        GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_WRITE, 0, CREATE_ALWAYS,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -2396,7 +2389,7 @@ HRESULT DirectX::SaveToTGAFile(
     #ifdef _WIN32
         const DWORD bytesToWrite = static_cast<DWORD>(blob.GetBufferSize());
         DWORD bytesWritten;
-        if (!WriteFile(hFile.get(), blob.GetBufferPointer(), bytesToWrite, &bytesWritten, nullptr))
+        if (!WriteFile(hFile.get(), blob.GetConstBufferPointer(), bytesToWrite, &bytesWritten, nullptr))
         {
             return HRESULT_FROM_WIN32(GetLastError());
         }
@@ -2406,7 +2399,7 @@ HRESULT DirectX::SaveToTGAFile(
             return E_FAIL;
         }
     #else
-        outFile.write(reinterpret_cast<char*>(blob.GetBufferPointer()),
+        outFile.write(reinterpret_cast<const char*>(blob.GetConstBufferPointer()),
             static_cast<std::streamsize>(blob.GetBufferSize()));
 
         if (!outFile)

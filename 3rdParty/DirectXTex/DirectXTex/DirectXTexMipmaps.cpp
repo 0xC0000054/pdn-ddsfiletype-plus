@@ -457,16 +457,12 @@ HRESULT DirectX::Internal::ResizeSeparateColorAndAlpha(
             }
             else
             {
-            #if(_WIN32_WINNT >= _WIN32_WINNT_WIN8) || defined(_WIN7_PLATFORM_UPDATE)
                 if (iswic2)
                 {
                     colorBytesInPixel = colorBytesPerPixel = 12;
                     colorPixelFormat = GUID_WICPixelFormat96bppRGBFloat;
                 }
                 else
-                #else
-                UNREFERENCED_PARAMETER(iswic2);
-            #endif
                 {
                     colorBytesInPixel = 12;
                     colorBytesPerPixel = 16;
@@ -2955,7 +2951,7 @@ HRESULT DirectX::GenerateMipMaps(
         mdata.mipLevels = levels;
         mdata.format = baseImage.format;
 
-        unsigned long filter_select = (filter & TEX_FILTER_MODE_MASK);
+        uint32_t filter_select = (filter & TEX_FILTER_MODE_MASK);
         if (!filter_select)
         {
             // Default filter choice
@@ -3170,7 +3166,7 @@ HRESULT DirectX::GenerateMipMaps(
         TexMetadata mdata2 = metadata;
         mdata2.mipLevels = levels;
 
-        unsigned long filter_select = (filter & TEX_FILTER_MODE_MASK);
+        uint32_t filter_select = (filter & TEX_FILTER_MODE_MASK);
         if (!filter_select)
         {
             // Default filter choice
@@ -3300,7 +3296,7 @@ HRESULT DirectX::GenerateMipMaps3D(
 
     HRESULT hr = E_UNEXPECTED;
 
-    unsigned long filter_select = (filter & TEX_FILTER_MODE_MASK);
+    uint32_t filter_select = (filter & TEX_FILTER_MODE_MASK);
     if (!filter_select)
     {
         // Default filter choice
@@ -3419,7 +3415,7 @@ HRESULT DirectX::GenerateMipMaps3D(
 
     static_assert(TEX_FILTER_POINT == 0x100000, "TEX_FILTER_ flag values don't match TEX_FILTER_MODE_MASK");
 
-    unsigned long filter_select = (filter & TEX_FILTER_MODE_MASK);
+    uint32_t filter_select = (filter & TEX_FILTER_MODE_MASK);
     if (!filter_select)
     {
         // Default filter choice

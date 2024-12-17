@@ -45,7 +45,12 @@
 #pragma warning(disable : 4244 4996)
 #include <ImfRgbaFile.h>
 #include <ImfIO.h>
+
+// https://openexr.com/en/latest/PortingGuide.html
+#include <OpenEXRConfig.h>
 #pragma warning(pop)
+
+#define COMBINED_OPENEXR_VERSION ((10000*OPENEXR_VERSION_MAJOR) + (100*OPENEXR_VERSION_MINOR) +  OPENEXR_VERSION_PATCH)
 
 #ifdef __clang__
 #pragma clang diagnostic pop
@@ -148,6 +153,13 @@ namespace
             SetLastError(0);
         }
 
+#if COMBINED_OPENEXR_VERSION >= 30300
+        int64_t read(void *buf, uint64_t sz, uint64_t offset) override
+        {
+            return Imf::IStream::read(buf, sz, offset);
+        }
+#endif
+
     private:
         HANDLE m_hFile;
         LONGLONG m_EOF;
@@ -220,7 +232,7 @@ HRESULT DirectX::GetMetadataFromEXRFile(const wchar_t* szFile, TexMetadata& meta
     const int nameLength = WideCharToMultiByte(CP_UTF8, 0, szFile, -1, nullptr, 0, nullptr, nullptr);
     if (nameLength > 0)
     {
-        fileName.resize(nameLength);
+        fileName.resize(static_cast<size_t>(nameLength));
         const int result = WideCharToMultiByte(CP_UTF8, 0, szFile, -1, fileName.data(), nameLength, nullptr, nullptr);
         if (result <= 0)
         {
@@ -228,19 +240,10 @@ HRESULT DirectX::GetMetadataFromEXRFile(const wchar_t* szFile, TexMetadata& meta
         }
     }
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
     ScopedHandle hFile(safe_handle(CreateFile2(
         szFile,
         GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
         nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(
-        szFile,
-        GENERIC_READ, FILE_SHARE_READ,
-        nullptr,
-        OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN,
-        nullptr)));
-#endif
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -338,7 +341,7 @@ HRESULT DirectX::LoadFromEXRFile(const wchar_t* szFile, TexMetadata* metadata, S
     const int nameLength = WideCharToMultiByte(CP_UTF8, 0, szFile, -1, nullptr, 0, nullptr, nullptr);
     if (nameLength > 0)
     {
-        fileName.resize(nameLength);
+        fileName.resize(static_cast<size_t>(nameLength));
         const int result = WideCharToMultiByte(CP_UTF8, 0, szFile, -1, fileName.data(), nameLength, nullptr, nullptr);
         if (result <= 0)
         {
@@ -346,19 +349,10 @@ HRESULT DirectX::LoadFromEXRFile(const wchar_t* szFile, TexMetadata* metadata, S
         }
     }
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
     ScopedHandle hFile(safe_handle(CreateFile2(
         szFile,
         GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
         nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(
-        szFile,
-        GENERIC_READ, FILE_SHARE_READ,
-        nullptr,
-        OPEN_EXISTING, FILE_FLAG_SEQUENTIAL_SCAN,
-        nullptr)));
-#endif
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -487,7 +481,7 @@ HRESULT DirectX::SaveToEXRFile(const Image& image, const wchar_t* szFile)
     const int nameLength = WideCharToMultiByte(CP_UTF8, 0, szFile, -1, nullptr, 0, nullptr, nullptr);
     if (nameLength > 0)
     {
-        fileName.resize(nameLength);
+        fileName.resize(static_cast<size_t>(nameLength));
         const int result = WideCharToMultiByte(CP_UTF8, 0, szFile, -1, fileName.data(), nameLength, nullptr, nullptr);
         if (result <= 0)
         {
@@ -496,19 +490,12 @@ HRESULT DirectX::SaveToEXRFile(const Image& image, const wchar_t* szFile)
     }
 
     // Create file and write header
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(
-        szFile,
-        GENERIC_WRITE, 0, CREATE_ALWAYS,
-        nullptr)));
-#else
     ScopedHandle hFile(safe_handle(CreateFileW(
         szFile,
         GENERIC_WRITE, 0,
         nullptr,
         CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL,
         nullptr)));
-#endif
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());

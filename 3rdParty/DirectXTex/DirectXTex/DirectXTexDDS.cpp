@@ -365,7 +365,7 @@ namespace
         }
 
         metadata.mipLevels = pHeader->mipMapCount;
-        if ((metadata.mipLevels == 0) || (flags & DDS_FLAGS_IGNORE_MIPS))
+        if (metadata.mipLevels == 0)
         {
             metadata.mipLevels = 1;
         }
@@ -637,6 +637,12 @@ namespace
             }
         }
 
+        // Special-handling flag for ignoring mipchains on simple DDS files
+        if ((flags & DDS_FLAGS_IGNORE_MIPS) && (metadata.arraySize == 1))
+        {
+            metadata.mipLevels = 1;
+        }
+
         // Handle DDS-specific metadata
         if (ddPixelFormat)
         {
@@ -662,7 +668,7 @@ _Use_decl_annotations_
 HRESULT DirectX::EncodeDDSHeader(
     const TexMetadata& metadata,
     DDS_FLAGS flags,
-    void* pDestination,
+    uint8_t* pDestination,
     size_t maxsize,
     size_t& required) noexcept
 {
@@ -838,7 +844,7 @@ HRESULT DirectX::EncodeDDSHeader(
     if (maxsize < required)
         return E_NOT_SUFFICIENT_BUFFER;
 
-    *static_cast<uint32_t*>(pDestination) = DDS_MAGIC;
+    *reinterpret_cast<uint32_t*>(pDestination) = DDS_MAGIC;
 
     auto header = reinterpret_cast<DDS_HEADER*>(static_cast<uint8_t*>(pDestination) + sizeof(uint32_t));
     assert(header);
@@ -1822,7 +1828,7 @@ namespace
 
 _Use_decl_annotations_
 HRESULT DirectX::GetMetadataFromDDSMemory(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     DDS_FLAGS flags,
     TexMetadata& metadata) noexcept
@@ -1832,7 +1838,7 @@ HRESULT DirectX::GetMetadataFromDDSMemory(
 
 _Use_decl_annotations_
 HRESULT DirectX::GetMetadataFromDDSMemoryEx(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     DDS_FLAGS flags,
     TexMetadata& metadata,
@@ -1865,12 +1871,10 @@ HRESULT DirectX::GetMetadataFromDDSFileEx(
         return E_INVALIDARG;
 
 #ifdef _WIN32
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -1944,7 +1948,7 @@ HRESULT DirectX::GetMetadataFromDDSFileEx(
 //-------------------------------------------------------------------------------------
 _Use_decl_annotations_
 HRESULT DirectX::LoadFromDDSMemory(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     DDS_FLAGS flags,
     TexMetadata* metadata,
@@ -1955,7 +1959,7 @@ HRESULT DirectX::LoadFromDDSMemory(
 
 _Use_decl_annotations_
 HRESULT DirectX::LoadFromDDSMemoryEx(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     DDS_FLAGS flags,
     TexMetadata* metadata,
@@ -2051,12 +2055,10 @@ HRESULT DirectX::LoadFromDDSFileEx(
     image.Release();
 
 #ifdef _WIN32
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -2528,7 +2530,7 @@ HRESULT DirectX::SaveToDDSMemory(
     if (FAILED(hr))
         return hr;
 
-    auto pDestination = static_cast<uint8_t*>(blob.GetBufferPointer());
+    auto pDestination = blob.GetBufferPointer();
     assert(pDestination);
 
     hr = EncodeDDSHeader(metadata, flags, pDestination, blob.GetBufferSize(), required);
@@ -2721,13 +2723,9 @@ HRESULT DirectX::SaveToDDSFile(
 
     // Create file and write header
 #ifdef _WIN32
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile,
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
         GENERIC_WRITE | DELETE, 0, CREATE_ALWAYS, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile,
-        GENERIC_WRITE | DELETE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr)));
-#endif
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());

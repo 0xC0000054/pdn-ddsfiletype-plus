@@ -27,7 +27,7 @@ namespace
     // Decodes DDS header using XBOX extended header (variant of DX10 header)
     //-------------------------------------------------------------------------------------
     HRESULT DecodeDDSHeader(
-        _In_reads_bytes_(size) const void* pSource,
+        _In_reads_bytes_(size) const uint8_t* pSource,
         size_t size,
         DirectX::TexMetadata& metadata,
         _Out_opt_ DDSMetaData* ddPixelFormat,
@@ -229,7 +229,7 @@ namespace
 _Use_decl_annotations_
 HRESULT Xbox::EncodeDDSHeader(
     const XboxImage& xbox,
-    void* pDestination,
+    uint8_t* pDestination,
     size_t maxsize) noexcept
 {
     if (!pDestination)
@@ -383,7 +383,7 @@ HRESULT Xbox::EncodeDDSHeader(
 
 _Use_decl_annotations_
 HRESULT Xbox::GetMetadataFromDDSMemory(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     TexMetadata& metadata,
     bool& isXbox)
@@ -393,7 +393,7 @@ HRESULT Xbox::GetMetadataFromDDSMemory(
 
 _Use_decl_annotations_
 HRESULT Xbox::GetMetadataFromDDSMemoryEx(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     TexMetadata& metadata,
     bool& isXbox,
@@ -439,12 +439,10 @@ HRESULT Xbox::GetMetadataFromDDSFileEx(
 
     isXbox = false;
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -498,7 +496,7 @@ HRESULT Xbox::GetMetadataFromDDSFileEx(
 //-------------------------------------------------------------------------------------
 _Use_decl_annotations_
 HRESULT Xbox::LoadFromDDSMemory(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     TexMetadata* metadata,
     XboxImage& xbox)
@@ -508,7 +506,7 @@ HRESULT Xbox::LoadFromDDSMemory(
 
 _Use_decl_annotations_
 HRESULT Xbox::LoadFromDDSMemoryEx(
-    const void* pSource,
+    const uint8_t* pSource,
     size_t size,
     TexMetadata* metadata,
     DDSMetaData* ddPixelFormat,
@@ -591,13 +589,10 @@ HRESULT Xbox::LoadFromDDSFileEx(
 
     xbox.Release();
 
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile, GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
-        FILE_FLAG_SEQUENTIAL_SCAN, nullptr)));
-#endif
-
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_READ, FILE_SHARE_READ, OPEN_EXISTING,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
@@ -694,7 +689,7 @@ HRESULT Xbox::SaveToDDSMemory(const XboxImage& xbox, Blob& blob)
         return hr;
 
     // Copy header
-    auto pDestination = reinterpret_cast<uint8_t*>(blob.GetBufferPointer());
+    auto pDestination = blob.GetBufferPointer();
     assert(pDestination);
 
     hr = EncodeDDSHeader(xbox, pDestination, DDS_XBOX_HEADER_SIZE);
@@ -742,13 +737,10 @@ HRESULT Xbox::SaveToDDSFile(const XboxImage& xbox, const wchar_t* szFile)
         return hr;
 
     // Create file and write header
-#if (_WIN32_WINNT >= _WIN32_WINNT_WIN8)
-    ScopedHandle hFile(safe_handle(CreateFile2(szFile,
-        GENERIC_WRITE, 0, CREATE_ALWAYS, nullptr)));
-#else
-    ScopedHandle hFile(safe_handle(CreateFileW(szFile,
-        GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr)));
-#endif
+    ScopedHandle hFile(safe_handle(CreateFile2(
+        szFile,
+        GENERIC_WRITE, 0, CREATE_ALWAYS,
+        nullptr)));
     if (!hFile)
     {
         return HRESULT_FROM_WIN32(GetLastError());
