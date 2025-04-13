@@ -3,7 +3,7 @@
 // This file is part of pdn-ddsfiletype-plus, a DDS FileType plugin
 // for Paint.NET that adds support for the DX10 and later formats.
 //
-// Copyright (c) 2017-2024 Nicholas Hayes
+// Copyright (c) 2017-2025 Nicholas Hayes
 //
 // This file is licensed under the MIT License.
 // See LICENSE.txt for complete licensing and attribution information.
@@ -22,7 +22,7 @@ using System.Runtime.Versioning;
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("null54")]
 [assembly: AssemblyProduct("DdsFileTypePlus")]
-[assembly: AssemblyCopyright("Copyright © 2017-2024 Nicholas Hayes (aka null54)")]
+[assembly: AssemblyCopyright("Copyright © 2017-2025 Nicholas Hayes (aka null54)")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 
