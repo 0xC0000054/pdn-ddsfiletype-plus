@@ -3,9 +3,9 @@
 
 cmake_minimum_required (VERSION 3.20)
 
-set(DIRECTXTEX_VERSION 2.0.6)
+set(DIRECTXTEX_VERSION 2.0.7)
 
-if(WINDOWS_STORE OR (DEFINED XBOX_CONSOLE_TARGET))
+if(XBOX_CONSOLE_TARGET STREQUAL "durango")
   set(CMAKE_TRY_COMPILE_TARGET_TYPE "STATIC_LIBRARY")
 endif()
 
@@ -15,7 +15,13 @@ project (DirectXTex
   HOMEPAGE_URL "https://go.microsoft.com/fwlink/?LinkId=248926"
   LANGUAGES CXX)
 
+if(DEFINED XBOX_CONSOLE_TARGET)
+  set(CMAKE_CXX_STANDARD_LIBRARIES "")
+endif()
+
 option(BUILD_TOOLS "Build tex command-line tools" ON)
+
+option(BUILD_SHARED_LIBS "Build DirectXTex as a shared library" OFF)
 
 option(BUILD_SAMPLE "Build DDSView sample (requires fxc.exe)" ON)
 
@@ -220,7 +226,28 @@ if(BUILD_DX11 AND WIN32 AND (NOT (XBOX_CONSOLE_TARGET STREQUAL "durango")))
     endif()
 endif()
 
-add_library(${PROJECT_NAME} STATIC ${LIBRARY_SOURCES} ${LIBRARY_HEADERS})
+if(WIN32 AND BUILD_SHARED_LIBS)
+  message(STATUS "Build library as a DLL")
+
+  configure_file(
+      "${CMAKE_CURRENT_SOURCE_DIR}/build/DirectXTex.rc.in"
+      "${CMAKE_CURRENT_BINARY_DIR}/DirectXTex.rc" @ONLY)
+
+  add_library(${PROJECT_NAME} SHARED ${LIBRARY_SOURCES} ${LIBRARY_HEADERS} "${CMAKE_CURRENT_BINARY_DIR}/DirectXTex.rc")
+
+  target_compile_definitions(${PROJECT_NAME} PRIVATE DIRECTX_TEX_EXPORT)
+  target_compile_definitions(${PROJECT_NAME} INTERFACE DIRECTX_TEX_IMPORT)
+
+  if(XBOX_CONSOLE_TARGET MATCHES "scarlett")
+    target_link_libraries(${PROJECT_NAME} PRIVATE xgameplatform.lib xg_xs.lib xmem.lib)
+  elseif(XBOX_CONSOLE_TARGET MATCHES "xboxone")
+    target_link_libraries(${PROJECT_NAME} PRIVATE xgameplatform.lib xg_x.lib xmem.lib)
+  elseif(XBOX_CONSOLE_TARGET MATCHES "durango")
+    target_link_libraries(${PROJECT_NAME} PRIVATE kernelx.lib xg_x.lib combase.lib)
+  endif()
+else()
+  add_library(${PROJECT_NAME} ${LIBRARY_SOURCES} ${LIBRARY_HEADERS})
+endif()
 
 if(BUILD_DX11 AND WIN32)
    target_include_directories(${PROJECT_NAME} PRIVATE ${COMPILED_SHADERS})
@@ -566,6 +593,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|IntelLLVM")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     foreach(t IN LISTS TOOL_EXES ITEMS ${PROJECT_NAME})
       target_compile_options(${t} PRIVATE "-Wno-ignored-attributes" "-Walloc-size-larger-than=4GB")
+
+      if(BUILD_SHARED_LIBS)
+        target_compile_options(${t} PRIVATE "-Wno-attributes")
+      endif()
     endforeach()
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
     set_target_properties(${PROJECT_NAME} PROPERTIES CXX_STANDARD 14)

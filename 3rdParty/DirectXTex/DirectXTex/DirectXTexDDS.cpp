@@ -341,7 +341,7 @@ namespace
         }
 
         // DDS files always start with the same magic number ("DDS ")
-        auto const dwMagicNumber = *static_cast<const uint32_t*>(pSource);
+        const auto dwMagicNumber = *static_cast<const uint32_t*>(pSource);
         if (dwMagicNumber != DDS_MAGIC)
         {
             return HRESULT_FROM_WIN32(ERROR_BAD_FORMAT);
@@ -1929,9 +1929,9 @@ HRESULT DirectX::GetMetadataFromDDSFileEx(
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    auto const headerLen = static_cast<size_t>(bytesRead);
+    const auto headerLen = static_cast<size_t>(bytesRead);
 #else
-    auto const headerLen = std::min<size_t>(len, DDS_DX10_HEADER_SIZE);
+    const auto headerLen = std::min<size_t>(len, DDS_DX10_HEADER_SIZE);
 
     inFile.read(reinterpret_cast<char*>(header), headerLen);
     if (!inFile)
@@ -1993,9 +1993,35 @@ HRESULT DirectX::LoadFromDDSMemoryEx(
             return E_FAIL;
     }
 
+    size_t remaining = size - offset;
+    if (remaining == 0)
+        return E_FAIL;
+
     hr = image.Initialize(mdata);
     if (FAILED(hr))
         return hr;
+
+    if (flags & DDS_FLAGS_PERMISSIVE)
+    {
+        // For cubemaps, DDS_HEADER_DXT10.arraySize is supposed to be 'number of cubes'.
+        // This handles cases where the value is incorrectly written as the original 6*numCubes value.
+        if ((mdata.miscFlags & TEX_MISC_TEXTURECUBE)
+            && (convFlags & CONV_FLAGS_DX10)
+            && (image.GetPixelsSize() > remaining)
+            && ((mdata.arraySize % 6) == 0))
+        {
+            mdata.arraySize = mdata.arraySize / 6;
+            hr = image.Initialize(mdata);
+            if (FAILED(hr))
+                return hr;
+
+            if (image.GetPixelsSize() > remaining)
+            {
+                image.Release();
+                return HRESULT_E_HANDLE_EOF;
+            }
+        }
+    }
 
     CP_FLAGS cflags = CP_FLAGS_NONE;
     if (flags & DDS_FLAGS_LEGACY_DWORD)
@@ -2111,9 +2137,9 @@ HRESULT DirectX::LoadFromDDSFileEx(
         return HRESULT_FROM_WIN32(GetLastError());
     }
 
-    auto const headerLen = static_cast<size_t>(bytesRead);
+    const auto headerLen = static_cast<size_t>(bytesRead);
 #else
-    auto const headerLen = std::min<size_t>(len, DDS_DX10_HEADER_SIZE);
+    const auto headerLen = std::min<size_t>(len, DDS_DX10_HEADER_SIZE);
 
     inFile.read(reinterpret_cast<char*>(header), headerLen);
     if (!inFile)
@@ -2181,6 +2207,28 @@ HRESULT DirectX::LoadFromDDSFileEx(
     hr = image.Initialize(mdata);
     if (FAILED(hr))
         return hr;
+
+    if (flags & DDS_FLAGS_PERMISSIVE)
+    {
+        // For cubemaps, DDS_HEADER_DXT10.arraySize is supposed to be 'number of cubes'.
+        // This handles cases where the value is incorrectly written as the original 6*numCubes value.
+        if ((mdata.miscFlags & TEX_MISC_TEXTURECUBE)
+            && (convFlags & CONV_FLAGS_DX10)
+            && (image.GetPixelsSize() > remaining)
+            && ((mdata.arraySize % 6) == 0))
+        {
+            mdata.arraySize = mdata.arraySize / 6;
+            hr = image.Initialize(mdata);
+            if (FAILED(hr))
+                return hr;
+
+            if (image.GetPixelsSize() > remaining)
+            {
+                image.Release();
+                return HRESULT_E_HANDLE_EOF;
+            }
+        }
+    }
 
     if ((convFlags & CONV_FLAGS_EXPAND) || (flags & (DDS_FLAGS_LEGACY_DWORD | DDS_FLAGS_BAD_DXTN_TAILS)))
     {
@@ -2250,7 +2298,7 @@ HRESULT DirectX::LoadFromDDSFileEx(
         }
 
     #ifdef _WIN32
-        auto const pixelBytes = static_cast<DWORD>(image.GetPixelsSize());
+        const auto pixelBytes = static_cast<DWORD>(image.GetPixelsSize());
         if (!ReadFile(hFile.get(), image.GetPixels(), pixelBytes, &bytesRead, nullptr))
         {
             image.Release();
@@ -2392,6 +2440,28 @@ HRESULT DirectX::LoadFromDDSIOCallbacks(
     hr = image.Initialize(mdata);
     if (FAILED(hr))
         return hr;
+
+    if (flags & DDS_FLAGS_PERMISSIVE)
+    {
+        // For cubemaps, DDS_HEADER_DXT10.arraySize is supposed to be 'number of cubes'.
+        // This handles cases where the value is incorrectly written as the original 6*numCubes value.
+        if ((mdata.miscFlags & TEX_MISC_TEXTURECUBE)
+            && (convFlags & CONV_FLAGS_DX10)
+            && (image.GetPixelsSize() > remaining)
+            && ((mdata.arraySize % 6) == 0))
+        {
+            mdata.arraySize = mdata.arraySize / 6;
+            hr = image.Initialize(mdata);
+            if (FAILED(hr))
+                return hr;
+
+            if (image.GetPixelsSize() > remaining)
+            {
+                image.Release();
+                return HRESULT_E_HANDLE_EOF;
+            }
+        }
+    }
 
     if ((convFlags & CONV_FLAGS_EXPAND) || (flags & (DDS_FLAGS_LEGACY_DWORD | DDS_FLAGS_BAD_DXTN_TAILS)))
     {
@@ -2543,7 +2613,7 @@ HRESULT DirectX::SaveToDDSMemory(
     size_t remaining = blob.GetBufferSize() - required;
     pDestination += required;
 
-    if (!remaining)
+    if (remaining == 0)
     {
         blob.Release();
         return E_FAIL;

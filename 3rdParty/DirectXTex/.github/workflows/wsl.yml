@@ -30,18 +30,35 @@ jobs:
 
       matrix:
         build_type: [x64-Debug-Linux, x64-Release-Linux]
-        gcc: [10, 11, 12]
+        gcc: [12, 13, 14]
 
     steps:
     - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-    - uses: seanmiddleditch/gha-setup-ninja@96bed6edff20d1dd61ecff9b75cc519d516e6401 # v5
+    - uses: seanmiddleditch/gha-setup-ninja@3b1f8f94a2f8254bd26914c4ab9474d4f0015f67 # v6
+
+    - name: Get vcpkg commit hash
+      shell: pwsh
+      run: |
+        if ($Env:vcpkgRelease) {
+            echo "Using vcpkg commit from repo variable..."
+            $VCPKG_COMMIT_ID = $Env:vcpkgRelease
+        }
+        else {
+            echo "Fetching latest vcpkg commit hash..."
+            $commit = (git ls-remote https://github.com/microsoft/vcpkg.git HEAD | Select-String -Pattern '([a-f0-9]{40})').Matches.Value
+            $VCPKG_COMMIT_ID = $commit
+        }
+        Write-Host "VCPKG_COMMIT_ID=$VCPKG_COMMIT_ID"
+        echo "VCPKG_COMMIT_ID=$VCPKG_COMMIT_ID" >> $env:GITHUB_ENV
+      env:
+        vcpkgRelease: '${{ vars.VCPKG_COMMIT_ID }}'
 
     - uses: lukka/run-vcpkg@7d259227a1fb6471a0253dd5ab7419835228f7d7 # v11
       with:
         runVcpkgInstall: true
         vcpkgJsonGlob: '**/build/vcpkg.json'
-        vcpkgGitCommitId: '${{ vars.VCPKG_COMMIT_ID }}'
+        vcpkgGitCommitId: '${{ env.VCPKG_COMMIT_ID }}'
 
     - name: 'Configure CMake'
       working-directory: ${{ github.workspace }}
@@ -55,5 +72,24 @@ jobs:
         CXX: g++-${{ matrix.gcc }}
 
     - name: 'Build'
+      working-directory: ${{ github.workspace }}
+      run: cmake --build out/build/${{ matrix.build_type }}
+
+    - name: 'Clean up'
+      working-directory: ${{ github.workspace }}
+      run: rm -rf out
+
+    - name: 'Configure CMake (-shared)'
+      working-directory: ${{ github.workspace }}
+      run: >
+        cmake --preset=${{ matrix.build_type }} -DENABLE_OPENEXR_SUPPORT=ON -DENABLE_LIBJPEG_SUPPORT=ON -DENABLE_LIBPNG_SUPPORT=ON
+        -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" -DVCPKG_MANIFEST_DIR="${{ github.workspace }}/build"
+        -DVCPKG_TARGET_TRIPLET="x64-linux" -DBUILD_SHARED_LIBS=ON
+
+      env:
+        CC: gcc-${{ matrix.gcc }}
+        CXX: g++-${{ matrix.gcc }}
+
+    - name: 'Build (-shared)'
       working-directory: ${{ github.workspace }}
       run: cmake --build out/build/${{ matrix.build_type }}
