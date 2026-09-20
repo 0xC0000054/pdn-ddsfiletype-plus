@@ -504,10 +504,11 @@ namespace DdsFileTypePlus
             {
                 // Downscaling images with transparency is done in a way that allows the completely transparent areas
                 // to retain their RGB color values, this behavior is required by some programs that use DDS files.
-                using IBitmapSource<ColorBgra32> resampledSourceOpaque = CreateBitmapScaler(source.OpaqueSurface, mipBitmap.Size, algorithm, useGammaCorrection, imagingFactory);
+                using IBitmapSource<ColorBgra32> resampledOpaqueSource = CreateBitmapScaler(source.OpaqueBitmap, mipBitmap.Size, algorithm, useGammaCorrection, imagingFactory);
 
-                // Copy the color data from the opaque image to create a merged image with the transparent pixels retaining their original values.
-                using IBitmapSource<ColorBgra32> mipBitmapSource = resampledSourceOpaque.CreateChannelReplacer(3, resampledSource);
+                // Copy the alpha channel from the non-opaque image to create a merged image with the transparent pixels retaining their original values.
+                using IBitmapSource<ColorAlpha8> resampledSourceAlpha = resampledSource.CreateChannelExtractor<ColorAlpha8>(3);
+                using IBitmapSource<ColorBgra32> mipBitmapSource = resampledOpaqueSource.CreateChannelReplacer(3, resampledSourceAlpha);
 
                 mipBitmap.WriteSource(mipBitmapSource);
             }
@@ -652,7 +653,7 @@ namespace DdsFileTypePlus
         {
             private readonly Lazy<bool> hasTransparency;
             private IBitmap<ColorBgra32> bitmap;
-            private IBitmap<ColorBgra32>? opaqueBitmap;
+            private IBitmapSource<ColorBgra32>? opaqueBitmap;
 
             public MipSourceSurface(IBitmap<ColorBgra32> bitmap)
             {
@@ -664,8 +665,10 @@ namespace DdsFileTypePlus
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             public bool HasTransparency => this.hasTransparency.Value;
 
+            public IBitmap<ColorBgra32> Bitmap => this.bitmap;
+
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            public IBitmap<ColorBgra32> OpaqueSurface
+            public IBitmapSource<ColorBgra32> OpaqueBitmap
             {
                 get
                 {
@@ -680,8 +683,6 @@ namespace DdsFileTypePlus
                 }
             }
 
-            public IBitmap<ColorBgra32> Bitmap => this.bitmap;
-
             protected override void Dispose(bool disposing)
             {
                 DisposableUtil.Free(ref this.bitmap!, disposing);
@@ -689,14 +690,10 @@ namespace DdsFileTypePlus
                 base.Dispose(disposing);
             }
 
-            private IBitmap<ColorBgra32> CreateOpaqueBitmap()
+            private IBitmapSource<ColorBgra32> CreateOpaqueBitmap()
             {
-                IBitmap<ColorBgra32> opaqueClone = this.bitmap.ToBitmap();
-                using IBitmapLock<ColorBgra32> opaqueCloneLock = opaqueClone.Lock(BitmapLockOptions.ReadWrite);
-
-                PixelKernels.SetAlphaChannel(opaqueCloneLock.AsRegionPtr(), ColorAlpha8.Opaque);
-
-                return opaqueClone;
+                using IBitmapSource<ColorAlpha8> alphaSource = this.bitmap.CreateChannelExtractor<ColorAlpha8>(3);
+                return this.bitmap.CreateChannelReplacer(3, alphaSource);
             }
 
             private unsafe bool BitmapHasTransparency()

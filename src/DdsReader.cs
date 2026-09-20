@@ -27,15 +27,14 @@ namespace DdsFileTypePlus
             {
                 using DirectXTexScratchImage image = DdsNative.Load(context.Input, out DDSLoadInfo info);
 
-                if (TryGetLoadFormat(info.Format, info.SwizzledImageFormat, out DdsFileFormat loadFormat))
+                SaveOptionsMetadata metadata = new SaveOptionsMetadata()
                 {
-                    SaveOptionsMetadata metadata = new SaveOptionsMetadata()
-                    {
-                        Format = loadFormat
-                    };
+                    Format = TryGetLoadFormat(info.Format, info.SwizzledImageFormat, out DdsFileFormat loadFormat) ? loadFormat : null,
+                    GenerateMipMaps = info.MipLevelsActual > 1,
+                    CubeMap = info.CubeMap
+                };
 
-                    metadata.Save(context.MetadataForSaveOptions);
-                }
+                metadata.Save(context.MetadataForSaveOptions);
 
                 if (info.IsTextureArray)
                 {

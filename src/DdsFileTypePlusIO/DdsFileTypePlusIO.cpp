@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////
 //
 // This file is part of pdn-ddsfiletype-plus, a DDS FileType plugin
 // for Paint.NET that adds support for the DX10 and later formats.
@@ -54,6 +54,40 @@ namespace
         }
 
         return format;
+    }
+
+    // Load uses DDS_FLAGS_IGNORE_MIPS, which makes DirectXTex report a mipLevels
+    // value of 1 regardless of the number of mip levels in the file, so the mip
+    // count has to be read from the DDS file header.
+    HRESULT GetFileMipMapCount(const ImageIOCallbacks* callbacks, size_t* fileMipMapCount)
+    {
+        *fileMipMapCount = 1;
+
+        uint8_t header[DDS_MIN_HEADER_SIZE] = {};
+
+        HRESULT hr = callbacks->Read(header, static_cast<DWORD>(DDS_MIN_HEADER_SIZE));
+
+        if (SUCCEEDED(hr))
+        {
+            uint32_t magic = *(uint32_t*)&header[0];
+
+            if (magic == DDS_MAGIC)
+            {
+                DDS_HEADER* ddsHeader = (DDS_HEADER*)(header + sizeof(uint32_t));
+
+                if (ddsHeader->size == sizeof(DDS_HEADER))
+                {
+                    *fileMipMapCount = ddsHeader->mipMapCount != 0 ? ddsHeader->mipMapCount : 1;
+                }
+            }
+        }
+        else if (hr == HRESULT_FROM_WIN32(ERROR_HANDLE_EOF))
+        {
+            // Files that are smaller than the DDS header will be rejected by LoadFromDDSIOCallbacks.
+            hr = S_OK;
+        }
+
+        return hr;
     }
 
     HRESULT SaveImage(const ImageIOCallbacks* callbacks, const ScratchImage* const image, DdsFileOptions fileOptions)
@@ -194,7 +228,23 @@ HRESULT __stdcall Load(
         return E_OUTOFMEMORY;
     }
 
-    HRESULT hr = LoadFromDDSIOCallbacks(
+    size_t fileMipMapCount = 1;
+
+    HRESULT hr = GetFileMipMapCount(callbacks, &fileMipMapCount);
+
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    hr = callbacks->Seek(0, FILE_BEGIN);
+
+    if (FAILED(hr))
+    {
+        return hr;
+    }
+
+    hr = LoadFromDDSIOCallbacks(
         callbacks,
         DDS_FLAGS_ALLOW_LARGE_FILES | DDS_FLAGS_PERMISSIVE | DDS_FLAGS_IGNORE_MIPS,
         &info,
@@ -276,7 +326,8 @@ HRESULT __stdcall Load(
     loadInfo->height = info.height;
     loadInfo->depth = info.depth;
     loadInfo->arraySize = info.arraySize;
-    loadInfo->mipLevels = info.mipLevels;
+    loadInfo->mipLevelsLoaded = info.mipLevels;
+    loadInfo->mipLevelsActual = fileMipMapCount;
     loadInfo->format = originalImageMetadata.format;
     loadInfo->swizzledImageFormat = GetSwizzledImageFormat(originalImageMetadata, ddsPixelFormat);
     loadInfo->cubeMap = info.IsCubemap();

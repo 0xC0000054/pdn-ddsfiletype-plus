@@ -1,4 +1,4 @@
-////////////////////////////////////////////////////////////////////////
+﻿////////////////////////////////////////////////////////////////////////
 //
 // This file is part of pdn-ddsfiletype-plus, a DDS FileType plugin
 // for Paint.NET that adds support for the DX10 and later formats.
@@ -84,7 +84,8 @@ extern "C" {
         size_t height;
         size_t depth;
         size_t arraySize;
-        size_t mipLevels;
+        size_t mipLevelsLoaded;
+        size_t mipLevelsActual;
         DXGI_FORMAT format;
         SwizzledImageFormat swizzledImageFormat;
         bool cubeMap;

@@ -27,7 +27,8 @@ namespace DdsFileTypePlus.Interop
                 public nuint height;
                 public nuint depth;
                 public nuint arraySize;
-                public nuint mipLevels;
+                public nuint mipLevelsLoaded;
+                public nuint mipLevelsActual;
                 public DXGI_FORMAT format;
                 public SwizzledImageFormat swizzledImageFormat;
                 public byte cubeMap;
@@ -43,7 +44,8 @@ namespace DdsFileTypePlus.Interop
                     Height = unmanaged.height,
                     Depth = unmanaged.depth,
                     ArraySize = unmanaged.arraySize,
-                    MipLevels = unmanaged.mipLevels,
+                    MipLevelsLoaded = unmanaged.mipLevelsLoaded,
+                    MipLevelsActual = unmanaged.mipLevelsActual,
                     Format = unmanaged.format,
                     SwizzledImageFormat = unmanaged.swizzledImageFormat,
                     CubeMap = unmanaged.cubeMap != 0,
