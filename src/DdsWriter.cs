@@ -13,6 +13,7 @@
 using DdsFileTypePlus.Interop;
 using PaintDotNet;
 using PaintDotNet.AppModel;
+using PaintDotNet.FileTypes;
 using PaintDotNet.Imaging;
 using PaintDotNet.Interop;
 using PaintDotNet.Rendering;
@@ -27,7 +28,7 @@ namespace DdsFileTypePlus
     {
         public static void Save(
             IServiceProvider services,
-            Document input,
+            IReadOnlyFileTypeDocument input,
             Stream output,
             DdsFileFormat format,
             bool errorDiffusionDithering,
@@ -35,19 +36,20 @@ namespace DdsFileTypePlus
             DdsErrorMetric errorMetric,
             bool cubeMapFromCrossedImage,
             bool generateMipmaps,
-            ResamplingAlgorithm sampling,
+            BitmapInterpolationMode2 sampling,
             bool useGammaCorrection,
-            Surface scratchSurface,
             ProgressEventHandler progressCallback)
         {
-            scratchSurface.Clear();
-            input.CreateRenderer().Render(scratchSurface);
+            using IFileTypeCompositeBitmap<ColorBgra32> composite = input.GetCompositeBitmap<ColorBgra32>();
+            using IFileTypeBitmapLock<ColorBgra32> compositeLock = composite.Lock();
+            RegionPtr<ColorBgra32> compositeRegion = compositeLock.AsRegionPtr();
+            using RegionPtrBitmap<ColorBgra32> compositeBitmap = new RegionPtrBitmap<ColorBgra32>(compositeRegion);
 
-            int width = scratchSurface.Width;
-            int height = scratchSurface.Height;
+            int width = compositeBitmap.Size.Width;
+            int height = compositeBitmap.Size.Height;
             int arraySize = 1;
 
-            if (cubeMapFromCrossedImage && IsCrossedCubeMapSize(scratchSurface))
+            if (cubeMapFromCrossedImage && IsCrossedCubeMapSize(compositeBitmap.Size))
             {
                 if (width > height)
                 {
@@ -68,7 +70,7 @@ namespace DdsFileTypePlus
 
             int mipLevels = generateMipmaps ? GetMipCount(width, height) : 1;
 
-            using (DirectXTexScratchImage textures = GetTextures(scratchSurface,
+            using (DirectXTexScratchImage textures = GetTextures(compositeBitmap,
                                                                  cubeMapFromCrossedImage,
                                                                  width,
                                                                  height,
@@ -76,7 +78,8 @@ namespace DdsFileTypePlus
                                                                  mipLevels,
                                                                  format,
                                                                  sampling,
-                                                                 useGammaCorrection))
+                                                                 useGammaCorrection,
+                                                                 services.GetService<IImagingFactory>()!))
             {
                 if (format == DdsFileFormat.R8G8B8X8 || format == DdsFileFormat.B8G8R8)
                 {
@@ -153,7 +156,7 @@ namespace DdsFileTypePlus
             }
         }
 
-        private static bool IsCrossedCubeMapSize(Surface surface)
+        private static bool IsCrossedCubeMapSize(SizeInt32 size)
         {
             // A crossed image cube map must have a 4:3 aspect ratio for horizontal cube maps
             // or a 3:4 aspect ratio for vertical cube maps, with the cube map images being square.
@@ -161,13 +164,13 @@ namespace DdsFileTypePlus
             // For example, a horizontal crossed image with 256 x 256 pixel cube maps
             // would have a width of 1024 and a height of 768.
 
-            if (surface.Width > surface.Height)
+            if (size.Width > size.Height)
             {
-                return (surface.Width / 4) == (surface.Height / 3);
+                return (size.Width / 4) == (size.Height / 3);
             }
-            else if (surface.Height > surface.Width)
+            else if (size.Height > size.Width)
             {
-                return (surface.Width / 3) == (surface.Height / 4);
+                return (size.Width / 3) == (size.Height / 4);
             }
 
             return false;
@@ -302,15 +305,16 @@ namespace DdsFileTypePlus
             return mipCount;
         }
 
-        private static DirectXTexScratchImage GetTextures(Surface scratchSurface,
+        private static DirectXTexScratchImage GetTextures(IBitmap<ColorBgra32> sourceBitmap,
                                                           bool cubeMapFromCrossedImage,
                                                           int width,
                                                           int height,
                                                           int arraySize,
                                                           int mipLevels,
                                                           DdsFileFormat format,
-                                                          ResamplingAlgorithm algorithm,
-                                                          bool useGammaCorrection)
+                                                          BitmapInterpolationMode2 algorithm,
+                                                          bool useGammaCorrection,
+                                                          IImagingFactory imagingFactory)
         {
             DirectXTexScratchImage image = null;
             DirectXTexScratchImage tempImage = null;
@@ -387,7 +391,7 @@ namespace DdsFileTypePlus
                     //
                     // The cube map faces in a DDS file are always ordered: +X, -X, +Y, -Y, +Z, -Z.
 
-                    if (scratchSurface.Width > scratchSurface.Height)
+                    if (sourceBitmap.Size.Width > sourceBitmap.Size.Height)
                     {
                         // A horizontal crossed image uses the following layout:
                         //
@@ -423,39 +427,39 @@ namespace DdsFileTypePlus
                     {
                         Point srcStartOffset = cubeMapOffsets[i];
 
-                        using (Surface cubeMapSurface = scratchSurface.CreateWindow(srcStartOffset.X,
-                                                                                    srcStartOffset.Y,
-                                                                                    width,
-                                                                                    height))
+                        using IBitmap<ColorBgra32> cubeMapBitmap = sourceBitmap.CreateWindow(new RectInt32(srcStartOffset.X, srcStartOffset.Y, width, height));
+                        using IBitmapLock<ColorBgra32> cubeMapBitmapLock = cubeMapBitmap.Lock(BitmapLockOptions.ReadWrite);
+
+                        uint item = (uint)i;
+
+                        RenderToDirectXTexScratchImage(cubeMapBitmapLock.AsRegionPtr(), tempImage.GetImageData(0, item, 0), format);
+
+                        if (mipLevels > 1)
                         {
-                            uint item = (uint)i;
-
-                            RenderToDirectXTexScratchImage(cubeMapSurface, tempImage.GetImageData(0, item, 0), format);
-
-                            if (mipLevels > 1)
+                            using (MipSourceSurface mipSource = new(cubeMapBitmap))
                             {
-                                using (MipSourceSurface mipSource = new(cubeMapSurface))
+                                for (int mip = 1; mip < mipLevels; ++mip)
                                 {
-                                    for (int mip = 1; mip < mipLevels; ++mip)
-                                    {
-                                        RenderMipMap(mipSource,
-                                                     tempImage.GetImageData((uint)mip, item, 0),
-                                                     algorithm,
-                                                     useGammaCorrection,
-                                                     format);
-                                    }
+                                    RenderMipMap(mipSource,
+                                                 tempImage.GetImageData((uint)mip, item, 0),
+                                                 algorithm,
+                                                 useGammaCorrection,
+                                                 format,
+                                                 imagingFactory);
                                 }
                             }
                         }
+
                     }
                 }
                 else
                 {
-                    RenderToDirectXTexScratchImage(scratchSurface, tempImage.GetImageData(0, 0, 0), format);
+                    using IBitmapLock<ColorBgra32> sourceBitmapLock = sourceBitmap.Lock(BitmapLockOptions.ReadWrite);
+                    RenderToDirectXTexScratchImage(sourceBitmapLock.AsRegionPtr(), tempImage.GetImageData(0, 0, 0), format);
 
                     if (mipLevels > 1)
                     {
-                        using (MipSourceSurface mipSource = new(scratchSurface))
+                        using (MipSourceSurface mipSource = new(sourceBitmap))
                         {
                             for (int mip = 1; mip < mipLevels; ++mip)
                             {
@@ -463,7 +467,8 @@ namespace DdsFileTypePlus
                                              tempImage.GetImageData((uint)mip, 0, 0),
                                              algorithm,
                                              useGammaCorrection,
-                                             format);
+                                             format,
+                                             imagingFactory);
                             }
                         }
                     }
@@ -482,54 +487,58 @@ namespace DdsFileTypePlus
 
         private static unsafe void RenderMipMap(MipSourceSurface source,
                                                 DirectXTexScratchImageData mipData,
-                                                ResamplingAlgorithm algorithm,
+                                                BitmapInterpolationMode2 algorithm,
                                                 bool useGammaCorrection,
-                                                DdsFileFormat format)
+                                                DdsFileFormat format,
+                                                IImagingFactory imagingFactory)
         {
-            FitSurfaceOptions options = useGammaCorrection ? FitSurfaceOptions.UseGammaCorrection : FitSurfaceOptions.Default;
+            using IBitmap<ColorBgra32> mipBitmap = imagingFactory.CreateBitmap<ColorBgra32>((int)mipData.Width, (int)mipData.Height);
 
-            using (Surface mipSurface = new((int)mipData.Width, (int)mipData.Height))
+            using IBitmapSource<ColorBgra32> resampledSource = CreateBitmapScaler(source.Bitmap, mipBitmap.Size, algorithm, useGammaCorrection, imagingFactory);
+
+            if (!source.HasTransparency)
             {
-                mipSurface.FitSurface(algorithm, source.Surface, options);
+                mipBitmap.WriteSource(resampledSource);
+            }
+            else
+            {
+                // Downscaling images with transparency is done in a way that allows the completely transparent areas
+                // to retain their RGB color values, this behavior is required by some programs that use DDS files.
+                using IBitmapSource<ColorBgra32> resampledOpaqueSource = CreateBitmapScaler(source.OpaqueBitmap, mipBitmap.Size, algorithm, useGammaCorrection, imagingFactory);
 
-                if (source.HasTransparency)
-                {
-                    // Downscaling images with transparency is done in a way that allows the completely transparent areas
-                    // to retain their RGB color values, this behavior is required by some programs that use DDS files.
-                    using (Surface color = new(mipSurface.Width, mipSurface.Height))
-                    {
-                        // An opaque copy of the source surface is used to prevent Windows Imaging Component
-                        // from discarding the color information of completely transparent pixels.
-                        color.FitSurface(algorithm, source.OpaqueSurface, options);
+                // Copy the alpha channel from the non-opaque image to create a merged image with the transparent pixels retaining their original values.
+                using IBitmapSource<ColorAlpha8> resampledSourceAlpha = resampledSource.CreateChannelExtractor<ColorAlpha8>(3);
+                using IBitmapSource<ColorBgra32> mipBitmapSource = resampledOpaqueSource.CreateChannelReplacer(3, resampledSourceAlpha);
 
-                        for (int y = 0; y < mipSurface.Height; ++y)
-                        {
-                            ColorBgra* colorPtr = color.GetRowPointerUnchecked(y);
-                            ColorBgra* destPtr = mipSurface.GetRowPointerUnchecked(y);
+                mipBitmap.WriteSource(mipBitmapSource);
+            }
 
-                            for (int x = 0; x < mipSurface.Width; ++x)
-                            {
-                                // Copy the color data from the opaque image to create a merged
-                                // image with the transparent pixels retaining their original values.
-                                destPtr->B = colorPtr->B;
-                                destPtr->G = colorPtr->G;
-                                destPtr->R = colorPtr->R;
+            using IBitmapLock<ColorBgra32> mipBitmapLock = mipBitmap.Lock(BitmapLockOptions.Read);
+            RenderToDirectXTexScratchImage(mipBitmapLock.AsRegionPtr(), mipData, format);
+        }
 
-                                ++colorPtr;
-                                ++destPtr;
-                            }
-                        }
-                    }
-                }
-
-                RenderToDirectXTexScratchImage(mipSurface, mipData, format);
+        private static IBitmapSource<TPixel> CreateBitmapScaler<TPixel>(IBitmapSource<TPixel> source, SizeInt32 dstSize, BitmapInterpolationMode2 mode, bool useGammaCorrection, IImagingFactory imagingFactory)
+            where TPixel : unmanaged, INaturalPixelInfo
+        {
+            if (useGammaCorrection)
+            {
+                // Convert the bitmap source to linear color space, then perform the scaling in linear space, and then convert back to the original color space
+                using IPixelFormatInfo formatInfo = default(TPixel).PixelFormat.GetInfo();
+                using IColorContext formatColorContext = formatInfo.ColorContext!.CreateRef(); // only alpha formats lack a color context
+                using IColorContext formatColorContextLinear = imagingFactory.TryCreateLinearizedColorContext(formatColorContext) ?? formatColorContext.CreateRef();
+                using IBitmapSource<ColorRgba128Float> sourceRgba128FL = source.CreateColorTransformer<ColorRgba128Float>(formatColorContext, formatColorContextLinear);
+                using IBitmapSource<ColorRgba128Float> scaledRgba128FL = sourceRgba128FL.CreateScaler(dstSize, mode);
+                IBitmapSource<TPixel> scaled = scaledRgba128FL.CreateColorTransformer<TPixel>(formatColorContextLinear, formatColorContext);
+                return scaled;
+            }
+            else
+            {
+                return source.CreateScaler(dstSize, mode);
             }
         }
 
-        private static unsafe void RenderToDirectXTexScratchImage(Surface surface, DirectXTexScratchImageData scratchImage, DdsFileFormat format)
+        private static unsafe void RenderToDirectXTexScratchImage(RegionPtr<ColorBgra32> source, DirectXTexScratchImageData scratchImage, DdsFileFormat format)
         {
-            RegionPtr<ColorBgra32> source = surface.AsRegionPtr().Cast<ColorBgra32>();
-
             switch (scratchImage.Format)
             {
                 case DXGI_FORMAT.DXGI_FORMAT_B8G8R8A8_UNORM:
@@ -643,20 +652,23 @@ namespace DdsFileTypePlus
         private sealed class MipSourceSurface : Disposable
         {
             private readonly Lazy<bool> hasTransparency;
-            private Surface opaqueSurface;
+            private IBitmap<ColorBgra32> bitmap;
+            private IBitmapSource<ColorBgra32>? opaqueBitmap;
 
-            public MipSourceSurface(Surface surface)
+            public MipSourceSurface(IBitmap<ColorBgra32> bitmap)
             {
-                this.Surface = surface;
-                this.opaqueSurface = null;
-                this.hasTransparency = new Lazy<bool>(SurfaceHasTransparency);
+                this.bitmap = bitmap.CreateRefT();
+                this.opaqueBitmap = null;
+                this.hasTransparency = new Lazy<bool>(BitmapHasTransparency);
             }
 
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
             public bool HasTransparency => this.hasTransparency.Value;
 
+            public IBitmap<ColorBgra32> Bitmap => this.bitmap;
+
             [DebuggerBrowsable(DebuggerBrowsableState.Never)]
-            public Surface OpaqueSurface
+            public IBitmapSource<ColorBgra32> OpaqueBitmap
             {
                 get
                 {
@@ -665,54 +677,38 @@ namespace DdsFileTypePlus
                         ExceptionUtil.ThrowObjectDisposedException(nameof(MipSourceSurface));
                     }
 
-                    this.opaqueSurface ??= CreateOpaqueSurface();
+                    this.opaqueBitmap ??= CreateOpaqueBitmap();
 
-                    return this.opaqueSurface;
+                    return this.opaqueBitmap;
                 }
             }
-
-            public Surface Surface { get; }
 
             protected override void Dispose(bool disposing)
             {
-                if (disposing)
-                {
-                    if (this.opaqueSurface != null)
-                    {
-                        this.opaqueSurface.Dispose();
-                        this.opaqueSurface = null;
-                    }
-                }
-
+                DisposableUtil.Free(ref this.bitmap!, disposing);
+                DisposableUtil.Free(ref this.opaqueBitmap!, disposing);
                 base.Dispose(disposing);
             }
 
-            private Surface CreateOpaqueSurface()
+            private IBitmapSource<ColorBgra32> CreateOpaqueBitmap()
             {
-                Surface opaqueClone = this.Surface.Clone();
-
-                PixelKernels.SetAlphaChannel(opaqueClone.AsRegionPtr().Cast<ColorBgra32>(), ColorAlpha8.Opaque);
-
-                return opaqueClone;
+                using IBitmapSource<ColorAlpha8> alphaSource = this.bitmap.CreateChannelExtractor<ColorAlpha8>(3);
+                return this.bitmap.CreateChannelReplacer(3, alphaSource);
             }
 
-            private unsafe bool SurfaceHasTransparency()
+            private unsafe bool BitmapHasTransparency()
             {
-                Surface surface = this.Surface;
+                using IBitmapLock<ColorBgra32> bitmapLock = this.bitmap.Lock(BitmapLockOptions.Read);
+                RegionPtr<ColorBgra32> region = bitmapLock.AsRegionPtr();
 
-                for (int y = 0; y < surface.Height; ++y)
+                foreach (RegionRowPtr<ColorBgra32> row in region.Rows)
                 {
-                    ColorBgra* ptr = surface.GetRowPointerUnchecked(y);
-                    ColorBgra* ptrEnd = ptr + surface.Width;
-
-                    while (ptr < ptrEnd)
+                    foreach (ColorBgra32 color in row)
                     {
-                        if (ptr->A < 255)
+                        if (color.A < 255)
                         {
                             return true;
                         }
-
-                        ++ptr;
                     }
                 }
 

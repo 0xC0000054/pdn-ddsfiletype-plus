@@ -11,6 +11,7 @@
 ////////////////////////////////////////////////////////////////////////
 
 using PaintDotNet;
+using PaintDotNet.FileTypes;
 using System;
 using System.IO;
 using System.Runtime.CompilerServices;
@@ -47,59 +48,49 @@ namespace DdsFileTypePlus
         /// </returns>
         internal static IFileTypeInfo? TryGetFileTypeInfo(Stream stream, IServiceProvider serviceProvider)
         {
-            string name = TryGetFileTypeName(stream);
-
-            IFileTypeInfo? fileTypeInfo = null;
-
-            if (!string.IsNullOrEmpty(name))
+            string? ext = TryGetFileTypeExtension(stream);
+            if (string.IsNullOrEmpty(ext))
             {
-                IFileTypesService? fileTypesService = serviceProvider?.GetService<IFileTypesService>();
-
-                if (fileTypesService != null)
-                {
-                    foreach (IFileTypeInfo item in fileTypesService.FileTypes)
-                    {
-                        if (item.Name.Equals(name, StringComparison.OrdinalIgnoreCase)
-                            && item.Options.SupportsLoading)
-                        {
-                            fileTypeInfo = item;
-                            break;
-                        }
-                    }
-                }
+                return null;
             }
 
-            return fileTypeInfo;
-        }
-
-        private static string TryGetFileTypeName(Stream stream)
-        {
-            string name = TryGetFormatFromImageHeader(stream);
-
-            if (string.IsNullOrEmpty(name))
+            IFileTypesService? fileTypesService = serviceProvider?.GetService<IFileTypesService>();
+            if (fileTypesService != null)
             {
-                name = TryGetFormatFromImageFooter(stream);
+                return fileTypesService.FindFileTypeForLoadingExtension(ext);
             }
 
-            return name;
+            return null;
         }
 
-        private static string TryGetFormatFromImageFooter(Stream stream)
+        private static string? TryGetFileTypeExtension(Stream stream)
         {
-            string name = string.Empty;
+            string? ext = TryGetExtensionFromImageHeader(stream);
+
+            if (string.IsNullOrEmpty(ext))
+            {
+                ext = TryGetExtensionFromImageFooter(stream);
+            }
+
+            return ext;
+        }
+
+        private static string? TryGetExtensionFromImageFooter(Stream stream)
+        {
+            string? ext = null;
 
             if (IsTgaFile(stream))
             {
-                name = "TGA";
+                ext = ".tga";
             }
 
-            return name;
+            return ext;
         }
 
         [SkipLocalsInit]
-        private static string TryGetFormatFromImageHeader(Stream stream)
+        private static string? TryGetExtensionFromImageHeader(Stream stream)
         {
-            string name = string.Empty;
+            string? ext = null;
 
             Span<byte> bytes = stackalloc byte[8];
 
@@ -109,26 +100,26 @@ namespace DdsFileTypePlus
 
             if (FileSignatureMatches(bytes, PngFileSignature))
             {
-                name = "PNG";
+                ext = ".png";
             }
             else if (FileSignatureMatches(bytes, BmpFileSignature))
             {
-                name = "BMP";
+                ext = ".bmp";
             }
             else if (FileSignatureMatches(bytes, JpegFileSignature))
             {
-                name = "JPEG";
+                ext = ".jpg";
             }
             else if (IsGifFileSignature(bytes))
             {
-                name = "GIF";
+                ext = ".gif";
             }
             else if (IsTiffFileSignature(bytes))
             {
-                name = "TIFF";
+                ext = ".tif";
             }
 
-            return name;
+            return ext;
         }
 
         private static bool FileSignatureMatches(ReadOnlySpan<byte> data, ReadOnlySpan<byte> signature)

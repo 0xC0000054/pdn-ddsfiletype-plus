@@ -10,7 +10,7 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using PaintDotNet.Dds;
+using PaintDotNet.FileTypes.Dds;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -21,14 +21,14 @@ namespace DdsFileTypePlus
     internal sealed class PdnLocalizedStringResourceManager : IDdsStringResourceManager
     {
         private readonly IDdsFileTypePlusStrings strings;
-        private static readonly IReadOnlyDictionary<string, DdsFileTypePlusStringName> pdnLocalizedStringMap;
+        private static readonly IReadOnlyDictionary<string, DdsFileTypePlusStringNames> pdnLocalizedStringMap;
 
         static PdnLocalizedStringResourceManager()
         {
             // Use a dictionary to map the resource name to its enumeration value.
             // This avoids repeated calls to Enum.TryParse.
             // Adapted from https://stackoverflow.com/a/13677446
-            pdnLocalizedStringMap = Enum.GetValues<DdsFileTypePlusStringName>()
+            pdnLocalizedStringMap = Enum.GetValues<DdsFileTypePlusStringNames>()
                                         .ToDictionary(kv => kv.ToString(), kv => kv, StringComparer.OrdinalIgnoreCase);
         }
 
@@ -39,7 +39,7 @@ namespace DdsFileTypePlus
 
         public string GetString(string name)
         {
-            if (pdnLocalizedStringMap.TryGetValue(name, out DdsFileTypePlusStringName value))
+            if (pdnLocalizedStringMap.TryGetValue(name, out DdsFileTypePlusStringNames value))
             {
                 return this.strings?.TryGetString(value) ?? Resources.ResourceManager.GetString(name);
             }

@@ -10,15 +10,15 @@
 //
 ////////////////////////////////////////////////////////////////////////
 
-using PaintDotNet;
+using PaintDotNet.FileTypes;
 
 namespace DdsFileTypePlus
 {
-    public sealed class DdsFileTypeFactory : IFileTypeFactory2
+    public sealed class DdsFileTypeFactory : IFileTypeFactory
     {
-        public FileType[] GetFileTypeInstances(IFileTypeHost host)
+        public IFileType[] CreateFileTypes(IFileTypeHost host)
         {
-            return new FileType[] { new DdsFileType(host.Services) };
+            return [new DdsFileType(host)];
         }
     }
 }
